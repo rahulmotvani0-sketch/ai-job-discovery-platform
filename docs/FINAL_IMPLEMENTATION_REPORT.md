@@ -13,23 +13,23 @@
 
 | Capability / Component | Status | Verification & Evidence |
 | :--- | :--- | :--- |
-| **NextRaise Product Research** | ✅ Delivered | `docs/NEXTRAISE_PRODUCT_RESEARCH.md`: Exhaustive evaluation of NextRaise features, category chips, early applicant tags, country browsing, and implementation complexity. |
-| **Platform Improvement Plan** | ✅ Delivered | `docs/PLATFORM_IMPROVEMENT_PLAN.md`: Strategic engineering roadmap detailing multi-account auth, AI configuration, model routing, and NextRaise UX. |
+| **Market Discovery Research** | ✅ Delivered | Exhaustive evaluation of modern tech job discovery features, category chips, early applicant tags, country browsing, and implementation complexity. |
+| **Platform Improvement Plan** | ✅ Delivered | `docs/PLATFORM_IMPROVEMENT_PLAN.md`: Strategic engineering roadmap detailing multi-account auth, AI configuration, model routing, and modern discovery UX. |
 | **OpenMausBot-main Audit** | ✅ Delivered & Updated | `docs/OPENMAUSBOT_AUDIT.md`: In-depth analysis of OpenMausBot drivers, persistence, and extraction of clean patterns without Composio bloat. |
 | **Multi-Account Authentication** | ✅ Fully Implemented & Tested | `src/core/accounts.ts`, `tests/multi-account.test.ts`: Connect multiple Google accounts (Primary job search and secondary recruitment email). Tokens never leaked to frontend. Disconnect, primary switching, and sync controls. |
 | **Cloud LLM API Configuration** | ✅ Fully Implemented & Tested | `src/ai/providers/cloud-config.ts`, `tests/llm-config.test.ts`: Dynamic configuration for OpenAI, Anthropic, Gemini, OpenRouter, and Ollama. Masked API keys (`sk-••••••••...`). Live `/api/llm/test` connection endpoint. |
 | **Model Routing (Local/Cloud/Hybrid)** | ✅ Fully Implemented & Tested | `src/ai/providers/router.ts`: Supports `local-only` (Ollama CPU), `cloud-only` (API), and `hybrid` modes. CPU-friendly timeouts and transparent token tracking. |
-| **NextRaise-Inspired UX & Discovery** | ✅ Fully Implemented & Tested | `src/discovery/connectors/manager.ts`, `public/index.html`: "✦ Early Applicant" badges (published &le; 48 hours), country filters (India, US, UK, Germany, etc.), role category chips, and saved jobs / bookmarks. |
+| **Enhanced Discovery & UX** | ✅ Fully Implemented & Tested | `src/discovery/connectors/manager.ts`, `public/index.html`: "✦ Early Applicant" badges (published &le; 48 hours), country filters (India, US, UK, Germany, etc.), role category chips, and saved jobs / bookmarks. |
 | **Human-in-the-Loop Approval Gate** | ✅ Fully Implemented & Tested | `src/applications/approval-gate.ts`: Mandates explicit user approval and sending account selection. Never dispatches an application from the wrong account. |
 | **Direct ATS Connectors (Greenhouse + Lever + Ashby)** | ✅ Fully Implemented & Tested | `src/discovery/connectors/greenhouse.ts`, `src/discovery/connectors/lever.ts`, `src/discovery/connectors/ashby.ts`: Ingests official public ATS feeds from Elastic, Cloudflare, Palantir, Supabase, Linear, Ramp, Perplexity, and Replit without intermediaries. |
 | **Google Cloud OAuth 2.0 Integration** | ✅ Fully Implemented & Tested | `src/integrations/google/oauth.ts`, `tests/google-oauth.test.ts`: Complete authorization URL generation, token exchange, and automatic token refresh. |
-| **Automated Test Suite Expansion** | ✅ Fully Verified | **41/41 tests passing across 8 suites** (`foundation`, `discovery`, `ai-matching`, `e2e-workflow`, `multi-account`, `llm-config`, `nextraise-ux`, `google-oauth`). |
+| **Automated Test Suite Expansion** | ✅ Fully Verified | **Automated tests passing across suites** (`foundation`, `discovery`, `ai-matching`, `e2e-workflow`, `multi-account`, `llm-config`, `discovery-ux`, `google-oauth`). |
 
 ---
 
 ## 2. Test Execution & Verification Evidence
 
-All 41 automated tests pass cleanly across 8 comprehensive test suites:
+All automated tests pass cleanly across comprehensive test suites:
 
 ```text
  ✓ tests/llm-config.test.ts (4 tests)
@@ -37,7 +37,7 @@ All 41 automated tests pass cleanly across 8 comprehensive test suites:
  ✓ tests/foundation.test.ts (5 tests)
  ✓ tests/discovery.test.ts (11 tests)
  ✓ tests/ai-matching.test.ts (5 tests)
- ✓ tests/nextraise-ux.test.ts (4 tests)
+ ✓ tests/discovery-ux.test.ts (4 tests)
  ✓ tests/google-oauth.test.ts (4 tests)
  ✓ tests/e2e-workflow.test.ts (3 tests)
 

@@ -3,7 +3,7 @@ import { DatabaseManager } from '../src/core/database.js';
 import { DiscoveryManager } from '../src/discovery/connectors/manager.js';
 import type { RawJobPayload } from '../src/types/index.js';
 
-describe('NextRaise-Inspired Discovery & UX Engine', () => {
+describe('Enhanced Discovery & UX Engine', () => {
   let db: DatabaseManager;
   let discoveryManager: DiscoveryManager;
 

@@ -2,7 +2,7 @@
 
 An enterprise-grade, open-source, local-first autonomous job discovery and application workstation built for **all IT and tech job seekers** (Full-Stack, Backend, Frontend, DevOps, SRE, Cloud Infrastructure, AI & Machine Learning, Data Engineering, Cybersecurity, Mobile, and QA & Automation).
 
-Inspired by modern job platforms like NextRaise and built with a local-first philosophy, the platform combines multi-source direct ATS scraping, local CPU inference via Ollama, hybrid cloud LLM routing, Google Cloud OAuth 2.0 integration, and human-in-the-loop security approval gates.
+Built with a local-first philosophy, the platform combines multi-source direct ATS scraping, local CPU inference via Ollama, hybrid cloud LLM routing, Google Cloud OAuth 2.0 integration, and human-in-the-loop security approval gates.
 
 ---
 
@@ -13,7 +13,7 @@ Inspired by modern job platforms like NextRaise and built with a local-first phi
   - Direct ATS scraping from **Lever** (Palantir, OptionMetrics, BrightEdge, Nextech, etc.)
   - Direct ATS scraping from **Ashby** (Linear, Supabase, Ramp, Perplexity, Resend, PostHog, Vanta, Replit, etc.)
   - Remote tech job feeds from **Himalayas Remote API**, **RemoteOK API**, and **Jobicy API**
-- **Modern NextRaise-Inspired UX**:
+- **Modern Discovery UX**:
   - Multi-Domain Role Chips (`All Roles`, `Full-Stack`, `Backend`, `Frontend`, `DevOps & SRE`, `Cloud Infra`, `AI & ML`, `Data Engineering`, `Cybersecurity`, `Mobile`, `QA & Automation`)
   - **"✦ Early Applicant"** Badges prioritizing vacancies active &le; 48 hours for 3–4× higher recruiter response rates
   - Country & Residency Filters with strict remote-eligibility matching (India-eligible, Worldwide, US, UK, Germany, Canada, Singapore, Australia, etc.)
