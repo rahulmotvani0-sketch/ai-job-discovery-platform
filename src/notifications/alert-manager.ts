@@ -152,7 +152,7 @@ export class AlertNotificationManager {
       locationText: 'Remote (Worldwide)',
       isRemote: true,
       acceptsIndia: true,
-      employmentType: 'FULL_TIME',
+      employmentType: 'full-time',
       rawDescription: 'Test opportunity',
       publishedAt: new Date().toISOString(),
       discoveredAt: new Date().toISOString(),

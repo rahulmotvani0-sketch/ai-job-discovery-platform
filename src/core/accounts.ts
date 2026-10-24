@@ -60,6 +60,8 @@ export class AccountManager {
     accessToken?: string;
     refreshToken?: string;
     grantedScopes?: string[];
+    scopes?: string[];
+    expiryDate?: number;
     isPrimary?: boolean;
   }): PublicAccountView {
     const existing = this.db.getConnectedAccounts().find(a => a.email.toLowerCase() === params.email.toLowerCase());
@@ -73,7 +75,7 @@ export class AccountManager {
       provider: 'google',
       accessToken: params.accessToken || existing?.accessToken,
       refreshToken: params.refreshToken || existing?.refreshToken,
-      grantedScopes: params.grantedScopes || existing?.grantedScopes || [
+      grantedScopes: params.grantedScopes || params.scopes || existing?.grantedScopes || [
         'https://www.googleapis.com/auth/gmail.compose',
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/gmail.readonly'

@@ -48,8 +48,8 @@ export class ResumeTailoringAgent {
     ];
 
     for (const skill of allUserSkills) {
-      const tokens = skill.toLowerCase().replace(/[(),]/g, ' ').split(/\s+/).filter(t => t.length > 2);
-      if (tokens.some(t => reqText.includes(t))) {
+      const tokens = skill.toLowerCase().replace(/[(),]/g, ' ').split(/\s+/).filter((t: string) => t.length > 2);
+      if (tokens.some((t: string) => reqText.includes(t))) {
         highlightedSkills.push(skill);
       }
     }

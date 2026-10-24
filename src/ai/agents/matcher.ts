@@ -17,10 +17,11 @@ export class JobMatchingAgent {
     // Flatten all verified user skills
     const userSkillsSet = new Set<string>();
     for (const category of Object.values(profile.skills)) {
+      if (!Array.isArray(category)) continue;
       for (const skill of category) {
         // split composite skill names like "AWS (EC2, S3, RDS...)" into tokens
         userSkillsSet.add(skill.toLowerCase());
-        const tokens = skill.toLowerCase().replace(/[(),]/g, ' ').split(/\s+/).filter(t => t.length > 2);
+        const tokens = skill.toLowerCase().replace(/[(),]/g, ' ').split(/\s+/).filter((t: string) => t.length > 2);
         for (const token of tokens) userSkillsSet.add(token);
       }
     }

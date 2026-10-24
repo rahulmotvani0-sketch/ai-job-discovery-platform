@@ -34,6 +34,7 @@ export interface WorkExperience {
 export interface UserProfile {
   id: string;
   fullName: string;
+  title?: string;
   email: string;
   phone: string;
   location: string;
@@ -52,6 +53,7 @@ export interface UserProfile {
     programmingAndScripting: string[];
     languagesAndFrameworks?: string[];
     networkingAndAdmin: string[];
+    [category: string]: string[] | undefined;
   };
   certifications: string[];
   education: Array<{

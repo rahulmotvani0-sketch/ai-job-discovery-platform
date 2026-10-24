@@ -22,6 +22,9 @@ data/*test*.json
 data/google_tokens.json
 data/resumes/tailored/
 
+# Backups
+backups/
+
 # Logs
 logs/
 *.log

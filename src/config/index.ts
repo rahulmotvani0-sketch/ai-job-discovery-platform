@@ -34,6 +34,7 @@ export interface AppConfig {
   // Web Server
   port: number;
   host: string;
+  apiAuthToken?: string;
   // Instant Mobile Alerts
   telegramBotToken?: string;
   telegramChatId?: string;
@@ -88,6 +89,7 @@ export function loadConfig(customEnvPath?: string): AppConfig {
     googleTokenPath,
     port: parseInt(process.env.PORT || '3000', 10),
     host: process.env.HOST || '127.0.0.1',
+    apiAuthToken: process.env.API_AUTH_TOKEN,
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: process.env.TELEGRAM_CHAT_ID,
     discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,

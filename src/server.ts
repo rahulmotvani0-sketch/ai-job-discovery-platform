@@ -14,9 +14,17 @@ import { DirectGoogleSheetsService } from './integrations/google/sheets.js';
 import { ModelRouter } from './ai/providers/router.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES, loadAuthoritativeProfile } from './core/profile.js';
 import { AtsPdfGenerator } from './applications/pdf-generator.js';
-import type { InferenceMode, Vacancy } from './types/index.js';
+import type { InferenceMode, Vacancy, UserProfile } from './types/index.js';
 import { config } from './config/index.js';
 import { GoogleOAuthManager } from './integrations/google/oauth.js';
+import {
+  SECURITY_HEADERS,
+  InMemoryRateLimiter,
+  extractClientIp,
+  getOrCreateRequestId,
+  validateAuthorization,
+  parseJsonBody,
+} from './core/security.js';
 
 export class ApplicationServer {
   private port: number;
@@ -28,6 +36,7 @@ export class ApplicationServer {
   private orchestrator: MasterOrchestrator;
   private scheduler: JobScheduler;
   private googleOAuthManager: GoogleOAuthManager;
+  private rateLimiter: InMemoryRateLimiter;
   private server?: ReturnType<typeof createServer>;
 
   constructor(options?: { port?: number; host?: string; dbPath?: string }) {
@@ -64,6 +73,7 @@ export class ApplicationServer {
 
     this.googleOAuthManager = new GoogleOAuthManager(undefined, undefined, undefined, undefined, this.accountManager);
     this.scheduler = new JobScheduler(this.orchestrator);
+    this.rateLimiter = new InMemoryRateLimiter(60_000, 300);
   }
 
   getDatabase(): DatabaseManager {
@@ -86,58 +96,135 @@ export class ApplicationServer {
     return this.scheduler;
   }
 
-  private sendJson(res: ServerResponse, statusCode: number, data: any) {
+  getRateLimiter(): InMemoryRateLimiter {
+    return this.rateLimiter;
+  }
+
+  private sendJson(res: ServerResponse, statusCode: number, data: any, requestId?: string) {
     const json = JSON.stringify(data);
-    res.writeHead(statusCode, {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    });
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Request-ID',
+      ...SECURITY_HEADERS,
+    };
+    if (requestId) {
+      headers['X-Request-ID'] = requestId;
+    }
+    res.writeHead(statusCode, headers);
     res.end(json);
   }
 
-  private sendHtml(res: ServerResponse, statusCode: number, html: string) {
-    res.writeHead(statusCode, {
+  private sendHtml(res: ServerResponse, statusCode: number, html: string, requestId?: string) {
+    const headers: Record<string, string> = {
       'Content-Type': 'text/html; charset=utf-8',
       'Access-Control-Allow-Origin': '*',
-    });
+      ...SECURITY_HEADERS,
+    };
+    if (requestId) {
+      headers['X-Request-ID'] = requestId;
+    }
+    res.writeHead(statusCode, headers);
     res.end(html);
   }
 
   private async parseBody(req: IncomingMessage): Promise<any> {
-    return new Promise((resolve) => {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          resolve(body ? JSON.parse(body) : {});
-        } catch {
-          resolve({});
-        }
-      });
-    });
+    const parsed = await parseJsonBody(req, 2 * 1024 * 1024);
+    if (parsed.error) {
+      throw new Error(parsed.error);
+    }
+    return parsed.data || {};
   }
 
   start(): Promise<void> {
     return new Promise((resolve) => {
       this.server = createServer(async (req, res) => {
+        const requestId = getOrCreateRequestId(req);
+        const clientIp = extractClientIp(req);
+
         // Handle CORS Preflight
         if (req.method === 'OPTIONS') {
           res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Request-ID',
+            'X-Request-ID': requestId,
+            ...SECURITY_HEADERS,
           });
           res.end();
           return;
+        }
+
+        // Rate limiting enforcement
+        const rateCheck = this.rateLimiter.check(clientIp);
+        if (!rateCheck.allowed) {
+          logger.warn(`Rate limit exceeded for IP ${clientIp} on ${req.url}`);
+          return this.sendJson(res, 429, {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please wait before retrying.',
+            retryAfterMs: rateCheck.resetTimeMs,
+          }, requestId);
         }
 
         const url = new URL(req.url || '/', `http://${this.host}:${this.port}`);
         const pathname = url.pathname;
 
         try {
-          // REST API Endpoints
+          // Guard mutating endpoints if API_AUTH_TOKEN is configured
+          const isMutating = req.method !== 'GET' && req.method !== 'OPTIONS' && !pathname.startsWith('/oauth2callback');
+          if (isMutating && config.apiAuthToken) {
+            const authCheck = validateAuthorization(req, config.apiAuthToken);
+            if (!authCheck.authorized) {
+              return this.sendJson(res, 401, { error: authCheck.error }, requestId);
+            }
+          }
+
+          // Observability & Health Check Endpoints
+          if (pathname === '/health/live') {
+            return this.sendJson(res, 200, {
+              status: 'alive',
+              uptimeSeconds: Math.floor(process.uptime()),
+              timestamp: new Date().toISOString(),
+            }, requestId);
+          }
+
+          if (pathname === '/health/ready') {
+            try {
+              this.db.getDashboardMetrics();
+              return this.sendJson(res, 200, {
+                status: 'ready',
+                database: 'connected',
+                scheduler: this.scheduler.getStatus().isRunning ? 'active' : 'idle',
+                timestamp: new Date().toISOString(),
+              }, requestId);
+            } catch (err: any) {
+              return this.sendJson(res, 503, {
+                status: 'not_ready',
+                database: 'disconnected',
+                error: err.message,
+                timestamp: new Date().toISOString(),
+              }, requestId);
+            }
+          }
+
+          if (pathname === '/api/metrics') {
+            const mem = process.memoryUsage();
+            const metrics = this.db.getDashboardMetrics();
+            return this.sendJson(res, 200, {
+              system: {
+                uptimeSeconds: Math.floor(process.uptime()),
+                memoryRssMb: Math.round(mem.rss / 1024 / 1024),
+                memoryHeapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+                nodeVersion: process.version,
+                platform: process.platform,
+              },
+              pipeline: metrics,
+              scheduler: this.scheduler.getStatus(),
+              timestamp: new Date().toISOString(),
+            }, requestId);
+          }
+
           if (pathname === '/api/health') {
             return this.sendJson(res, 200, {
               status: 'healthy',
@@ -145,7 +232,7 @@ export class ApplicationServer {
               version: '1.1.0',
               scheduler: this.scheduler.getStatus(),
               inferenceMode: this.router.getMode(),
-            });
+            }, requestId);
           }
 
           if (pathname === '/api/dashboard/metrics') {
@@ -207,14 +294,25 @@ export class ApplicationServer {
               networkingAndAdmin: ['Linux', 'Ubuntu', 'TCP/IP', 'Nginx', 'DNS'],
             };
 
-            const detectedSkills: Record<string, string[]> = { ...current.skills };
+            const detectedSkills: UserProfile['skills'] = {
+              ...current.skills,
+              cloudPlatforms: [...(current.skills.cloudPlatforms || [])],
+              infrastructureAsCode: [...(current.skills.infrastructureAsCode || [])],
+              containersAndOrchestration: [...(current.skills.containersAndOrchestration || [])],
+              ciCdAndGitOps: [...(current.skills.ciCdAndGitOps || [])],
+              devSecOpsAndSecurity: [...(current.skills.devSecOpsAndSecurity || [])],
+              observabilityAndMonitoring: [...(current.skills.observabilityAndMonitoring || [])],
+              programmingAndScripting: [...(current.skills.programmingAndScripting || [])],
+              networkingAndAdmin: [...(current.skills.networkingAndAdmin || [])],
+            };
             for (const [category, keywords] of Object.entries(techKeywords)) {
               for (const kw of keywords) {
                 const regex = new RegExp(`\\b${kw.replace('+', '\\+')}\\b`, 'i');
                 if (regex.test(content)) {
-                  if (!detectedSkills[category]) detectedSkills[category] = [];
-                  if (!detectedSkills[category].includes(kw)) {
-                    detectedSkills[category].push(kw);
+                  const list = detectedSkills[category] || [];
+                  detectedSkills[category] = list;
+                  if (!list.includes(kw)) {
+                    list.push(kw);
                   }
                 }
               }

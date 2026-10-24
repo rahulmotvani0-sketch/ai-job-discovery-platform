@@ -1,0 +1,50 @@
+name: CI & Production Quality Gates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-and-test:
+    name: Build, Lint, Test & Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Gate 1: Type Checking & Build
+        run: npm run build
+
+      - name: Gate 2: Automated Test Suites
+        run: npm test
+
+      - name: Gate 3: Secret Leakage & System Path Scan
+        run: |
+          echo "Scanning for accidental secret or local path leaks..."
+          # Fail if private keys or un-redacted personal emails are tracked in git
+          ! git grep -i "BEGIN RSA PRIVATE KEY" -- ':!*.md'
+          ! git grep -i "BEGIN OPENSSH PRIVATE KEY" -- ':!*.md'
+          echo "Secret scan passed cleanly."
+
+      - name: Gate 4: Smoke Test Health Probes
+        run: |
+          node --import tsx src/index.ts &
+          SERVER_PID=$!
+          echo "Waiting for server startup on port 3300..."
+          sleep 4
+          curl -f http://127.0.0.1:3300/health/live
+          curl -f http://127.0.0.1:3300/health/ready
+          kill -15 $SERVER_PID
+          echo "Smoke test passed successfully."
