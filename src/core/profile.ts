@@ -32,6 +32,7 @@ export const DEFAULT_JOB_PREFERENCES: JobPreferences = {
 export const DEFAULT_USER_PROFILE: UserProfile = {
   id: process.env.USER_ID || 'primary_candidate',
   fullName: process.env.USER_FULL_NAME || 'Tech Professional',
+  title: process.env.USER_TITLE || 'Software & Cloud Infrastructure Engineer',
   email: process.env.USER_EMAIL || 'candidate@example.com',
   phone: process.env.USER_PHONE || '+1-555-0100',
   location: process.env.USER_LOCATION || 'Global / Remote (Open to Relocation)',

@@ -235,6 +235,7 @@ export class DatabaseManager {
     try { this.db.exec("ALTER TABLE vacancies ADD COLUMN country TEXT DEFAULT 'Worldwide';"); } catch {}
     try { this.db.exec("ALTER TABLE vacancies ADD COLUMN category TEXT DEFAULT 'DevOps';"); } catch {}
     try { this.db.exec("ALTER TABLE application_drafts ADD COLUMN sending_account_id TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE application_drafts ADD COLUMN tailored_pdf_path TEXT;"); } catch {}
   }
 
   // User Profile
@@ -566,8 +567,8 @@ export class DatabaseManager {
   // Application Drafts
   saveApplicationDraft(draft: ApplicationDraft): void {
     const stmt = this.db.prepare(`
-      INSERT INTO application_drafts (id, vacancy_id, sending_account_id, recipient_email, subject_line, email_body, cover_letter, tailored_resume_path, screening_answers, status, created_at, reviewed_at, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO application_drafts (id, vacancy_id, sending_account_id, recipient_email, subject_line, email_body, cover_letter, tailored_resume_path, tailored_pdf_path, screening_answers, status, created_at, reviewed_at, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         sending_account_id = excluded.sending_account_id,
         recipient_email = excluded.recipient_email,
@@ -575,6 +576,7 @@ export class DatabaseManager {
         email_body = excluded.email_body,
         cover_letter = excluded.cover_letter,
         tailored_resume_path = excluded.tailored_resume_path,
+        tailored_pdf_path = excluded.tailored_pdf_path,
         screening_answers = excluded.screening_answers,
         status = excluded.status,
         reviewed_at = excluded.reviewed_at,
@@ -589,6 +591,7 @@ export class DatabaseManager {
       draft.emailBody,
       draft.coverLetter ?? null,
       draft.tailoredResumePath,
+      draft.tailoredPdfPath ?? null,
       draft.screeningAnswers ? JSON.stringify(draft.screeningAnswers) : null,
       draft.status,
       draft.createdAt,
@@ -783,6 +786,7 @@ export class DatabaseManager {
       emailBody: row.email_body,
       coverLetter: row.cover_letter ?? undefined,
       tailoredResumePath: row.tailored_resume_path,
+      tailoredPdfPath: row.tailored_pdf_path ?? undefined,
       screeningAnswers: row.screening_answers ? JSON.parse(row.screening_answers) : undefined,
       status: row.status,
       createdAt: row.created_at,

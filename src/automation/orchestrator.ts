@@ -7,6 +7,7 @@ import { JobMatchingAgent } from '../ai/agents/matcher.js';
 import { ResumeTailoringAgent } from '../applications/resume-tailor.js';
 import { ApplicationWritingAgent } from '../applications/writer.js';
 import { ApprovalGatekeeper } from '../applications/approval-gate.js';
+import { AlertNotificationManager } from '../notifications/alert-manager.js';
 import type { IGmailService } from '../integrations/google/gmail.js';
 import type { IDriveService } from '../integrations/google/drive.js';
 import type { ISheetsService } from '../integrations/google/sheets.js';
@@ -29,6 +30,7 @@ export class MasterOrchestrator {
   private gmailService: IGmailService;
   private driveService?: IDriveService;
   private sheetsService?: ISheetsService;
+  private alertManager: AlertNotificationManager;
 
   constructor(deps: {
     db: DatabaseManager;
@@ -37,6 +39,7 @@ export class MasterOrchestrator {
     gmailService: IGmailService;
     driveService?: IDriveService;
     sheetsService?: ISheetsService;
+    alertManager?: AlertNotificationManager;
   }) {
     this.db = deps.db;
     this.discoveryManager = deps.discoveryManager;
@@ -46,10 +49,15 @@ export class MasterOrchestrator {
     this.gmailService = deps.gmailService;
     this.driveService = deps.driveService;
     this.sheetsService = deps.sheetsService;
+    this.alertManager = deps.alertManager || new AlertNotificationManager();
   }
 
   getGatekeeper(): ApprovalGatekeeper {
     return this.gatekeeper;
+  }
+
+  getAlertManager(): AlertNotificationManager {
+    return this.alertManager;
   }
 
   /**
@@ -94,7 +102,8 @@ export class MasterOrchestrator {
             vacancy,
             profile,
             tailoredResume.filePath,
-            evaluation
+            evaluation,
+            tailoredResume.pdfPath
           );
           this.db.saveApplicationDraft(draft);
           draftsPrepared++;
@@ -109,6 +118,11 @@ export class MasterOrchestrator {
           if (this.sheetsService) {
             this.sheetsService.syncVacancyRow(vacancy, evaluation, 'DRAFT_AWAITING_APPROVAL').catch(() => {});
           }
+
+          // Instant Mobile Alert Dispatch (Telegram / Discord) for high-match opportunities
+          this.alertManager.notifyOpportunity(vacancy, evaluation).catch((err) => {
+            logger.debug(`Alert notification skipped: ${err}`);
+          });
 
           logger.info(`Staged qualified application draft for ${vacancy.companyName} - "${vacancy.title}" (Score: ${evaluation.overallScore}/100, Tier: ${evaluation.tier})`);
         } else {

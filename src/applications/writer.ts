@@ -9,35 +9,36 @@ export class ApplicationWritingAgent {
     vacancy: Vacancy,
     profile: UserProfile,
     tailoredResumePath: string,
-    evaluation?: MatchScoreEvaluation
+    evaluation?: MatchScoreEvaluation,
+    tailoredPdfPath?: string
   ): ApplicationDraft {
     const id = randomUUID();
     const company = vacancy.companyName;
     const role = vacancy.title;
 
     // 1. Contextual subject line
-    const subjectLine = `Application: ${role} - ${profile.fullName} (DevOps / Infrastructure Engineer)`;
+    const targetTitle = profile.title || role;
+    const subjectLine = `Application: ${role} - ${profile.fullName} (${targetTitle})`;
 
     // 2. Highlighting top matching skills
-    const topSkills = evaluation?.matchingSkills.slice(0, 4).join(', ') || 'Kubernetes, Terraform, AWS, CI/CD';
+    const topSkills = evaluation?.matchingSkills.slice(0, 4).join(', ') || 'Modern Tech Stack & Architecture';
 
     // 3. Personalized application email body
     const emailBody = `Dear Hiring Team at ${company},
 
-I am writing to express my strong enthusiasm for the ${role} opening at ${company}. With 4+ years of production experience across cloud infrastructure, multi-cloud Terraform provisioning, and container orchestration on Kubernetes, my background directly aligns with your operational and scalability objectives.
+I am writing to express my strong enthusiasm for the ${role} opening at ${company}. With proven hands-on experience in software engineering, technical architecture, and system scalability, my background directly aligns with your requirements for this role.
 
-Key highlights of my background include:
-• Multi-Cloud Infrastructure as Code: Architecting modular Terraform for AWS, Azure, and GCP, eliminating configuration drift and standardizing environment provisioning.
-• Container Orchestration & GitOps: Operating Kubernetes clusters with Helm and ArgoCD, enforcing pod anti-affinity, resource boundaries, and automated zero-downtime rolling updates.
-• Shift-Left Security: Embedding SonarQube SAST and Snyk SCA vulnerability gates directly into Jenkins, GitLab CI, and GitHub Actions pipelines to block insecure deployments.
-• Observability & Reliability: Building comprehensive Prometheus, Grafana, and centralized logging stacks to minimize MTTR and enable actionable telemetry.
+Key technical competencies relevant to this opportunity:
+• Core Expertise: ${topSkills}
+• Engineering Best Practices: Scalable architecture, clean code, automated CI/CD testing, and security-first development.
+• Reliability & Telemetry: Observability, comprehensive instrumentation, and rapid root-cause resolution.
 
-You can inspect my technical portfolio and production code samples at:
+Portfolio & Production Samples:
 • Portfolio: ${profile.portfolioUrl}
 • GitHub: ${profile.githubUrl}
 • LinkedIn: ${profile.linkedinUrl}
 
-I have attached my tailored resume for your review. I am available for remote opportunities and would welcome the chance to discuss how my hands-on infrastructure experience can benefit ${company}.
+I have attached my tailored ATS-optimized resume for your review. I am available for remote opportunities and would welcome the chance to discuss how my technical experience can benefit ${company}.
 
 Sincerely,
 ${profile.fullName}
@@ -47,24 +48,24 @@ ${profile.email}`;
     // 4. Concise Cover Letter
     const coverLetter = `To the Hiring Team at ${company},
 
-As a DevOps and Cloud Infrastructure Engineer with 4+ years of experience architecting resilient infrastructure with Terraform and Kubernetes, I am excited about the opportunity to contribute to ${company} as a ${role}.
+I am excited to submit my application for the ${role} position at ${company}. With a strong track record of engineering scalable, resilient systems and delivering high-impact solutions, I am confident in my ability to contribute effectively from day one.
 
-Throughout my career at Agile logic Technovations and Azilen Technologies, I have focused on closing the gap between software development and stable infrastructure. Whether building multi-cloud architectures across AWS/Azure, optimizing GitOps pipelines with ArgoCD, or hardening containerized deployments against CVEs using SonarQube and Snyk, I prioritize security, reliability, and automation.
+Throughout my career, I have focused on building performant software architectures, optimizing delivery workflows, and adhering to strict quality and security standards. I prioritize automation, collaboration, and continuous improvement.
 
 I appreciate your consideration and look forward to the possibility of collaborating with your team.
 
 Best regards,
 ${profile.fullName}
-Ahmedabad, India (Open to Remote)`;
+${profile.location} (Open to Remote)`;
 
     // 5. Standard verified screening answers
     const screeningAnswers: Record<string, string> = {
-      'Are you authorized to work remotely?': 'Yes, residing in India and eligible for international remote contracts and employment.',
-      'How many years of experience do you have with Kubernetes & Terraform?': '4+ years of production experience architecting multi-cloud IaC and orchestrating Kubernetes workloads.',
+      'Are you authorized to work remotely?': `Yes, residing in ${profile.location || 'India'} and eligible for international remote contracts and employment.`,
+      'What are your primary technical skills?': topSkills,
       'What is your notice period?': 'Available within 15 to 30 days.',
       'What are your compensation expectations?': vacancy.salaryMin 
         ? `In alignment with published range: ${vacancy.currency || 'USD'} ${vacancy.salaryMin.toLocaleString()}`
-        : 'Open to competitive market compensation (minimum equivalent of ₹15 LPA).',
+        : 'Open to competitive market compensation in line with experience.',
       'Portfolio / Work Samples': `${profile.portfolioUrl} | ${profile.githubUrl}`,
     };
 
@@ -76,6 +77,7 @@ Ahmedabad, India (Open to Remote)`;
       emailBody,
       coverLetter,
       tailoredResumePath,
+      tailoredPdfPath,
       screeningAnswers,
       status: 'PENDING_REVIEW', // Starts strictly in pending review state
       createdAt: new Date().toISOString(),

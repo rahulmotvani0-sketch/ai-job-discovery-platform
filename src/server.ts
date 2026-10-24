@@ -1,6 +1,6 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { logger } from './core/logger.js';
 import { DatabaseManager } from './core/database.js';
 import { AccountManager } from './core/accounts.js';
@@ -13,7 +13,8 @@ import { DirectGoogleDriveService } from './integrations/google/drive.js';
 import { DirectGoogleSheetsService } from './integrations/google/sheets.js';
 import { ModelRouter } from './ai/providers/router.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES, loadAuthoritativeProfile } from './core/profile.js';
-import type { InferenceMode } from './types/index.js';
+import { AtsPdfGenerator } from './applications/pdf-generator.js';
+import type { InferenceMode, Vacancy } from './types/index.js';
 import { config } from './config/index.js';
 import { GoogleOAuthManager } from './integrations/google/oauth.js';
 
@@ -162,6 +163,80 @@ export class ApplicationServer {
               this.db.saveUserProfile(body);
               return this.sendJson(res, 200, { success: true });
             }
+          }
+
+          if (pathname === '/api/profile/upload-resume' && req.method === 'POST') {
+            const body = await this.parseBody(req);
+            const content = body.resumeContent || '';
+            if (!content || typeof content !== 'string') {
+              return this.sendJson(res, 400, { error: 'resumeContent text is required' });
+            }
+
+            const current = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
+
+            // Extract email
+            const emailMatch = content.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
+            const email = emailMatch ? emailMatch[0] : current.email;
+
+            // Extract phone
+            const phoneMatch = content.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+            const phone = phoneMatch ? phoneMatch[0] : current.phone;
+
+            // Extract links
+            const githubMatch = content.match(/https?:\/\/(?:www\.)?github\.com\/[A-Za-z0-9_-]+/i);
+            const linkedinMatch = content.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[A-Za-z0-9_-]+/i);
+
+            // Extract Name from first header line if present
+            const lines = content.split('\n').map((l: string) => l.trim()).filter(Boolean);
+            let fullName = current.fullName;
+            if (lines.length > 0 && lines[0].startsWith('# ')) {
+              fullName = lines[0].replace(/^#\s+/, '').trim();
+            } else if (lines.length > 0 && !lines[0].includes('@') && lines[0].length < 40) {
+              fullName = lines[0];
+            }
+
+            // Extract skills by scanning popular keywords
+            const techKeywords: Record<string, string[]> = {
+              cloudPlatforms: ['AWS', 'GCP', 'Azure', 'DigitalOcean', 'Cloudflare'],
+              containersAndOrchestration: ['Docker', 'Kubernetes', 'Helm', 'ArgoCD', 'Podman', 'OpenShift'],
+              infrastructureAsCode: ['Terraform', 'Terragrunt', 'Ansible', 'Pulumi', 'CloudFormation'],
+              ciCdAndGitOps: ['GitHub Actions', 'GitLab CI', 'Jenkins', 'CircleCI', 'Tekton'],
+              devSecOpsAndSecurity: ['SonarQube', 'Snyk', 'Trivy', 'Vault', 'OWASP'],
+              observabilityAndMonitoring: ['Prometheus', 'Grafana', 'Datadog', 'OpenTelemetry', 'ELK', 'Jaeger'],
+              programmingAndScripting: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Java', 'Rust', 'Bash', 'C++'],
+              networkingAndAdmin: ['Linux', 'Ubuntu', 'TCP/IP', 'Nginx', 'DNS'],
+            };
+
+            const detectedSkills: Record<string, string[]> = { ...current.skills };
+            for (const [category, keywords] of Object.entries(techKeywords)) {
+              for (const kw of keywords) {
+                const regex = new RegExp(`\\b${kw.replace('+', '\\+')}\\b`, 'i');
+                if (regex.test(content)) {
+                  if (!detectedSkills[category]) detectedSkills[category] = [];
+                  if (!detectedSkills[category].includes(kw)) {
+                    detectedSkills[category].push(kw);
+                  }
+                }
+              }
+            }
+
+            const updatedProfile = {
+              ...current,
+              fullName: fullName || current.fullName,
+              email: email || current.email,
+              phone: phone || current.phone,
+              githubUrl: githubMatch ? githubMatch[0] : current.githubUrl,
+              linkedinUrl: linkedinMatch ? linkedinMatch[0] : current.linkedinUrl,
+              skills: detectedSkills,
+              updatedAt: new Date().toISOString(),
+            };
+
+            this.db.saveUserProfile(updatedProfile);
+            return this.sendJson(res, 200, {
+              success: true,
+              message: 'Resume parsed and profile updated successfully',
+              profile: updatedProfile,
+            });
           }
 
           if (pathname === '/api/preferences') {
@@ -411,6 +486,51 @@ export class ApplicationServer {
           if (pathname === '/api/scheduler/stop' && req.method === 'POST') {
             this.scheduler.stop();
             return this.sendJson(res, 200, this.scheduler.getStatus());
+          }
+
+          // Mobile Alerts API
+          if (pathname === '/api/notifications/status' && req.method === 'GET') {
+            return this.sendJson(res, 200, this.orchestrator.getAlertManager().getStatus());
+          }
+
+          if (pathname === '/api/notifications/test' && req.method === 'POST') {
+            const result = await this.orchestrator.getAlertManager().sendTestAlert();
+            return this.sendJson(res, 200, result);
+          }
+
+          if (pathname === '/api/resumes/generate-pdf' && req.method === 'POST') {
+            const body = await this.parseBody(req);
+            const profile = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
+            let vacancy: Vacancy | undefined;
+            if (body.vacancyId) {
+              vacancy = this.db.getVacancyById(body.vacancyId) || undefined;
+            }
+            const pdfPath = await AtsPdfGenerator.generateFromProfile(profile, vacancy, {
+              title: body.title,
+            });
+            const fileName = basename(pdfPath);
+            return this.sendJson(res, 200, {
+              success: true,
+              pdfPath,
+              fileName,
+              downloadUrl: `/api/resumes/${fileName}`,
+            });
+          }
+
+          if (pathname.startsWith('/api/resumes/')) {
+            const fileName = basename(pathname.replace('/api/resumes/', ''));
+            const filePath = join(process.cwd(), 'data', 'resumes', 'tailored', fileName);
+            if (!existsSync(filePath)) {
+              return this.sendJson(res, 404, { error: 'Resume file not found' });
+            }
+            const isPdf = fileName.endsWith('.pdf');
+            const data = readFileSync(filePath);
+            res.writeHead(200, {
+              'Content-Type': isPdf ? 'application/pdf' : 'text/markdown; charset=utf-8',
+              'Content-Disposition': `inline; filename="${fileName}"`,
+              'Access-Control-Allow-Origin': '*',
+            });
+            return res.end(data);
           }
 
           // Serve Web Dashboard Frontend

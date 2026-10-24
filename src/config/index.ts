@@ -34,6 +34,11 @@ export interface AppConfig {
   // Web Server
   port: number;
   host: string;
+  // Instant Mobile Alerts
+  telegramBotToken?: string;
+  telegramChatId?: string;
+  discordWebhookUrl?: string;
+  alertsMinScore: number;
 }
 
 export function loadConfig(customEnvPath?: string): AppConfig {
@@ -83,6 +88,10 @@ export function loadConfig(customEnvPath?: string): AppConfig {
     googleTokenPath,
     port: parseInt(process.env.PORT || '3000', 10),
     host: process.env.HOST || '127.0.0.1',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+    telegramChatId: process.env.TELEGRAM_CHAT_ID,
+    discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,
+    alertsMinScore: parseInt(process.env.ALERTS_MIN_SCORE || '85', 10),
   };
 }
 

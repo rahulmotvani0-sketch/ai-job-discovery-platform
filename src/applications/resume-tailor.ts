@@ -2,6 +2,7 @@ import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { logger } from '../core/logger.js';
+import { AtsPdfGenerator } from './pdf-generator.js';
 import type { Vacancy, UserProfile } from '../types/index.js';
 
 export interface TailoredResumeResult {
@@ -9,6 +10,7 @@ export interface TailoredResumeResult {
   vacancyId: string;
   markdownContent: string;
   filePath: string;
+  pdfPath?: string;
   highlightedSkills: string[];
   targetedAchievements: string[];
   createdAt: string;
@@ -123,10 +125,15 @@ export class ResumeTailoringAgent {
     const markdownContent = mdLines.join('\n');
     const safeFileName = `resume_${vacancy.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_${vacancy.id.slice(0, 8)}.md`;
     const filePath = join(this.outputDir, safeFileName);
+    const pdfPath = join(this.outputDir, safeFileName.replace(/\.md$/, '.pdf'));
 
     try {
       writeFileSync(filePath, markdownContent, { mode: 0o600 });
       logger.info(`Tailored resume generated at ${filePath} (${markdownContent.length} chars).`);
+      // Compile ATS PDF asynchronously
+      AtsPdfGenerator.compileMarkdownToPdf(markdownContent, pdfPath).catch((err) => {
+        logger.warn(`Could not compile ATS PDF: ${err}`);
+      });
     } catch (err) {
       logger.warn(`Could not write tailored resume to disk: ${err}`);
     }
@@ -136,9 +143,21 @@ export class ResumeTailoringAgent {
       vacancyId: vacancy.id,
       markdownContent,
       filePath,
+      pdfPath,
       highlightedSkills: Array.from(new Set(highlightedSkills)),
       targetedAchievements,
       createdAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Generates tailored resume and awaits PDF compilation completion.
+   */
+  async tailorResumeAsync(vacancy: Vacancy, profile: UserProfile): Promise<TailoredResumeResult> {
+    const res = this.tailorResume(vacancy, profile);
+    if (res.pdfPath) {
+      await AtsPdfGenerator.compileMarkdownToPdf(res.markdownContent, res.pdfPath);
+    }
+    return res;
   }
 }

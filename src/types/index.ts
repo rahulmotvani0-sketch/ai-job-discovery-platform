@@ -77,7 +77,7 @@ export interface JobPreferences {
 
 export interface RawJobPayload {
   sourceId: string;
-  sourceType: 'remoteok' | 'jobicy' | 'himalayas' | 'greenhouse' | 'lever' | 'ashby' | 'direct_portal' | 'other';
+  sourceType: 'remoteok' | 'jobicy' | 'himalayas' | 'greenhouse' | 'lever' | 'ashby' | 'workable' | 'ycombinator' | 'direct_portal' | 'other';
   sourceUrl: string;
   companyName: string;
   title: string;
@@ -162,10 +162,12 @@ export interface ApplicationDraft {
   emailBody: string;
   coverLetter?: string;
   tailoredResumePath: string;
+  tailoredPdfPath?: string;
   screeningAnswers?: Record<string, string>;
   status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED_BY_USER' | 'SUBMITTED';
   createdAt: string;
   reviewedAt?: string;
+  approvedBy?: string;
   notes?: string;
 }
 

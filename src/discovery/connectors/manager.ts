@@ -11,6 +11,8 @@ import { GreenhouseAtsConnector } from './greenhouse.js';
 import { HimalayasConnector } from './himalayas.js';
 import { LeverAtsConnector } from './lever.js';
 import { AshbyAtsConnector } from './ashby.js';
+import { WorkableAtsConnector } from './workable.js';
+import { YCombinatorStartupsConnector } from './ycombinator.js';
 
 export interface DiscoveryScanReport {
   totalDiscovered: number;
@@ -35,6 +37,8 @@ export class DiscoveryManager {
       new HimalayasConnector(),
       new LeverAtsConnector(),
       new AshbyAtsConnector(),
+      new WorkableAtsConnector(),
+      new YCombinatorStartupsConnector(),
     ];
   }
 

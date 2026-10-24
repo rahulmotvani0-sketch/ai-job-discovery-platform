@@ -683,6 +683,8 @@
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('explorer')">Discovered Vacancies</button>
       <button class="nav-tab" onclick="switchTab('pipeline')">Review & Approvals</button>
+      <button class="nav-tab" onclick="switchTab('profile')">My Profile & Resume</button>
+      <button class="nav-tab" onclick="switchTab('alerts')">Mobile Alerts</button>
       <button class="nav-tab" onclick="switchTab('accounts')">Connected Accounts</button>
       <button class="nav-tab" onclick="switchTab('ai-settings')">AI Models & Routing</button>
       <button class="nav-tab" onclick="switchTab('history')">Submission History</button>
@@ -800,6 +802,218 @@
       <div id="pipeline-list" class="vacancies-container"></div>
     </div>
 
+    <!-- Candidate Profile & Resume Studio View -->
+    <div id="view-profile" style="display: none;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">Candidate Profile & ATS Resume Studio</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Manage your master identity, skill taxonomy, upload resumes, and compile single-click ATS PDF resumes.</p>
+        </div>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-secondary" onclick="generateProfilePdf()">📄 Generate & View ATS PDF</button>
+          <button class="btn btn-primary" onclick="saveProfileChanges()">💾 Save Profile Changes</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 1.5rem; align-items: start;">
+        <!-- Left: Profile Details & Skills -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="settings-card">
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; color: var(--accent-cyan);">Candidate Identity</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Full Name</label>
+                <input type="text" id="prof-name" class="input-field" placeholder="Candidate Name" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Headline / Target Title</label>
+                <input type="text" id="prof-title" class="input-field" placeholder="e.g. Senior Software / DevOps Engineer" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Email</label>
+                <input type="email" id="prof-email" class="input-field" placeholder="candidate@example.com" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Phone</label>
+                <input type="text" id="prof-phone" class="input-field" placeholder="+1-555-0100" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Location</label>
+                <input type="text" id="prof-location" class="input-field" placeholder="Remote / Global" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Portfolio URL</label>
+                <input type="text" id="prof-portfolio" class="input-field" placeholder="https://..." style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">GitHub URL</label>
+                <input type="text" id="prof-github" class="input-field" placeholder="https://github.com/..." style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">LinkedIn URL</label>
+                <input type="text" id="prof-linkedin" class="input-field" placeholder="https://linkedin.com/in/..." style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 0.5rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Professional Summary</label>
+              <textarea id="prof-summary" class="input-field" style="width: 100%; height: 95px; font-size: 0.82rem; line-height: 1.45;"></textarea>
+            </div>
+          </div>
+
+          <!-- Skills Taxonomy Card -->
+          <div class="settings-card">
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.8rem; color: var(--accent-emerald);">Technical Competencies (Comma Separated)</h3>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Languages & Frameworks</label>
+              <input type="text" id="prof-skills-languages" class="input-field" placeholder="TypeScript, Python, Go, Node.js, React, Java" style="width: 100%; font-size: 0.82rem;">
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Cloud Platforms</label>
+              <input type="text" id="prof-skills-cloud" class="input-field" placeholder="AWS (EKS, RDS, S3), GCP, Azure" style="width: 100%; font-size: 0.82rem;">
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Containers & Orchestration</label>
+              <input type="text" id="prof-skills-containers" class="input-field" placeholder="Docker, Kubernetes, Helm, ArgoCD" style="width: 100%; font-size: 0.82rem;">
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Infrastructure as Code</label>
+              <input type="text" id="prof-skills-iac" class="input-field" placeholder="Terraform, Terragrunt, Ansible, Pulumi" style="width: 100%; font-size: 0.82rem;">
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">CI/CD & GitOps</label>
+              <input type="text" id="prof-skills-cicd" class="input-field" placeholder="GitHub Actions, GitLab CI, Jenkins, ArgoCD" style="width: 100%; font-size: 0.82rem;">
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Observability & Monitoring</label>
+              <input type="text" id="prof-skills-observability" class="input-field" placeholder="Prometheus, Grafana, OpenTelemetry, Datadog" style="width: 100%; font-size: 0.82rem;">
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Security & DevSecOps</label>
+              <input type="text" id="prof-skills-security" class="input-field" placeholder="SonarQube, Snyk, Trivy, HashiCorp Vault" style="width: 100%; font-size: 0.82rem;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Resume Upload & ATS PDF Preview Hub -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Upload Resume Card -->
+          <div class="settings-card" style="border: 2px dashed rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.03);">
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+              📤 Upload Existing Resume
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Upload your Markdown or plain text resume, or paste its text below. Our parser will automatically extract your contact info, skills, and summary to sync your profile.
+            </p>
+
+            <div style="margin-bottom: 0.8rem;">
+              <input type="file" id="resume-file-input" accept=".md,.txt,.json" onchange="handleResumeFileUpload(event)" style="display: none;">
+              <button class="btn btn-secondary" onclick="document.getElementById('resume-file-input').click()" style="width: 100%; font-size: 0.85rem; padding: 0.6rem;">
+                📁 Choose Resume File (.md / .txt)
+              </button>
+            </div>
+
+            <div style="margin-bottom: 0.8rem;">
+              <textarea id="resume-paste-text" class="input-field" placeholder="... or paste raw resume text / Markdown here to parse directly" style="width: 100%; height: 110px; font-size: 0.78rem; font-family: var(--font-mono);"></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="parsePastedResume()" style="width: 100%; font-size: 0.85rem;">
+              ⚡ Parse Resume & Auto-Populate Profile
+            </button>
+          </div>
+
+          <!-- ATS PDF Generator Card -->
+          <div class="settings-card">
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--accent-purple);">
+              🎯 ATS PDF Resume Studio
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Generates an ATS-optimized, single-column PDF resume using standard typography (Helvetica) to ensure 100% pass rates through corporate ATS parsers.
+            </p>
+
+            <div id="pdf-download-area" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-emerald); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="pdf-status-name" style="font-size: 0.82rem; font-weight: 600; color: #fff;">resume_alex_master.pdf</span>
+                <a id="pdf-download-link" href="#" target="_blank" class="btn btn-success" style="font-size: 0.78rem; padding: 0.35rem 0.8rem; text-decoration: none;">
+                  ⬇ Download PDF
+                </a>
+              </div>
+            </div>
+
+            <div class="code-preview" id="profile-resume-preview" style="height: 280px; overflow-y: auto; font-size: 0.75rem;">
+              Click "Generate & View ATS PDF" above to compile your latest profile into an ATS-compliant resume.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instant Mobile Alerts View -->
+    <div id="view-alerts" style="display: none;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">Instant Mobile Alerts (Telegram & Discord)</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Get push notifications directly to your phone the minute a 85%+ matched or Early Applicant vacancy is discovered.</p>
+        </div>
+        <button class="btn btn-primary" onclick="sendTestMobileAlert()">🔔 Send Test Notification</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <!-- Telegram Card -->
+        <div class="settings-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.4rem;">✈️</span>
+              <span style="font-weight: 700; font-size: 1.1rem;">Telegram Bot Push</span>
+            </div>
+            <span id="telegram-status-pill" class="badge" style="background: var(--bg-card); color: var(--text-muted);">Checking...</span>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
+            Delivers formatted job summaries, key required skills, salary insights, and direct review links straight to your Telegram chat or channel.
+          </p>
+          <div style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+            <strong>Configuration via <code>.env</code>:</strong><br>
+            • <code>TELEGRAM_BOT_TOKEN</code>: Created via @BotFather<br>
+            • <code>TELEGRAM_CHAT_ID</code>: Your personal or channel Chat ID<br>
+            • <code>ALERTS_MIN_SCORE</code>: 85 (Default)
+          </div>
+        </div>
+
+        <!-- Discord Webhook Card -->
+        <div class="settings-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.4rem;">🎮</span>
+              <span style="font-weight: 700; font-size: 1.1rem;">Discord Webhook Alerts</span>
+            </div>
+            <span id="discord-status-pill" class="badge" style="background: var(--bg-card); color: var(--text-muted);">Checking...</span>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
+            Posts rich Discord embed cards with role metadata, early applicant badges, and match breakdown in any private Discord channel.
+          </p>
+          <div style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+            <strong>Configuration via <code>.env</code>:</strong><br>
+            • <code>DISCORD_WEBHOOK_URL</code>: Channel Settings → Integrations → Webhooks<br>
+            • Zero server deployment needed; webhook delivers in &lt;100ms.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Connected Accounts View -->
     <div id="view-accounts" style="display: none;">
       <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
@@ -868,7 +1082,10 @@
         <div class="section-title">Personalized Application Email (Editable)</div>
         <textarea id="modal-email-body" class="input-field" style="width: 100%; height: 160px; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5;"></textarea>
 
-        <div class="section-title">Tailored Resume Attachment</div>
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Tailored ATS Resume Attachment</span>
+          <button id="modal-download-pdf-btn" class="btn btn-secondary" onclick="downloadCurrentDraftPdf()" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">📄 Download ATS PDF</button>
+        </div>
         <div id="modal-resume-path" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;"></div>
         <div class="code-preview" id="modal-resume-preview">Loading tailored resume...</div>
 
@@ -1261,6 +1478,25 @@
       }
     }
 
+    async function downloadCurrentDraftPdf() {
+      if (!currentVacancy) return;
+      try {
+        const res = await fetch('/api/resumes/generate-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vacancyId: currentVacancy.id, title: currentVacancy.title }),
+        });
+        const data = await res.json();
+        if (data.downloadUrl) {
+          window.open(data.downloadUrl, '_blank');
+        } else {
+          alert('Failed to generate ATS PDF: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Could not open ATS PDF: ' + err.message);
+      }
+    }
+
     async function rejectCurrentDraft() {
       if (!currentDraft) return;
       const reason = prompt('Reason for deprioritizing draft (e.g. Salary below target, location misaligned):');
@@ -1585,6 +1821,209 @@
       }
     }
 
+    // Profile & Resume Studio Logic
+    let currentProfileData = null;
+
+    async function loadProfileView() {
+      try {
+        const res = await fetch('/api/profile');
+        currentProfileData = await res.json();
+        
+        document.getElementById('prof-name').value = currentProfileData.fullName || '';
+        document.getElementById('prof-title').value = currentProfileData.title || '';
+        document.getElementById('prof-email').value = currentProfileData.email || '';
+        document.getElementById('prof-phone').value = currentProfileData.phone || '';
+        document.getElementById('prof-location').value = currentProfileData.location || '';
+        document.getElementById('prof-portfolio').value = currentProfileData.portfolioUrl || '';
+        document.getElementById('prof-github').value = currentProfileData.githubUrl || '';
+        document.getElementById('prof-linkedin').value = currentProfileData.linkedinUrl || '';
+        document.getElementById('prof-summary').value = currentProfileData.summary || '';
+
+        const skills = currentProfileData.skills || {};
+        document.getElementById('prof-skills-languages').value = (skills.languagesAndFrameworks || skills.programmingAndScripting || []).join(', ');
+        document.getElementById('prof-skills-cloud').value = (skills.cloudPlatforms || []).join(', ');
+        document.getElementById('prof-skills-containers').value = (skills.containersAndOrchestration || []).join(', ');
+        document.getElementById('prof-skills-iac').value = (skills.infrastructureAsCode || []).join(', ');
+        document.getElementById('prof-skills-cicd').value = (skills.ciCdAndGitOps || []).join(', ');
+        document.getElementById('prof-skills-observability').value = (skills.observabilityAndMonitoring || []).join(', ');
+        document.getElementById('prof-skills-security').value = (skills.devSecOpsAndSecurity || []).join(', ');
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    }
+
+    async function saveProfileChanges() {
+      const splitSkills = (val) => val.split(',').map(s => s.trim()).filter(Boolean);
+      
+      const payload = {
+        ...(currentProfileData || {}),
+        fullName: document.getElementById('prof-name').value.trim(),
+        title: document.getElementById('prof-title').value.trim(),
+        email: document.getElementById('prof-email').value.trim(),
+        phone: document.getElementById('prof-phone').value.trim(),
+        location: document.getElementById('prof-location').value.trim(),
+        portfolioUrl: document.getElementById('prof-portfolio').value.trim(),
+        githubUrl: document.getElementById('prof-github').value.trim(),
+        linkedinUrl: document.getElementById('prof-linkedin').value.trim(),
+        summary: document.getElementById('prof-summary').value.trim(),
+        skills: {
+          cloudPlatforms: splitSkills(document.getElementById('prof-skills-cloud').value),
+          infrastructureAsCode: splitSkills(document.getElementById('prof-skills-iac').value),
+          containersAndOrchestration: splitSkills(document.getElementById('prof-skills-containers').value),
+          ciCdAndGitOps: splitSkills(document.getElementById('prof-skills-cicd').value),
+          devSecOpsAndSecurity: splitSkills(document.getElementById('prof-skills-security').value),
+          observabilityAndMonitoring: splitSkills(document.getElementById('prof-skills-observability').value),
+          programmingAndScripting: splitSkills(document.getElementById('prof-skills-languages').value),
+          languagesAndFrameworks: splitSkills(document.getElementById('prof-skills-languages').value),
+          networkingAndAdmin: currentProfileData?.skills?.networkingAndAdmin || ['Linux', 'Ubuntu', 'Networking'],
+        },
+        updatedAt: new Date().toISOString(),
+      };
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          alert('✓ Profile updated successfully!');
+          await loadProfileView();
+        } else {
+          alert('Failed saving profile changes.');
+        }
+      } catch (err) {
+        alert('Error saving profile: ' + err.message);
+      }
+    }
+
+    async function handleResumeFileUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target.result;
+        document.getElementById('resume-paste-text').value = content;
+        await parseResumeContent(content);
+      };
+      reader.readAsText(file);
+    }
+
+    async function parsePastedResume() {
+      const content = document.getElementById('resume-paste-text').value;
+      if (!content || !content.trim()) {
+        alert('Please paste resume text or choose a file first.');
+        return;
+      }
+      await parseResumeContent(content);
+    }
+
+    async function parseResumeContent(content) {
+      try {
+        const res = await fetch('/api/profile/upload-resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resumeContent: content }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✓ ' + data.message);
+          await loadProfileView();
+        } else {
+          alert('Parsing failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Resume upload error: ' + err.message);
+      }
+    }
+
+    async function generateProfilePdf() {
+      const previewBox = document.getElementById('profile-resume-preview');
+      previewBox.textContent = 'Compiling single-column ATS PDF resume with PDFKit...';
+
+      try {
+        const res = await fetch('/api/resumes/generate-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: document.getElementById('prof-title').value.trim() || undefined,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('pdf-download-area').style.display = 'block';
+          document.getElementById('pdf-status-name').textContent = data.fileName;
+          const downloadBtn = document.getElementById('pdf-download-link');
+          downloadBtn.href = data.downloadUrl;
+          downloadBtn.setAttribute('download', data.fileName);
+
+          previewBox.innerHTML = `
+            <div style="color: var(--accent-emerald); font-weight: 600; margin-bottom: 0.5rem;">
+              ✓ ATS PDF Compiled Successfully (${data.fileName})
+            </div>
+            <div style="margin-bottom: 0.8rem; color: var(--text-muted);">
+              File location: <code>${data.pdfPath}</code>
+            </div>
+            <a href="${data.downloadUrl}" target="_blank" class="btn btn-secondary" style="font-size: 0.78rem;">
+              ↗ Open in Full PDF Viewer
+            </a>
+          `;
+        } else {
+          previewBox.textContent = 'Failed generating PDF: ' + (data.error || 'Unknown error');
+        }
+      } catch (err) {
+        previewBox.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    // Alerts View Logic
+    async function loadAlertsView() {
+      try {
+        const res = await fetch('/api/notifications/status');
+        const status = await res.json();
+        
+        const telePill = document.getElementById('telegram-status-pill');
+        if (status.telegram) {
+          telePill.textContent = 'CONNECTED';
+          telePill.style.background = 'rgba(16, 185, 129, 0.2)';
+          telePill.style.color = 'var(--accent-emerald)';
+        } else {
+          telePill.textContent = 'NOT CONFIGURED';
+          telePill.style.background = 'rgba(239, 68, 68, 0.2)';
+          telePill.style.color = '#ef4444';
+        }
+
+        const discPill = document.getElementById('discord-status-pill');
+        if (status.discord) {
+          discPill.textContent = 'CONNECTED';
+          discPill.style.background = 'rgba(16, 185, 129, 0.2)';
+          discPill.style.color = 'var(--accent-emerald)';
+        } else {
+          discPill.textContent = 'NOT CONFIGURED';
+          discPill.style.background = 'rgba(239, 68, 68, 0.2)';
+          discPill.style.color = '#ef4444';
+        }
+      } catch (err) {
+        console.error('Error loading alerts status:', err);
+      }
+    }
+
+    async function sendTestMobileAlert() {
+      try {
+        const res = await fetch('/api/notifications/test', { method: 'POST' });
+        const data = await res.json();
+        if (data.telegramSent || data.discordSent) {
+          alert(`✓ Notification Test Dispatched!\nTelegram: ${data.telegramSent ? 'Sent' : 'Skipped'}\nDiscord: ${data.discordSent ? 'Sent' : 'Skipped'}`);
+        } else {
+          alert(`Notice: Neither Telegram nor Discord credentials are set in .env yet.\nA simulated test notification was recorded in platform logs.`);
+        }
+      } catch (err) {
+        alert('Notification test failed: ' + err.message);
+      }
+    }
+
     // View Switching
     function switchTab(tab) {
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -1592,6 +2031,8 @@
 
       document.getElementById('view-explorer').style.display = tab === 'explorer' ? 'block' : 'none';
       document.getElementById('view-pipeline').style.display = tab === 'pipeline' ? 'block' : 'none';
+      document.getElementById('view-profile').style.display = tab === 'profile' ? 'block' : 'none';
+      document.getElementById('view-alerts').style.display = tab === 'alerts' ? 'block' : 'none';
       document.getElementById('view-accounts').style.display = tab === 'accounts' ? 'block' : 'none';
       document.getElementById('view-ai-settings').style.display = tab === 'ai-settings' ? 'block' : 'none';
       document.getElementById('view-history').style.display = tab === 'history' ? 'block' : 'none';
@@ -1599,6 +2040,10 @@
       if (tab === 'pipeline') {
         const awaiting = allVacancies.filter(v => v.status === 'QUALIFIED' || v.status === 'DRAFTED' || v.status === 'AWAITING_APPROVAL');
         renderVacancies(awaiting, 'pipeline-list');
+      } else if (tab === 'profile') {
+        loadProfileView();
+      } else if (tab === 'alerts') {
+        loadAlertsView();
       } else if (tab === 'accounts') {
         loadAccounts();
       } else if (tab === 'ai-settings') {
