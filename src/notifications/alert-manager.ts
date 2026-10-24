@@ -28,6 +28,13 @@ export class AlertNotificationManager {
     this.minScore = options?.minScore || (process.env.ALERTS_MIN_SCORE ? parseInt(process.env.ALERTS_MIN_SCORE, 10) : 85);
   }
 
+  updateConfig(config: Partial<AlertConfig>): void {
+    if (config.telegramBotToken !== undefined) this.telegramBotToken = config.telegramBotToken;
+    if (config.telegramChatId !== undefined) this.telegramChatId = config.telegramChatId;
+    if (config.discordWebhookUrl !== undefined) this.discordWebhookUrl = config.discordWebhookUrl;
+    if (config.minScore !== undefined) this.minScore = config.minScore;
+  }
+
   isTelegramConfigured(): boolean {
     return Boolean(this.telegramBotToken && this.telegramChatId);
   }
@@ -40,11 +47,12 @@ export class AlertNotificationManager {
     return this.isTelegramConfigured() || this.isDiscordConfigured();
   }
 
-  getStatus(): { telegram: boolean; discord: boolean; minScore: number } {
+  getStatus(): { telegram: boolean; discord: boolean; minScore: number; telegramChatId?: string } {
     return {
       telegram: this.isTelegramConfigured(),
       discord: this.isDiscordConfigured(),
       minScore: this.minScore,
+      telegramChatId: this.telegramChatId ? `...${this.telegramChatId.slice(-4)}` : undefined,
     };
   }
 
@@ -140,6 +148,15 @@ export class AlertNotificationManager {
    * Sends a verification test alert to confirm webhook and bot integration.
    */
   async sendTestAlert(): Promise<AlertDispatchResult> {
+    if (!this.isConfigured()) {
+      return {
+        telegramSent: false,
+        discordSent: false,
+        message: 'No notification channels are configured.',
+        error: 'NOT CONFIGURED: Please configure Telegram Bot Token & Chat ID or a Discord Webhook URL first.',
+      };
+    }
+
     const mockVacancy: Vacancy = {
       id: 'test_alert_vac',
       canonicalHash: 'test_hash',

@@ -78,6 +78,31 @@ export class ApplicationServer {
       sheetsService,
     });
 
+    // Initialize alert manager with persisted notification configs
+    try {
+      const telegramCfg = this.db.getNotificationConfig('telegram');
+      const discordCfg = this.db.getNotificationConfig('discord');
+      const alertMgr = this.orchestrator.getAlertManager();
+      if (telegramCfg?.credentials?.botToken && telegramCfg?.credentials?.chatId && telegramCfg.isEnabled) {
+        alertMgr.updateConfig({
+          telegramBotToken: telegramCfg.credentials.botToken,
+          telegramChatId: String(telegramCfg.credentials.chatId),
+        });
+      }
+      if (discordCfg?.credentials?.webhookUrl && discordCfg.isEnabled) {
+        alertMgr.updateConfig({
+          discordWebhookUrl: discordCfg.credentials.webhookUrl,
+        });
+      }
+      if (telegramCfg?.minScore || discordCfg?.minScore) {
+        alertMgr.updateConfig({
+          minScore: telegramCfg?.minScore || discordCfg?.minScore,
+        });
+      }
+    } catch (err: any) {
+      logger.warn(`Failed loading notification configs: ${err.message}`);
+    }
+
     this.googleOAuthManager = new GoogleOAuthManager(undefined, undefined, undefined, undefined, this.accountManager);
     this.scheduler = new JobScheduler(this.orchestrator);
     this.rateLimiter = new InMemoryRateLimiter(60_000, 300);
@@ -285,14 +310,28 @@ export class ApplicationServer {
               const parsedDoc = await ResumeIntelligenceEngine.parseDocument(fileBuffer, fileName);
               const analysis = ResumeIntelligenceEngine.analyzeCandidateResume(parsedDoc.text, currentProfile);
 
-              this.db.saveUserProfile(analysis.profile);
+              if (!body.previewOnly && !body.dryRun) {
+                this.db.saveUserProfile(analysis.profile);
+              }
+
+              const warnings: string[] = [];
+              if (!analysis.profile.education || analysis.profile.education.length === 0) {
+                warnings.push('No formal education degree detected in text.');
+              }
+              if (!analysis.profile.experiences || analysis.profile.experiences.length === 0) {
+                warnings.push('No discrete work history blocks detected.');
+              }
+
               return this.sendJson(res, 200, {
                 success: true,
-                message: 'Resume parsed and profile updated successfully',
+                message: body.previewOnly ? 'Resume parsed for preview' : 'Resume parsed and profile updated successfully',
+                previewOnly: Boolean(body.previewOnly || body.dryRun),
                 profile: analysis.profile,
                 extractedFacts: analysis.extractedFacts,
                 adjacentQueries: analysis.adjacentSearchTitles,
                 fileType: parsedDoc.fileType,
+                textPreview: parsedDoc.text.slice(0, 1000),
+                warnings,
               });
             } catch (err: any) {
               return this.sendJson(res, 400, { error: err.message });
@@ -1001,6 +1040,76 @@ export class ApplicationServer {
           // Mobile Alerts API
           if (pathname === '/api/notifications/status' && req.method === 'GET') {
             return this.sendJson(res, 200, this.orchestrator.getAlertManager().getStatus());
+          }
+
+          if (pathname === '/api/notifications/config' && req.method === 'GET') {
+            const telegram = this.db.getNotificationConfig('telegram');
+            const discord = this.db.getNotificationConfig('discord');
+            const alertMgr = this.orchestrator.getAlertManager();
+            const status = alertMgr.getStatus();
+            return this.sendJson(res, 200, {
+              telegram: {
+                configured: status.telegram,
+                enabled: telegram ? telegram.isEnabled : status.telegram,
+                chatId: telegram?.credentials?.chatId ? `...${String(telegram.credentials.chatId).slice(-4)}` : (status.telegramChatId || ''),
+              },
+              discord: {
+                configured: status.discord,
+                enabled: discord ? discord.isEnabled : status.discord,
+                webhookUrl: discord?.credentials?.webhookUrl ? `https://discord.com/api/webhooks/...` : '',
+              },
+              minScore: status.minScore,
+            });
+          }
+
+          if (pathname === '/api/notifications/config' && req.method === 'POST') {
+            const body = await this.parseBody(req);
+            const { telegramBotToken, telegramChatId, telegramEnabled, discordWebhookUrl, discordEnabled, minScore } = body;
+
+            if (telegramBotToken !== undefined || telegramChatId !== undefined) {
+              const existing = this.db.getNotificationConfig('telegram');
+              const token = telegramBotToken || existing?.credentials?.botToken || process.env.TELEGRAM_BOT_TOKEN;
+              const chatId = telegramChatId || existing?.credentials?.chatId || process.env.TELEGRAM_CHAT_ID;
+              if (token && chatId) {
+                this.db.saveNotificationConfig({
+                  channel: 'telegram',
+                  isEnabled: telegramEnabled !== false,
+                  credentials: { botToken: token, chatId },
+                  minScore: minScore !== undefined ? Number(minScore) : undefined,
+                });
+                this.orchestrator.getAlertManager().updateConfig({
+                  telegramBotToken: token,
+                  telegramChatId: String(chatId),
+                });
+              }
+            }
+
+            if (discordWebhookUrl !== undefined) {
+              const existing = this.db.getNotificationConfig('discord');
+              const webhookUrl = discordWebhookUrl || existing?.credentials?.webhookUrl || process.env.DISCORD_WEBHOOK_URL;
+              if (webhookUrl) {
+                this.db.saveNotificationConfig({
+                  channel: 'discord',
+                  isEnabled: discordEnabled !== false,
+                  credentials: { webhookUrl },
+                  minScore: minScore !== undefined ? Number(minScore) : undefined,
+                });
+                this.orchestrator.getAlertManager().updateConfig({
+                  discordWebhookUrl: webhookUrl,
+                });
+              }
+            }
+
+            if (minScore !== undefined) {
+              this.orchestrator.getAlertManager().updateConfig({
+                minScore: Number(minScore),
+              });
+            }
+
+            return this.sendJson(res, 200, {
+              success: true,
+              status: this.orchestrator.getAlertManager().getStatus(),
+            });
           }
 
           if (pathname === '/api/notifications/test' && req.method === 'POST') {

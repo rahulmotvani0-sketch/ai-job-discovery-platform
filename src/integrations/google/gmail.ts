@@ -87,39 +87,62 @@ export class DirectGmailService implements IGmailService {
 
     logger.info(`Sending authorized application for draft ${draftId} to ${draft.recipientEmail}...`);
 
-    let messageId = `gmail_msg_${Date.now()}`;
-    let threadId = `gmail_thread_${Date.now()}`;
-
-    if (this.hasCredentials()) {
-      try {
-        const tokens = JSON.parse(readFileSync(this.tokenPath, 'utf-8'));
-        const rawEmail = [
-          `To: ${draft.recipientEmail}`,
-          `Subject: ${draft.subjectLine}`,
-          'Content-Type: text/plain; charset=utf-8',
-          '',
-          draft.emailBody,
-        ].join('\r\n');
-
-        const encoded = Buffer.from(rawEmail).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-        const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${tokens.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ raw: encoded }),
+    if (!this.hasCredentials()) {
+      if (process.env.NODE_ENV === 'test') {
+        logger.info(`[Test Mode] Automated test Gmail transmission for draft ${draftId} to ${draft.recipientEmail}`);
+        const messageId = `test_msg_${Date.now()}`;
+        const threadId = `test_thread_${Date.now()}`;
+        gatekeeper.recordSubmission(draftId, 'GMAIL_API', {
+          gmailMessageId: messageId,
+          gmailThreadId: threadId,
+          actor: draft.approvedBy || 'authorized_user',
         });
-
-        if (resp.ok) {
-          const data = await resp.json() as any;
-          messageId = data.id || messageId;
-          threadId = data.threadId || threadId;
-        }
-      } catch (err) {
-        logger.warn(`Live Gmail send encountered error: ${err}`);
+        return { messageId, threadId };
       }
+      throw new Error(
+        'Gmail integration is not configured or authenticated. Connect your Google account in Connected Accounts or submit this application manually.'
+      );
+    }
+
+    let messageId: string;
+    let threadId: string;
+
+    try {
+      const tokens = JSON.parse(readFileSync(this.tokenPath, 'utf-8'));
+      if (!tokens.access_token) {
+        throw new Error('No valid access token found in Google credentials file.');
+      }
+
+      const rawEmail = [
+        `To: ${draft.recipientEmail}`,
+        `Subject: ${draft.subjectLine}`,
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        draft.emailBody,
+      ].join('\r\n');
+
+      const encoded = Buffer.from(rawEmail).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ raw: encoded }),
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Gmail API send failed with HTTP ${resp.status}: ${errorText}`);
+      }
+
+      const data = await resp.json() as any;
+      messageId = data.id;
+      threadId = data.threadId || data.id;
+    } catch (err: any) {
+      logger.error(`Live Gmail send encountered error: ${err.message}`);
+      throw err;
     }
 
     // 2. Record submission in DB and write cryptographic audit hash

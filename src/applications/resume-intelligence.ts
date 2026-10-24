@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { basename } from 'node:path';
 import AdmZip from 'adm-zip';
 import { randomUUID } from 'node:crypto';
 import type { UserProfile, WorkExperience, SeniorityLevel } from '../types/index.js';
@@ -41,12 +42,24 @@ export class ResumeIntelligenceEngine {
       throw new Error(`File size exceeds maximum allowed limit of 5 MB (Received ${(fileBuffer.length / (1024 * 1024)).toFixed(2)} MB).`);
     }
 
-    const lowerName = fileName.toLowerCase();
+    // Sanitize filename and prevent path traversal
+    const safeName = basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const lowerName = safeName.toLowerCase();
+
+    // Block dangerous extensions immediately
+    const blockedExtensions = ['.exe', '.sh', '.bat', '.cmd', '.js', '.ts', '.py', '.rb', '.php', '.bin', '.dll', '.so'];
+    if (blockedExtensions.some(ext => lowerName.endsWith(ext))) {
+      throw new Error('Unsupported resume format: Executable and script file uploads are strictly prohibited. Please upload a PDF (.pdf), Word Document (.docx), or Markdown/Text (.md, .txt) file.');
+    }
+
     const isPdfHeader = fileBuffer.subarray(0, 4).toString() === '%PDF';
     const isZipHeader = fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b; // 'PK'
 
     // 1. PDF Parsing
     if (lowerName.endsWith('.pdf') || isPdfHeader) {
+      if (!isPdfHeader) {
+        throw new Error('File extension is .pdf but document does not have a valid PDF header.');
+      }
       try {
         const { PDFParse } = require('pdf-parse');
         const parser = new PDFParse({ data: fileBuffer });
@@ -63,6 +76,9 @@ export class ResumeIntelligenceEngine {
 
     // 2. DOCX Parsing (Word Document XML extraction)
     if (lowerName.endsWith('.docx') || isZipHeader) {
+      if (!isZipHeader) {
+        throw new Error('File extension is .docx but document is not a valid DOCX/ZIP archive.');
+      }
       try {
         const zip = new AdmZip(fileBuffer);
         const docEntry = zip.getEntry('word/document.xml');
@@ -104,6 +120,16 @@ export class ResumeIntelligenceEngine {
   }
 
   /**
+   * Complete pipeline: validates file, extracts text across PDF/DOCX/MD/TXT, and parses profile facts.
+   */
+  static async parseUploadedResume(fileBuffer: Buffer, fileName: string, currentProfile?: UserProfile): Promise<ParsedResumeResult> {
+    const doc = await this.parseDocument(fileBuffer, fileName);
+    const analyzed = this.analyzeCandidateResume(doc.text, currentProfile);
+    analyzed.fileType = doc.fileType;
+    return analyzed;
+  }
+
+  /**
    * Analyzes raw resume text and constructs a comprehensive candidate profile.
    * Separates extracted facts from inferred search queries without fabricating background.
    */
@@ -122,8 +148,8 @@ export class ResumeIntelligenceEngine {
     const portfolioMatch = text.match(/https?:\/\/(?:www\.)?[A-Za-z0-9.-]+\.(?:dev|tech|io|me|com|in)\b/i);
 
     // Extract name: First non-empty header line or existing profile
-    const firstLine = text.split('\n').map(l => l.trim()).filter(l => l.length > 2 && !l.includes('@'))[0];
-    const fullName = (firstLine && firstLine.length < 50 && !firstLine.includes('#')) ? firstLine : (currentProfile?.fullName || 'Candidate');
+    const rawFirstLine = text.split('\n').map(l => l.replace(/^#+\s*/, '').trim()).filter(l => l.length > 2 && !l.includes('@'))[0];
+    const fullName = (rawFirstLine && rawFirstLine.length < 50) ? rawFirstLine : (currentProfile?.fullName || 'Candidate');
 
     // 2. Comprehensive Tech Keywords Categorization
     const taxonomyDict: Record<string, string[]> = {
@@ -227,33 +253,43 @@ export class ResumeIntelligenceEngine {
       addQuery('Kubernetes Platform Engineer');
     }
 
-    // Construct clean UserProfile
+    // Extract Education if present
+    const educationList: Array<{ degree: string; institution: string; year?: string }> = currentProfile?.education ? [...currentProfile.education] : [];
+    if (educationList.length === 0) {
+      const eduLines = text.split('\n').filter(l => /\b(bachelor|master|b\.tech|b\.s|m\.s|ph\.d|diploma|university|college|institute)\b/i.test(l));
+      for (const line of eduLines.slice(0, 3)) {
+        const clean = line.replace(/^[#*-\s]+/, '').trim();
+        if (clean.length > 5 && clean.length < 120) {
+          educationList.push({ degree: clean, institution: '' });
+        }
+      }
+    }
+
+    // Construct clean UserProfile without fabricated details
     const profile: UserProfile = {
       id: currentProfile?.id || randomUUID(),
       fullName,
       title: targetTitle,
       email,
       phone,
-      location: currentProfile?.location || 'Remote / India',
+      location: currentProfile?.location || '',
       portfolioUrl: portfolioMatch ? portfolioMatch[0] : (currentProfile?.portfolioUrl || ''),
       githubUrl: githubMatch ? githubMatch[0] : (currentProfile?.githubUrl || ''),
       linkedinUrl: linkedinMatch ? linkedinMatch[0] : (currentProfile?.linkedinUrl || ''),
-      summary: currentProfile?.summary || `Experienced ${targetTitle} with proven expertise across cloud infrastructure, automation, and reliable systems.`,
+      summary: currentProfile?.summary || (text.slice(0, 200).replace(/\n/g, ' ').trim()),
       experiences: currentProfile?.experiences || [],
       skills: {
-        cloudPlatforms: detectedSkills.cloudPlatforms.length > 0 ? detectedSkills.cloudPlatforms : (currentProfile?.skills.cloudPlatforms || ['AWS', 'Azure', 'GCP']),
-        infrastructureAsCode: detectedSkills.infrastructureAsCode.length > 0 ? detectedSkills.infrastructureAsCode : (currentProfile?.skills.infrastructureAsCode || ['Terraform']),
-        containersAndOrchestration: detectedSkills.containersAndOrchestration.length > 0 ? detectedSkills.containersAndOrchestration : (currentProfile?.skills.containersAndOrchestration || ['Docker', 'Kubernetes']),
-        ciCdAndGitOps: detectedSkills.ciCdAndGitOps.length > 0 ? detectedSkills.ciCdAndGitOps : (currentProfile?.skills.ciCdAndGitOps || ['GitHub Actions']),
-        devSecOpsAndSecurity: detectedSkills.devSecOpsAndSecurity.length > 0 ? detectedSkills.devSecOpsAndSecurity : (currentProfile?.skills.devSecOpsAndSecurity || ['SonarQube']),
-        observabilityAndMonitoring: detectedSkills.observabilityAndMonitoring.length > 0 ? detectedSkills.observabilityAndMonitoring : (currentProfile?.skills.observabilityAndMonitoring || ['Prometheus', 'Grafana']),
-        programmingAndScripting: detectedSkills.programmingAndScripting.length > 0 ? detectedSkills.programmingAndScripting : (currentProfile?.skills.programmingAndScripting || ['Python', 'Bash']),
-        networkingAndAdmin: detectedSkills.networkingAndAdmin.length > 0 ? detectedSkills.networkingAndAdmin : (currentProfile?.skills.networkingAndAdmin || ['Linux', 'Ubuntu']),
+        cloudPlatforms: detectedSkills.cloudPlatforms.length > 0 ? detectedSkills.cloudPlatforms : (currentProfile?.skills?.cloudPlatforms || []),
+        infrastructureAsCode: detectedSkills.infrastructureAsCode.length > 0 ? detectedSkills.infrastructureAsCode : (currentProfile?.skills?.infrastructureAsCode || []),
+        containersAndOrchestration: detectedSkills.containersAndOrchestration.length > 0 ? detectedSkills.containersAndOrchestration : (currentProfile?.skills?.containersAndOrchestration || []),
+        ciCdAndGitOps: detectedSkills.ciCdAndGitOps.length > 0 ? detectedSkills.ciCdAndGitOps : (currentProfile?.skills?.ciCdAndGitOps || []),
+        devSecOpsAndSecurity: detectedSkills.devSecOpsAndSecurity.length > 0 ? detectedSkills.devSecOpsAndSecurity : (currentProfile?.skills?.devSecOpsAndSecurity || []),
+        observabilityAndMonitoring: detectedSkills.observabilityAndMonitoring.length > 0 ? detectedSkills.observabilityAndMonitoring : (currentProfile?.skills?.observabilityAndMonitoring || []),
+        programmingAndScripting: detectedSkills.programmingAndScripting.length > 0 ? detectedSkills.programmingAndScripting : (currentProfile?.skills?.programmingAndScripting || []),
+        networkingAndAdmin: detectedSkills.networkingAndAdmin.length > 0 ? detectedSkills.networkingAndAdmin : (currentProfile?.skills?.networkingAndAdmin || []),
       },
       certifications: certifications.length > 0 ? certifications : (currentProfile?.certifications || []),
-      education: currentProfile?.education || [
-        { degree: 'Bachelor of Technology (B.Tech) in Computer Engineering', institution: 'University', year: '2022' }
-      ],
+      education: educationList,
     };
 
     return {

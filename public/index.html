@@ -1648,27 +1648,34 @@
         <!-- Right: Resume Upload & ATS PDF Preview Hub -->
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
           <!-- Upload Resume Card -->
-          <div class="settings-card" style="border: 2px dashed rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.03);">
+          <div class="settings-card" id="upload-resume-card" style="border: 2px dashed rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.03);">
             <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
               📤 Upload Existing Resume
             </h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-              Upload your Markdown or plain text resume, or paste its text below. Our parser will automatically extract your contact info, skills, and summary to sync your profile.
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              Upload your resume in <strong>PDF (.pdf)</strong>, <strong>Word (.docx)</strong>, <strong>Markdown (.md)</strong>, or <strong>Plain Text (.txt)</strong> format. Review and edit extracted fields before saving to profile.
             </p>
+            <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-bottom: 0.85rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+              <span class="meta-pill" style="border-color: rgba(56, 189, 248, 0.4);">✓ PDF (.pdf)</span>
+              <span class="meta-pill" style="border-color: rgba(56, 189, 248, 0.4);">✓ Microsoft Word (.docx)</span>
+              <span class="meta-pill" style="border-color: rgba(56, 189, 248, 0.4);">✓ Markdown (.md)</span>
+              <span class="meta-pill" style="border-color: rgba(56, 189, 248, 0.4);">✓ Plain Text (.txt)</span>
+              <span class="meta-pill" style="border-color: rgba(56, 189, 248, 0.4);">Max: 5 MB</span>
+            </div>
 
             <div style="margin-bottom: 0.8rem;">
-              <input type="file" id="resume-file-input" accept=".md,.txt,.json" onchange="handleResumeFileUpload(event)" style="display: none;">
+              <input type="file" id="resume-file-input" accept=".pdf,.docx,.md,.txt,.markdown" onchange="handleResumeFileUpload(event)" style="display: none;">
               <button class="btn btn-secondary" onclick="document.getElementById('resume-file-input').click()" style="width: 100%; font-size: 0.85rem; padding: 0.6rem;">
-                📁 Choose Resume File (.md / .txt)
+                📁 Choose Resume File (PDF, DOCX, MD, TXT)
               </button>
             </div>
 
             <div style="margin-bottom: 0.8rem;">
-              <textarea id="resume-paste-text" class="input-field" placeholder="... or paste raw resume text / Markdown here to parse directly" style="width: 100%; height: 110px; font-size: 0.78rem; font-family: var(--font-mono);"></textarea>
+              <textarea id="resume-paste-text" class="input-field" placeholder="... or paste raw resume text / Markdown here to parse directly" style="width: 100%; height: 100px; font-size: 0.78rem; font-family: var(--font-mono);"></textarea>
             </div>
 
             <button class="btn btn-primary" onclick="parsePastedResume()" style="width: 100%; font-size: 0.85rem;">
-              ⚡ Parse Resume & Auto-Populate Profile
+              ⚡ Parse Resume & Preview Profile
             </button>
           </div>
 
@@ -1703,12 +1710,15 @@
       <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
           <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">Instant Mobile Alerts (Telegram & Discord)</h2>
-          <p style="color: var(--text-muted); font-size: 0.85rem;">Get push notifications directly to your phone the minute a 85%+ matched or Early Applicant vacancy is discovered.</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Configure real push alerts for high-match opportunities and early applicant discoveries directly through the UI.</p>
         </div>
-        <button class="btn btn-primary" onclick="sendTestMobileAlert()">🔔 Send Test Notification</button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-secondary" onclick="saveMobileAlertsConfig()">💾 Save Notification Settings</button>
+          <button class="btn btn-primary" onclick="sendTestMobileAlert()">🔔 Send Test Notification</button>
+        </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
         <!-- Telegram Card -->
         <div class="settings-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -1721,11 +1731,19 @@
           <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
             Delivers formatted job summaries, key required skills, salary insights, and direct review links straight to your Telegram chat or channel.
           </p>
-          <div style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-            <strong>Configuration via <code>.env</code>:</strong><br>
-            • <code>TELEGRAM_BOT_TOKEN</code>: Created via @BotFather<br>
-            • <code>TELEGRAM_CHAT_ID</code>: Your personal or channel Chat ID<br>
-            • <code>ALERTS_MIN_SCORE</code>: 85 (Default)
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Telegram Bot Token</label>
+              <input type="password" id="alert-telegram-token" class="input-field" placeholder="123456789:ABCdefGHIjklMNO..." style="width: 100%; font-size: 0.8rem;">
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Telegram Chat ID</label>
+              <input type="text" id="alert-telegram-chatid" class="input-field" placeholder="e.g. 987654321 or @channelname" style="width: 100%; font-size: 0.8rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+              <input type="checkbox" id="alert-telegram-enabled" checked style="accent-color: var(--primary); cursor: pointer;">
+              <label for="alert-telegram-enabled" style="font-size: 0.8rem; cursor: pointer;">Enable Telegram Notifications</label>
+            </div>
           </div>
         </div>
 
@@ -1741,10 +1759,19 @@
           <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
             Posts rich Discord embed cards with role metadata, early applicant badges, and match breakdown in any private Discord channel.
           </p>
-          <div style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-            <strong>Configuration via <code>.env</code>:</strong><br>
-            • <code>DISCORD_WEBHOOK_URL</code>: Channel Settings → Integrations → Webhooks<br>
-            • Zero server deployment needed; webhook delivers in &lt;100ms.
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Discord Webhook URL</label>
+              <input type="password" id="alert-discord-webhook" class="input-field" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; font-size: 0.8rem;">
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Minimum Alert Score Threshold (%)</label>
+              <input type="number" id="alert-min-score" class="input-field" min="50" max="100" value="85" style="width: 100%; font-size: 0.8rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+              <input type="checkbox" id="alert-discord-enabled" checked style="accent-color: var(--primary); cursor: pointer;">
+              <label for="alert-discord-enabled" style="font-size: 0.8rem; cursor: pointer;">Enable Discord Notifications</label>
+            </div>
           </div>
         </div>
       </div>
@@ -2360,24 +2387,72 @@
           </div>
         </div>
 
-        <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-bottom: 1rem;">— OR ADD ACCOUNT MANUALLY —</div>
-
-        <div style="margin-bottom: 1rem;">
-          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Account Email Address</label>
-          <input type="email" id="new-account-email" class="input-field" placeholder="e.g. user@gmail.com" style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Display Label</label>
-          <input type="text" id="new-account-name" class="input-field" placeholder="e.g. Primary Job Search" style="width: 100%;">
-        </div>
-        <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <input type="checkbox" id="new-account-primary" style="cursor: pointer;">
-          <label for="new-account-primary" style="font-size: 0.85rem; cursor: pointer;">Set as default sending account</label>
+        <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: #fff;">Production Security Policy:</strong><br>
+          Connected accounts require valid Google OAuth 2.0 authorization tokens. The platform does not store unauthenticated or fabricated accounts. Click <strong>"Sign in with Google"</strong> above to authorize your real Gmail account with least-privilege scopes.
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeAccountModal()">Cancel</button>
-        <button class="btn btn-success" onclick="saveNewAccount()">Connect Account</button>
+        <button class="btn btn-secondary" onclick="closeAccountModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resume Review & Confirmation Modal -->
+  <div class="modal-backdrop" id="resume-review-modal">
+    <div class="modal-window" style="max-width: 740px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700;">Review & Confirm Parsed Resume</h2>
+          <p id="resume-review-meta" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">File: resume.pdf (PDF, 245 KB)</p>
+        </div>
+        <button class="btn btn-secondary" onclick="closeResumeReviewModal()">✕</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 1.25rem;">
+        <div id="resume-review-warnings" style="display: none; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: #fbbf24;"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Full Name</label>
+            <input type="text" id="review-fullName" class="input-field" style="width: 100%; font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Headline / Target Title</label>
+            <input type="text" id="review-title" class="input-field" style="width: 100%; font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Email Address</label>
+            <input type="email" id="review-email" class="input-field" style="width: 100%; font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Phone Number</label>
+            <input type="text" id="review-phone" class="input-field" style="width: 100%; font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Professional Summary</label>
+          <textarea id="review-summary" class="input-field" style="width: 100%; height: 90px; font-size: 0.82rem; line-height: 1.4;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.3rem;">Detected Technical Skills</label>
+          <div id="review-skills-box" style="display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; min-height: 50px;"></div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <details style="border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.6rem 0.8rem; background: rgba(0,0,0,0.2);">
+            <summary style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); cursor: pointer;">View Raw Extracted Text Preview</summary>
+            <pre id="review-text-preview" style="margin-top: 0.6rem; font-size: 0.75rem; color: var(--text-dim); white-space: pre-wrap; max-height: 180px; overflow-y: auto; font-family: var(--font-mono);"></pre>
+          </details>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem;">
+        <span style="font-size: 0.78rem; color: var(--text-dim);">Existing profile will not be modified until you confirm.</span>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-secondary" onclick="closeResumeReviewModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmApplyParsedProfile()">✓ Confirm & Save to Profile</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3363,38 +3438,46 @@
         const res = await fetch('/api/accounts');
         connectedAccounts = await res.json();
         const grid = document.getElementById('accounts-grid');
-        if (connectedAccounts.length === 0) {
+        if (!connectedAccounts || connectedAccounts.length === 0) {
           grid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-card); border-radius: 14px;">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-card); border-radius: 14px; border: 1px dashed var(--border-subtle);">
               <p style="color: var(--text-muted); margin-bottom: 1rem;">No Google accounts currently connected.</p>
-              <button class="btn" onclick="openConnectAccountModal()">+ Connect First Account</button>
+              <button class="btn btn-primary" onclick="openConnectAccountModal()">+ Connect First Account</button>
             </div>
           `;
           return;
         }
 
-        grid.innerHTML = connectedAccounts.map(a => `
-          <div class="settings-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-              <div style="font-weight: 700; font-size: 1.05rem; display: flex; align-items: center;">
-                ${a.email}
-                ${a.isPrimary ? '<span class="account-badge-primary">PRIMARY</span>' : ''}
+        grid.innerHTML = connectedAccounts.map(a => {
+          const isConnected = a.status === 'CONNECTED';
+          const statusColor = isConnected ? 'var(--accent-emerald)' : (a.status === 'DISCONNECTED' ? '#ef4444' : 'var(--accent-gold)');
+          const statusBg = isConnected ? 'rgba(16, 185, 129, 0.1)' : (a.status === 'DISCONNECTED' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)');
+
+          return `
+            <div class="settings-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                <div style="font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;">
+                  ${a.email}
+                  ${a.isPrimary ? '<span class="account-badge-primary">PRIMARY</span>' : ''}
+                </div>
+                <span class="meta-pill" style="color: ${statusColor}; background: ${statusBg}; border-color: ${statusColor}; font-weight: 700;">${a.status}</span>
               </div>
-              <span class="meta-pill" style="color: var(--accent-emerald);">${a.status}</span>
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+                <strong>Label:</strong> ${a.displayName || 'Default'} · <strong>Provider:</strong> ${a.provider}
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1.2rem;">
+                <strong>Granted Scopes:</strong> ${(a.grantedScopes || []).join(', ') || 'None'}
+              </div>
+              <div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+                ${isConnected && !a.isPrimary ? `<button class="btn btn-secondary" onclick="setPrimaryAccount('${a.id}')">Make Primary</button>` : ''}
+                ${isConnected ? `<button class="btn btn-secondary" onclick="syncAccount('${a.id}')">Sync Emails</button>` : ''}
+                ${isConnected ? `<button class="btn btn-danger" onclick="disconnectAccount('${a.id}')">Disconnect</button>` : ''}
+                ${!isConnected ? `<button class="btn btn-primary" onclick="initiateGoogleOAuth()">Authorize / Reconnect</button>` : ''}
+                ${!isConnected ? `<button class="btn btn-secondary" style="color: #ef4444;" onclick="deleteAccount('${a.id}')">Delete Record</button>` : ''}
+              </div>
             </div>
-            <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.6rem;">
-              <strong>Label:</strong> ${a.displayName || 'Default'} · <strong>Provider:</strong> ${a.provider}
-            </div>
-            <div style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1.2rem;">
-              <strong>Scopes:</strong> ${a.grantedScopes.join(', ')}
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-              ${!a.isPrimary ? `<button class="btn btn-secondary" onclick="setPrimaryAccount('${a.id}')">Make Primary</button>` : ''}
-              <button class="btn btn-secondary" onclick="syncAccount('${a.id}')">Sync Emails</button>
-              <button class="btn btn-danger" onclick="disconnectAccount('${a.id}')">Disconnect</button>
-            </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (err) {
         console.error('Error loading accounts:', err);
       }
@@ -3473,48 +3556,63 @@
       document.getElementById('account-modal').classList.remove('active');
     }
 
-    async function saveNewAccount() {
-      const email = document.getElementById('new-account-email').value.trim();
-      const displayName = document.getElementById('new-account-name').value.trim();
-      const isPrimary = document.getElementById('new-account-primary').checked;
-
-      if (!email) {
-        alert('Please enter a valid email address.');
-        return;
-      }
-
+    async function setPrimaryAccount(id) {
       try {
-        const res = await fetch('/api/accounts/connect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, displayName, isPrimary })
-        });
+        const res = await fetch(`/api/accounts/${id}/primary`, { method: 'POST' });
         const data = await res.json();
-        if (data.success) {
-          alert(`Google Account connected: ${data.account.email}`);
-          closeAccountModal();
-          await loadAccounts();
+        if (!data.success) {
+          alert('Failed to set primary account: ' + (data.error || 'Unknown error'));
         }
       } catch (err) {
-        alert('Failed to connect account: ' + err.message);
+        alert('Set primary error: ' + err.message);
       }
-    }
-
-    async function setPrimaryAccount(id) {
-      await fetch(`/api/accounts/${id}/primary`, { method: 'POST' });
       await loadAccounts();
     }
 
     async function disconnectAccount(id) {
-      if (!confirm('Are you sure you want to disconnect this account?')) return;
-      await fetch(`/api/accounts/${id}/disconnect`, { method: 'POST' });
+      if (!confirm('Are you sure you want to disconnect this Google account? Associated background synchronization will stop and stored tokens will be revoked.')) return;
+      try {
+        const res = await fetch(`/api/accounts/${id}/disconnect`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message || 'Account disconnected successfully.');
+        } else {
+          alert('Disconnect notice: ' + (data.error || 'Failed to disconnect.'));
+        }
+      } catch (err) {
+        alert('Disconnect error: ' + err.message);
+      }
       await loadAccounts();
     }
 
     async function syncAccount(id) {
-      const res = await fetch(`/api/accounts/${id}/sync`, { method: 'POST' });
-      const data = await res.json();
-      alert(`Account Synchronized!\nSuccess: ${data.success}`);
+      try {
+        const res = await fetch(`/api/accounts/${id}/sync`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Account Synchronized!\nProcessed: ${data.processedCount || 0} messages\nStatus: Synced`);
+        } else {
+          alert(`Synchronization Notice:\n${data.error || 'Account is not authenticated.'}`);
+        }
+      } catch (err) {
+        alert('Sync error: ' + err.message);
+      }
+      await loadAccounts();
+    }
+
+    async function deleteAccount(id) {
+      if (!confirm('Permanently remove this account record?')) return;
+      try {
+        const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message || 'Account record removed.');
+        } else {
+          alert('Delete error: ' + (data.error || 'Failed to remove account.'));
+        }
+      } catch (err) {
+        alert('Delete error: ' + err.message);
+      }
       await loadAccounts();
     }
 
@@ -3738,17 +3836,43 @@
       }
     }
 
+    let pendingParsedProfile = null;
+
     async function handleResumeFileUpload(event) {
       const file = event.target.files?.[0];
       if (!file) return;
 
+      const lower = file.name.toLowerCase();
+      const validExtensions = ['.pdf', '.docx', '.md', '.txt', '.markdown'];
+      if (!validExtensions.some(ext => lower.endsWith(ext))) {
+        alert('Unsupported file format. Please upload a PDF (.pdf), Microsoft Word (.docx), Markdown (.md), or Plain Text (.txt) file.');
+        event.target.value = '';
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File exceeds 5 MB limit (Current: ${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a smaller file.`);
+        event.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const content = e.target.result;
-        document.getElementById('resume-paste-text').value = content;
-        await parseResumeContent(content);
+        const rawResult = e.target.result;
+        let fileBase64 = '';
+        if (typeof rawResult === 'string' && rawResult.includes(',')) {
+          fileBase64 = rawResult.split(',')[1];
+        }
+
+        await processResumePayload({
+          fileBase64,
+          fileName: file.name,
+          fileSize: file.size,
+          previewOnly: true,
+        });
       };
-      reader.readAsText(file);
+
+      reader.readAsDataURL(file);
     }
 
     async function parsePastedResume() {
@@ -3757,25 +3881,96 @@
         alert('Please paste resume text or choose a file first.');
         return;
       }
-      await parseResumeContent(content);
+      await processResumePayload({
+        resumeContent: content,
+        fileName: 'pasted_resume.txt',
+        fileSize: content.length,
+        previewOnly: true,
+      });
     }
 
-    async function parseResumeContent(content) {
+    async function processResumePayload(payload) {
       try {
         const res = await fetch('/api/profile/upload-resume', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resumeContent: content }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (data.success) {
-          alert('✓ ' + data.message);
-          await loadProfileView();
-        } else {
-          alert('Parsing failed: ' + (data.error || 'Unknown error'));
+        if (!data.success) {
+          alert('Resume parsing error: ' + (data.error || 'Failed to extract text.'));
+          return;
         }
+
+        pendingParsedProfile = data.profile;
+
+        // Populate Review Modal
+        const metaEl = document.getElementById('resume-review-meta');
+        const sizeKb = payload.fileSize ? Math.round(payload.fileSize / 1024) : 0;
+        metaEl.textContent = `File: ${payload.fileName} (${(data.fileType || 'doc').toUpperCase()}, ${sizeKb} KB)`;
+
+        const warningsEl = document.getElementById('resume-review-warnings');
+        if (data.warnings && data.warnings.length > 0) {
+          warningsEl.innerHTML = `<strong>Review Notices:</strong><ul style="margin: 0.3rem 0 0 1rem;">${data.warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
+          warningsEl.style.display = 'block';
+        } else {
+          warningsEl.style.display = 'none';
+        }
+
+        document.getElementById('review-fullName').value = data.profile.fullName || '';
+        document.getElementById('review-title').value = data.profile.title || '';
+        document.getElementById('review-email').value = data.profile.email || '';
+        document.getElementById('review-phone').value = data.profile.phone || '';
+        document.getElementById('review-summary').value = data.profile.summary || '';
+
+        // Skills box
+        const skillsBox = document.getElementById('review-skills-box');
+        const allSkills = Object.values(data.profile.skills || {}).flat().filter(Boolean);
+        skillsBox.innerHTML = allSkills.length > 0 
+          ? allSkills.map(s => `<span class="meta-pill" style="color: var(--accent-cyan); border-color: rgba(56, 189, 248, 0.4); font-size: 0.75rem;">${s}</span>`).join('')
+          : '<span style="color: var(--text-dim); font-size: 0.8rem;">No explicit technical keywords extracted.</span>';
+
+        document.getElementById('review-text-preview').textContent = data.textPreview || 'No raw text preview available.';
+
+        document.getElementById('resume-review-modal').classList.add('active');
       } catch (err) {
         alert('Resume upload error: ' + err.message);
+      }
+    }
+
+    function closeResumeReviewModal() {
+      document.getElementById('resume-review-modal').classList.remove('active');
+      pendingParsedProfile = null;
+    }
+
+    async function confirmApplyParsedProfile() {
+      if (!pendingParsedProfile) return;
+
+      const updatedProfile = {
+        ...pendingParsedProfile,
+        fullName: document.getElementById('review-fullName').value.trim(),
+        title: document.getElementById('review-title').value.trim(),
+        email: document.getElementById('review-email').value.trim(),
+        phone: document.getElementById('review-phone').value.trim(),
+        summary: document.getElementById('review-summary').value.trim(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedProfile),
+        });
+        if (res.ok) {
+          alert('✓ Verified profile updated with extracted resume facts!');
+          closeResumeReviewModal();
+          await loadProfileView();
+        } else {
+          alert('Failed to save reviewed profile to database.');
+        }
+      } catch (err) {
+        alert('Error saving profile: ' + err.message);
       }
     }
 
@@ -3822,14 +4017,14 @@
     // Alerts View Logic
     async function loadAlertsView() {
       try {
-        const res = await fetch('/api/notifications/status');
-        const status = await res.json();
+        const res = await fetch('/api/notifications/config');
+        const cfg = await res.json();
         
         const telePill = document.getElementById('telegram-status-pill');
-        if (status.telegram) {
-          telePill.textContent = 'CONNECTED';
-          telePill.style.background = 'rgba(16, 185, 129, 0.2)';
-          telePill.style.color = 'var(--accent-emerald)';
+        if (cfg.telegram.configured) {
+          telePill.textContent = cfg.telegram.enabled ? 'ACTIVE & CONFIGURED' : 'DISABLED';
+          telePill.style.background = cfg.telegram.enabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)';
+          telePill.style.color = cfg.telegram.enabled ? 'var(--accent-emerald)' : 'var(--accent-gold)';
         } else {
           telePill.textContent = 'NOT CONFIGURED';
           telePill.style.background = 'rgba(239, 68, 68, 0.2)';
@@ -3837,17 +4032,61 @@
         }
 
         const discPill = document.getElementById('discord-status-pill');
-        if (status.discord) {
-          discPill.textContent = 'CONNECTED';
-          discPill.style.background = 'rgba(16, 185, 129, 0.2)';
-          discPill.style.color = 'var(--accent-emerald)';
+        if (cfg.discord.configured) {
+          discPill.textContent = cfg.discord.enabled ? 'ACTIVE & CONFIGURED' : 'DISABLED';
+          discPill.style.background = cfg.discord.enabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)';
+          discPill.style.color = cfg.discord.enabled ? 'var(--accent-emerald)' : 'var(--accent-gold)';
         } else {
           discPill.textContent = 'NOT CONFIGURED';
           discPill.style.background = 'rgba(239, 68, 68, 0.2)';
           discPill.style.color = '#ef4444';
         }
+
+        if (cfg.telegram.chatId) {
+          document.getElementById('alert-telegram-chatid').placeholder = cfg.telegram.chatId;
+        }
+        document.getElementById('alert-telegram-enabled').checked = cfg.telegram.enabled !== false;
+        document.getElementById('alert-discord-enabled').checked = cfg.discord.enabled !== false;
+        if (cfg.minScore) {
+          document.getElementById('alert-min-score').value = cfg.minScore;
+        }
       } catch (err) {
-        console.error('Error loading alerts status:', err);
+        console.error('Error loading alerts config:', err);
+      }
+    }
+
+    async function saveMobileAlertsConfig() {
+      const telegramBotToken = document.getElementById('alert-telegram-token').value.trim() || undefined;
+      const telegramChatId = document.getElementById('alert-telegram-chatid').value.trim() || undefined;
+      const telegramEnabled = document.getElementById('alert-telegram-enabled').checked;
+      const discordWebhookUrl = document.getElementById('alert-discord-webhook').value.trim() || undefined;
+      const discordEnabled = document.getElementById('alert-discord-enabled').checked;
+      const minScore = parseInt(document.getElementById('alert-min-score').value, 10) || 85;
+
+      try {
+        const res = await fetch('/api/notifications/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramBotToken,
+            telegramChatId,
+            telegramEnabled,
+            discordWebhookUrl,
+            discordEnabled,
+            minScore,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✓ Notification settings saved and active!');
+          document.getElementById('alert-telegram-token').value = '';
+          document.getElementById('alert-discord-webhook').value = '';
+          await loadAlertsView();
+        } else {
+          alert('Failed to save notification settings: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error saving notifications: ' + err.message);
       }
     }
 
@@ -3856,12 +4095,12 @@
         const res = await fetch('/api/notifications/test', { method: 'POST' });
         const data = await res.json();
         if (data.telegramSent || data.discordSent) {
-          alert(`✓ Notification Test Dispatched!\nTelegram: ${data.telegramSent ? 'Sent' : 'Skipped'}\nDiscord: ${data.discordSent ? 'Sent' : 'Skipped'}`);
+          alert(`✓ Live Notification Test Dispatched!\nTelegram: ${data.telegramSent ? 'Delivered' : 'Not configured'}\nDiscord: ${data.discordSent ? 'Delivered' : 'Not configured'}`);
         } else {
-          alert(`Notice: Neither Telegram nor Discord credentials are set in .env yet.\nA simulated test notification was recorded in platform logs.`);
+          alert(`Notification Test Notice:\n${data.error || 'Neither Telegram nor Discord is configured.'}\n\nPlease enter your credentials in the forms below and click "Save Notification Settings".`);
         }
       } catch (err) {
-        alert('Notification test failed: ' + err.message);
+        alert('Notification test error: ' + err.message);
       }
     }
 
@@ -3904,6 +4143,34 @@
           processResumeFileInput(files[0]);
         }
       }, false);
+
+      const profileCard = document.getElementById('upload-resume-card');
+      if (profileCard && !profileCard._setupDone) {
+        profileCard._setupDone = true;
+        ['dragenter', 'dragover'].forEach(eventName => {
+          profileCard.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            profileCard.style.borderColor = 'var(--accent-cyan)';
+            profileCard.style.background = 'rgba(56, 189, 248, 0.08)';
+          }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+          profileCard.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            profileCard.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+            profileCard.style.background = 'rgba(59, 130, 246, 0.03)';
+          }, false);
+        });
+        profileCard.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          if (files && files.length > 0) {
+            handleResumeFileUpload({ target: { files: [files[0]] } });
+          }
+        }, false);
+      }
     }
 
     function handleAiResumeSelected(event) {

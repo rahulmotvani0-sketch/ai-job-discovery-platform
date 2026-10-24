@@ -26,6 +26,7 @@ import type {
   SourceProposal 
 } from '../discovery/registry/types.js';
 import { INITIAL_SOURCE_CATALOG } from '../discovery/registry/catalog.js';
+import { computeCanonicalHash } from '../discovery/deduplication.js';
 
 export class DatabaseManager {
   private db: DatabaseSync;
@@ -303,6 +304,15 @@ export class DatabaseManager {
         last_results_count INTEGER DEFAULT 0
       );
 
+      CREATE TABLE IF NOT EXISTS notification_configurations (
+        id TEXT PRIMARY KEY,
+        channel TEXT UNIQUE NOT NULL,
+        credentials_json TEXT NOT NULL,
+        min_score INTEGER NOT NULL DEFAULT 85,
+        is_enabled INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id);
       CREATE INDEX IF NOT EXISTS idx_saved_searches_default ON saved_searches(user_id, is_default);
     `);
@@ -341,6 +351,16 @@ export class DatabaseManager {
     } catch (err) {
       logger.error('Failed to check/seed source registry', { error: (err as Error).message });
     }
+
+    // Purge fake unauthenticated accounts (missing both access_token and refresh_token)
+    try {
+      this.purgeUnauthenticatedFakeAccounts();
+    } catch {}
+
+    // Clean duplicate evaluations
+    try {
+      this.cleanupDuplicateEvaluations();
+    } catch {}
   }
 
   // User Profile
@@ -444,8 +464,12 @@ export class DatabaseManager {
     };
   }
 
+  getRawDb(): any {
+    return this.db;
+  }
+
   // Vacancies
-  insertOrUpdateVacancy(vacancy: Vacancy): { inserted: boolean; id: string } {
+  insertOrUpdateVacancy(vacancy: Vacancy): { inserted: boolean; isNew: boolean; id: string; vacancy: Vacancy } {
     const existing = this.getVacancyByCanonicalHash(vacancy.canonicalHash);
     if (existing) {
       // Update alternate URLs and verification time
@@ -468,7 +492,8 @@ export class DatabaseManager {
         vacancy.category ?? null,
         existing.id
       );
-      return { inserted: false, id: existing.id };
+      const updated = this.getVacancyById(existing.id)!;
+      return { inserted: false, isNew: false, id: existing.id, vacancy: updated };
     }
 
     const stmt = this.db.prepare(`
@@ -480,36 +505,121 @@ export class DatabaseManager {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(
-      vacancy.id,
-      vacancy.canonicalHash,
-      vacancy.sourceType,
-      vacancy.sourceUrl,
-      JSON.stringify(vacancy.alternateUrls),
-      vacancy.companyName,
-      vacancy.title,
-      vacancy.normalizedTitle,
-      vacancy.locationText,
-      vacancy.isRemote ? 1 : 0,
-      vacancy.acceptsIndia ? 1 : 0,
-      vacancy.employmentType,
-      vacancy.salaryMin ?? null,
-      vacancy.salaryMax ?? null,
-      vacancy.currency ?? null,
-      vacancy.rawDescription,
-      vacancy.parsedRequirements ? JSON.stringify(vacancy.parsedRequirements) : null,
-      vacancy.publishedAt,
-      vacancy.discoveredAt,
-      vacancy.lastVerifiedAt,
-      vacancy.status,
-      vacancy.isContractOrFreelance ? 1 : 0,
-      vacancy.isEarlyApplicant ? 1 : 0,
-      vacancy.isSaved ? 1 : 0,
-      vacancy.country || 'Worldwide',
-      vacancy.category || 'DevOps'
-    );
+    try {
+      stmt.run(
+        vacancy.id,
+        vacancy.canonicalHash,
+        vacancy.sourceType,
+        vacancy.sourceUrl,
+        JSON.stringify(vacancy.alternateUrls || []),
+        vacancy.companyName,
+        vacancy.title,
+        vacancy.normalizedTitle,
+        vacancy.locationText,
+        vacancy.isRemote ? 1 : 0,
+        vacancy.acceptsIndia ? 1 : 0,
+        vacancy.employmentType,
+        vacancy.salaryMin ?? null,
+        vacancy.salaryMax ?? null,
+        vacancy.currency ?? null,
+        vacancy.rawDescription,
+        vacancy.parsedRequirements ? JSON.stringify(vacancy.parsedRequirements) : null,
+        vacancy.publishedAt,
+        vacancy.discoveredAt,
+        vacancy.lastVerifiedAt,
+        vacancy.status,
+        vacancy.isContractOrFreelance ? 1 : 0,
+        vacancy.isEarlyApplicant ? 1 : 0,
+        vacancy.isSaved ? 1 : 0,
+        vacancy.country || 'Worldwide',
+        vacancy.category || 'DevOps'
+      );
+      const created = this.getVacancyById(vacancy.id)!;
+      return { inserted: true, isNew: true, id: vacancy.id, vacancy: created };
+    } catch (err: any) {
+      if (err.message && err.message.includes('UNIQUE constraint failed')) {
+        const concurrent = this.getVacancyByCanonicalHash(vacancy.canonicalHash);
+        if (concurrent) {
+          const mergedUrls = Array.from(new Set([...concurrent.alternateUrls, vacancy.sourceUrl, ...(vacancy.alternateUrls || [])]));
+          this.db.prepare(`
+            UPDATE vacancies SET
+              alternate_urls = ?,
+              last_verified_at = ?
+            WHERE id = ?
+          `).run(JSON.stringify(mergedUrls), new Date().toISOString(), concurrent.id);
+          const resolved = this.getVacancyById(concurrent.id)!;
+          return { inserted: false, isNew: false, id: concurrent.id, vacancy: resolved };
+        }
+      }
+      throw err;
+    }
+  }
 
-    return { inserted: true, id: vacancy.id };
+  /**
+   * Safely scans existing vacancy records, merges duplicates, preserves application history,
+   * re-points match evaluations and drafts to the canonical record, and eliminates duplicate rows.
+   */
+  deduplicateExistingVacancies(): { scanned: number; merged: number; duplicatesRemoved: number } {
+    const rows = this.db.prepare('SELECT * FROM vacancies ORDER BY discovered_at ASC, id ASC').all() as any[];
+    const seenHashes = new Map<string, any>();
+    let merged = 0;
+    let duplicatesRemoved = 0;
+
+    for (const row of rows) {
+      const hash = computeCanonicalHash(row.company_name, row.title, row.source_url) || row.canonical_hash;
+      if (!seenHashes.has(hash)) {
+        seenHashes.set(hash, row);
+      } else {
+        const primary = seenHashes.get(hash);
+        const duplicateId = row.id;
+
+        // 1. Merge alternate URLs
+        const primUrls = JSON.parse(primary.alternate_urls || '[]');
+        const dupUrls = JSON.parse(row.alternate_urls || '[]');
+        const combinedUrls = Array.from(new Set([...primUrls, row.source_url, ...dupUrls]));
+        this.db.prepare('UPDATE vacancies SET alternate_urls = ? WHERE id = ?').run(JSON.stringify(combinedUrls), primary.id);
+
+        // 2. Re-point or delete match evaluations
+        const primEval = this.db.prepare('SELECT id FROM match_evaluations WHERE vacancy_id = ?').get(primary.id);
+        if (primEval) {
+          this.db.prepare('DELETE FROM match_evaluations WHERE vacancy_id = ?').run(duplicateId);
+        } else {
+          this.db.prepare('UPDATE match_evaluations SET vacancy_id = ? WHERE vacancy_id = ?').run(primary.id, duplicateId);
+        }
+
+        // 3. Re-point drafts and submissions
+        this.db.prepare('UPDATE application_drafts SET vacancy_id = ? WHERE vacancy_id = ?').run(primary.id, duplicateId);
+        this.db.prepare('UPDATE application_submissions SET vacancy_id = ? WHERE vacancy_id = ?').run(primary.id, duplicateId);
+
+        // 4. Delete duplicate vacancy row
+        this.db.prepare('DELETE FROM vacancies WHERE id = ?').run(duplicateId);
+
+        merged++;
+        duplicatesRemoved++;
+      }
+    }
+
+    this.cleanupDuplicateEvaluations();
+    logger.info(`Deduplication scan completed: scanned ${rows.length}, merged ${merged}, removed ${duplicatesRemoved} duplicates`);
+    return { scanned: rows.length, merged, duplicatesRemoved };
+  }
+
+  /**
+   * Ensures only one canonical evaluation exists per vacancy, eliminating duplicate evaluations
+   * that distort dashboard qualified matches counts.
+   */
+  cleanupDuplicateEvaluations(): number {
+    const stmt = this.db.prepare(`
+      DELETE FROM match_evaluations
+      WHERE id NOT IN (
+        SELECT id FROM (
+          SELECT id, ROW_NUMBER() OVER (PARTITION BY vacancy_id ORDER BY evaluated_at DESC, id DESC) as rn
+          FROM match_evaluations
+        ) WHERE rn = 1
+      )
+    `);
+    const res = stmt.run();
+    return Number(res.changes);
   }
 
   getVacancyByCanonicalHash(canonicalHash: string): Vacancy | null {
@@ -630,21 +740,40 @@ export class DatabaseManager {
     stmt.run(JSON.stringify(parsed), id);
   }
 
-  // Match Evaluations
   saveMatchEvaluation(evalData: MatchScoreEvaluation): void {
+    const existing = this.getMatchEvaluationByVacancyId(evalData.vacancyId);
+    if (existing) {
+      const updateStmt = this.db.prepare(`
+        UPDATE match_evaluations SET
+          overall_score = ?,
+          tier = ?,
+          category_scores = ?,
+          matching_skills = ?,
+          missing_skills = ?,
+          evidence_explanation = ?,
+          evaluated_at = ?,
+          qualifies_75 = ?,
+          mandatory_blockers = ?
+        WHERE id = ?
+      `);
+      updateStmt.run(
+        evalData.overallScore,
+        evalData.tier,
+        JSON.stringify(evalData.categoryScores),
+        JSON.stringify(evalData.matchingSkills),
+        JSON.stringify(evalData.missingSkills),
+        evalData.evidenceExplanation,
+        evalData.evaluatedAt,
+        evalData.qualifies75 ? 1 : 0,
+        JSON.stringify(evalData.mandatoryBlockers || []),
+        existing.id
+      );
+      return;
+    }
+
     const stmt = this.db.prepare(`
       INSERT INTO match_evaluations (id, vacancy_id, overall_score, tier, category_scores, matching_skills, missing_skills, evidence_explanation, evaluated_at, qualifies_75, mandatory_blockers)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        overall_score = excluded.overall_score,
-        tier = excluded.tier,
-        category_scores = excluded.category_scores,
-        matching_skills = excluded.matching_skills,
-        missing_skills = excluded.missing_skills,
-        evidence_explanation = excluded.evidence_explanation,
-        evaluated_at = excluded.evaluated_at,
-        qualifies_75 = excluded.qualifies_75,
-        mandatory_blockers = excluded.mandatory_blockers
     `);
     stmt.run(
       evalData.id,
@@ -770,7 +899,7 @@ export class DatabaseManager {
       submission.channel,
       submission.gmailMessageId ?? null,
       submission.gmailThreadId ?? null,
-      submission.status,
+      submission.status || 'SENT',
       submission.sheetsRowIndex ?? null,
       submission.auditHash
     );
@@ -941,21 +1070,28 @@ export class DatabaseManager {
     this.saveDiscoveryRun(updated);
   }
 
+  saveApplicationSubmission(submission: ApplicationSubmission): void {
+    this.saveSubmission(submission);
+  }
+
   // Telemetry & Metrics
   getDashboardMetrics(): Record<string, any> {
-    const totalDiscovered = (this.db.prepare('SELECT COUNT(*) as c FROM vacancies').get() as any).c;
-    const totalQualified = (this.db.prepare('SELECT COUNT(*) as c FROM vacancies v JOIN match_evaluations m ON v.id = m.vacancy_id WHERE m.overall_score >= 75').get() as any).c;
-    const draftsAwaitingApproval = (this.db.prepare("SELECT COUNT(*) as c FROM application_drafts WHERE status = 'APPROVED' OR status = 'PENDING_REVIEW'").get() as any).c;
-    const totalSubmitted = (this.db.prepare('SELECT COUNT(*) as c FROM application_submissions').get() as any).c;
-    const interviewInvites = (this.db.prepare("SELECT COUNT(*) as c FROM application_submissions WHERE status = 'INTERVIEW_INVITE'").get() as any).c;
-    const totalContracts = (this.db.prepare('SELECT COUNT(*) as c FROM vacancies WHERE is_contract_or_freelance = 1').get() as any).c;
+    const totalDiscovered = (this.db.prepare("SELECT COUNT(*) as c FROM vacancies WHERE status != 'ARCHIVED' AND status != 'IGNORED'").get() as any).c;
+    const totalQualified = (this.db.prepare("SELECT COUNT(DISTINCT v.id) as c FROM vacancies v JOIN match_evaluations m ON v.id = m.vacancy_id WHERE m.overall_score >= 75 AND v.status != 'ARCHIVED' AND v.status != 'IGNORED'").get() as any).c;
+    const draftsAwaitingApproval = (this.db.prepare("SELECT COUNT(*) as c FROM application_drafts WHERE status = 'PENDING_REVIEW'").get() as any).c;
+    const totalSubmitted = (this.db.prepare("SELECT COUNT(*) as c FROM application_submissions WHERE status != 'FAILED'").get() as any).c;
+    const interviewInvites = (this.db.prepare("SELECT (SELECT COUNT(*) FROM recruiter_interactions WHERE detected_intent = 'INTERVIEW_INVITE' OR detected_intent = 'INTERVIEW') + (SELECT COUNT(*) FROM application_submissions WHERE status = 'INTERVIEW_INVITE') as c").get() as any).c;
+    const totalContracts = (this.db.prepare("SELECT COUNT(*) as c FROM vacancies WHERE is_contract_or_freelance = 1 AND status != 'ARCHIVED' AND status != 'IGNORED'").get() as any).c;
 
     return {
       totalDiscovered,
       totalQualified,
       draftsAwaitingApproval,
+      awaitingApproval: draftsAwaitingApproval,
       totalSubmitted,
+      submittedApplications: totalSubmitted,
       interviewInvites,
+      interviewInvitations: interviewInvites,
       totalContracts,
     };
   }
@@ -1098,11 +1234,11 @@ export class DatabaseManager {
   }
 
   getPrimaryConnectedAccount(): ConnectedAccount | null {
-    const stmt = this.db.prepare("SELECT * FROM connected_accounts WHERE is_primary = 1 AND status = 'CONNECTED' LIMIT 1");
+    const stmt = this.db.prepare("SELECT * FROM connected_accounts WHERE is_primary = 1 LIMIT 1");
     const r = stmt.get() as any;
     if (!r) {
-      // Fallback to first connected account
-      const fallbackStmt = this.db.prepare("SELECT * FROM connected_accounts WHERE status = 'CONNECTED' LIMIT 1");
+      // Fallback to first account
+      const fallbackStmt = this.db.prepare("SELECT * FROM connected_accounts LIMIT 1");
       const fb = fallbackStmt.get() as any;
       if (!fb) return null;
       return {
@@ -1144,18 +1280,86 @@ export class DatabaseManager {
   }
 
   disconnectConnectedAccount(id: string): void {
-    this.db.prepare("UPDATE connected_accounts SET status = 'DISCONNECTED', access_token = NULL, refresh_token = NULL, updated_at = ? WHERE id = ?")
+    const acc = this.getConnectedAccountById(id);
+    this.db.prepare("UPDATE connected_accounts SET status = 'DISCONNECTED', access_token = NULL, refresh_token = NULL, is_primary = 0, updated_at = ? WHERE id = ?")
       .run(new Date().toISOString(), id);
+    if (acc?.isPrimary) {
+      const nextConnected = this.db.prepare("SELECT id FROM connected_accounts WHERE status = 'CONNECTED' AND id != ? LIMIT 1").get(id) as any;
+      if (nextConnected) {
+        this.setPrimaryConnectedAccount(nextConnected.id);
+      }
+    }
   }
 
   deleteConnectedAccount(id: string): boolean {
+    const acc = this.getConnectedAccountById(id);
     const res = this.db.prepare('DELETE FROM connected_accounts WHERE id = ?').run(id);
+    if (acc?.isPrimary) {
+      const nextConnected = this.db.prepare("SELECT id FROM connected_accounts WHERE status = 'CONNECTED' LIMIT 1").get() as any;
+      if (nextConnected) {
+        this.setPrimaryConnectedAccount(nextConnected.id);
+      }
+    }
     return res.changes > 0;
+  }
+
+  purgeUnauthenticatedFakeAccounts(): number {
+    const stmt = this.db.prepare("DELETE FROM connected_accounts WHERE (access_token IS NULL OR access_token = '') AND (refresh_token IS NULL OR refresh_token = '')");
+    const res = stmt.run();
+    if (res.changes > 0) {
+      logger.info(`Purged ${res.changes} unauthenticated fake accounts from database.`);
+    }
+    return Number(res.changes);
   }
 
   updateAccountSyncStatus(id: string, status: string, error?: string): void {
     const stmt = this.db.prepare('UPDATE connected_accounts SET status = ?, last_synced_at = ?, sync_error = ?, updated_at = ? WHERE id = ?');
     stmt.run(status, new Date().toISOString(), error ?? null, new Date().toISOString(), id);
+  }
+
+  // Notification Configurations Management
+  saveNotificationConfig(config: { channel: string; credentials: Record<string, any>; minScore?: number; isEnabled?: boolean }): void {
+    const id = `notif_${config.channel.toLowerCase()}`;
+    const stmt = this.db.prepare(`
+      INSERT INTO notification_configurations (id, channel, credentials_json, min_score, is_enabled, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(channel) DO UPDATE SET
+        credentials_json = excluded.credentials_json,
+        min_score = excluded.min_score,
+        is_enabled = excluded.is_enabled,
+        updated_at = excluded.updated_at
+    `);
+    stmt.run(
+      id,
+      config.channel.toLowerCase(),
+      JSON.stringify(config.credentials),
+      config.minScore ?? 85,
+      config.isEnabled !== false ? 1 : 0,
+      new Date().toISOString()
+    );
+  }
+
+  getNotificationConfig(channel: string): { channel: string; credentials: Record<string, any>; minScore: number; isEnabled: boolean } | null {
+    const stmt = this.db.prepare('SELECT * FROM notification_configurations WHERE channel = ?');
+    const row = stmt.get(channel.toLowerCase()) as any;
+    if (!row) return null;
+    return {
+      channel: row.channel,
+      credentials: JSON.parse(row.credentials_json || '{}'),
+      minScore: row.min_score,
+      isEnabled: row.is_enabled === 1,
+    };
+  }
+
+  listNotificationConfigs(): Array<{ channel: string; credentials: Record<string, any>; minScore: number; isEnabled: boolean }> {
+    const stmt = this.db.prepare('SELECT * FROM notification_configurations ORDER BY channel ASC');
+    const rows = stmt.all() as any[];
+    return rows.map(row => ({
+      channel: row.channel,
+      credentials: JSON.parse(row.credentials_json || '{}'),
+      minScore: row.min_score,
+      isEnabled: row.is_enabled === 1,
+    }));
   }
 
   // LLM Configurations Management

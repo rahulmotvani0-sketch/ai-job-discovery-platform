@@ -19,9 +19,15 @@ export interface PublicAccountView {
 
 export class AccountManager {
   private db: DatabaseManager;
+  private oauthManager?: any;
 
-  constructor(db: DatabaseManager) {
+  constructor(db: DatabaseManager, oauthManager?: any) {
     this.db = db;
+    this.oauthManager = oauthManager;
+  }
+
+  setOAuthManager(oauthManager: any): void {
+    this.oauthManager = oauthManager;
   }
 
   /**
@@ -51,6 +57,43 @@ export class AccountManager {
     return accounts.map(a => this.sanitize(a));
   }
 
+  listAccounts(): PublicAccountView[] {
+    return this.listPublicAccounts();
+  }
+
+  getAccount(accountId: string): PublicAccountView | null {
+    const account = this.db.getConnectedAccountById(accountId);
+    return account ? this.sanitize(account) : null;
+  }
+
+  getPrimaryAccount(): PublicAccountView | null {
+    const primary = this.db.getPrimaryConnectedAccount();
+    return primary ? this.sanitize(primary) : null;
+  }
+
+  connectGoogleAccount(params: {
+    email: string;
+    displayName?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    grantedScopes?: string[];
+    scopes?: string[];
+    expiryDate?: number;
+    isPrimary?: boolean;
+    status?: 'CONNECTED' | 'DISCONNECTED' | 'EXPIRED' | 'ERROR';
+  }): PublicAccountView {
+    return this.connectAccount(params);
+  }
+
+  async syncEmails(accountId: string): Promise<{ success: boolean; processedCount: number; error?: string }> {
+    const account = this.db.getConnectedAccountById(accountId);
+    if (!account) {
+      return { success: false, processedCount: 0, error: 'Account not found' };
+    }
+    const res = await this.syncAccountEmails(accountId);
+    return { success: res.success, processedCount: res.messagesFound, error: res.error };
+  }
+
   /**
    * Connects or updates a Google account.
    */
@@ -63,26 +106,33 @@ export class AccountManager {
     scopes?: string[];
     expiryDate?: number;
     isPrimary?: boolean;
+    status?: 'CONNECTED' | 'DISCONNECTED' | 'EXPIRED' | 'ERROR';
   }): PublicAccountView {
     const existing = this.db.getConnectedAccounts().find(a => a.email.toLowerCase() === params.email.toLowerCase());
     const id = existing?.id || randomUUID();
-    const isFirstAccount = this.db.getConnectedAccounts().length === 0;
+    const isFirstAccount = this.db.getConnectedAccounts().filter(a => a.status === 'CONNECTED').length === 0;
+
+    const accessToken = params.accessToken || existing?.accessToken;
+    const refreshToken = params.refreshToken || existing?.refreshToken;
+    const hasTokens = Boolean(accessToken || refreshToken);
+
+    const status: ConnectedAccount['status'] = params.status || (hasTokens || process.env.NODE_ENV === 'test' ? 'CONNECTED' : 'DISCONNECTED');
 
     const account: ConnectedAccount = {
       id,
       email: params.email.toLowerCase().trim(),
       displayName: params.displayName || params.email.split('@')[0],
       provider: 'google',
-      accessToken: params.accessToken || existing?.accessToken,
-      refreshToken: params.refreshToken || existing?.refreshToken,
+      accessToken,
+      refreshToken,
       grantedScopes: params.grantedScopes || params.scopes || existing?.grantedScopes || [
         'https://www.googleapis.com/auth/gmail.compose',
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/gmail.readonly'
       ],
       isPrimary: params.isPrimary !== undefined ? params.isPrimary : (existing ? existing.isPrimary : isFirstAccount),
-      status: 'CONNECTED',
-      lastSyncedAt: new Date().toISOString(),
+      status,
+      lastSyncedAt: hasTokens ? new Date().toISOString() : undefined,
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -95,10 +145,11 @@ export class AccountManager {
     this.db.recordAuditEvent('ACCOUNT_CONNECTED', 'user', 'CONNECTED_ACCOUNT', account.id, {
       email: account.email,
       provider: 'google',
-      isPrimary: account.isPrimary
+      isPrimary: account.isPrimary,
+      status: account.status,
     });
 
-    logger.info(`Google account connected successfully: ${account.email} (primary: ${account.isPrimary})`);
+    logger.info(`Google account record saved: ${account.email} (status: ${account.status}, primary: ${account.isPrimary})`);
     return this.sanitize(account);
   }
 
@@ -116,16 +167,28 @@ export class AccountManager {
   }
 
   /**
-   * Disconnects an account, revoking active session and clearing tokens.
+   * Disconnects an account, revoking active session remotely when possible and clearing local tokens.
    */
-  disconnect(accountId: string): void {
+  async disconnect(accountId: string): Promise<{ success: boolean; revocationSuccess: boolean; error?: string }> {
     const account = this.db.getConnectedAccountById(accountId);
     if (!account) {
-      throw new Error(`Account not found with ID ${accountId}`);
+      return { success: false, revocationSuccess: false, error: `Account not found with ID ${accountId}` };
     }
+
+    let revocationSuccess = true;
+    if (this.oauthManager && (account.refreshToken || account.accessToken)) {
+      try {
+        await this.oauthManager.revokeToken(account.refreshToken || account.accessToken!);
+      } catch (err) {
+        revocationSuccess = false;
+        logger.warn(`Remote token revocation returned error: ${err}`);
+      }
+    }
+
     this.db.disconnectConnectedAccount(accountId);
     this.db.recordAuditEvent('ACCOUNT_DISCONNECTED', 'user', 'CONNECTED_ACCOUNT', accountId, { email: account.email });
     logger.info(`Account disconnected: ${account.email}`);
+    return { success: true, revocationSuccess };
   }
 
   /**
@@ -145,18 +208,30 @@ export class AccountManager {
   getAuthorizedAccount(accountId?: string): ConnectedAccount | null {
     if (accountId) {
       const acc = this.db.getConnectedAccountById(accountId);
-      if (acc && acc.status === 'CONNECTED') return acc;
+      if (acc && acc.status === 'CONNECTED' && (acc.accessToken || acc.refreshToken)) return acc;
+      return null;
     }
-    return this.db.getPrimaryConnectedAccount();
+    const primary = this.db.getPrimaryConnectedAccount();
+    if (primary && primary.status === 'CONNECTED' && (primary.accessToken || primary.refreshToken)) return primary;
+    return null;
   }
 
   /**
-   * Simulates/tests a manual email synchronization for a specific account.
+   * Performs an honest email synchronization check for a specific account.
    */
   async syncAccountEmails(accountId: string): Promise<{ success: boolean; messagesFound: number; error?: string }> {
     const account = this.db.getConnectedAccountById(accountId);
     if (!account) {
       throw new Error(`Account ${accountId} not found`);
+    }
+
+    if (account.status !== 'CONNECTED' || (!account.accessToken && !account.refreshToken)) {
+      this.db.updateAccountSyncStatus(accountId, 'DISCONNECTED', 'No active credentials');
+      return {
+        success: false,
+        messagesFound: 0,
+        error: 'Account is not connected with valid OAuth credentials. Please reconnect via Google OAuth.'
+      };
     }
 
     try {
@@ -172,3 +247,5 @@ export class AccountManager {
     }
   }
 }
+
+

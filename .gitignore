@@ -37,5 +37,3 @@ npm-debug.log*
 *.swp
 *.swo
 
-# Excluded documentation
-docs/NEXTRAISE_PRODUCT_RESEARCH.md

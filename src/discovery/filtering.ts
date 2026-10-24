@@ -149,7 +149,7 @@ export function filterVacancies(
   const seenHashes = new Set<string>();
   const deduplicated: Vacancy[] = [];
   for (const v of vacancies) {
-    const hash = v.canonicalHash || computeCanonicalHash(v.companyName, v.title, v.sourceUrl, v.locationText);
+    const hash = v.canonicalHash || computeCanonicalHash(v.companyName, v.title, v.sourceUrl, v.locationText, (v as any).sourceId, v.sourceType);
     if (!seenHashes.has(hash)) {
       seenHashes.add(hash);
       deduplicated.push(v);

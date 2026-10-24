@@ -65,7 +65,15 @@ export class DiscoveryManager {
   processRawPayload(payload: RawJobPayload): { vacancy: Vacancy; inserted: boolean } {
     const normUrl = normalizeJobUrl(payload.sourceUrl);
     const normTitle = normalizeJobTitle(payload.title);
-    const canonicalHash = computeCanonicalHash(payload.companyName, payload.title, normUrl, payload.locationText);
+    const canonicalHash = computeCanonicalHash(
+      payload.companyName,
+      payload.title,
+      normUrl,
+      payload.locationText,
+      payload.sourceId,
+      payload.sourceType,
+      (payload as any).requisitionId
+    );
 
     // Verify content & regional eligibility
     const verification = VacancyVerificationAgent.verifyContent(
@@ -78,10 +86,15 @@ export class DiscoveryManager {
       payload.employmentType === 'freelance' || 
       /contract|freelance/i.test(payload.title);
 
-    // Compute Early Applicant status (published <= 48 hours ago)
-    const publishedTime = new Date(payload.publishedAt || Date.now()).getTime();
-    const hoursSincePublished = Math.max(0, (Date.now() - publishedTime) / (1000 * 60 * 60));
-    const isEarlyApplicant = hoursSincePublished <= 48;
+    // Compute Early Applicant status (published <= 48 hours ago with trustworthy publication evidence)
+    let isEarlyApplicant = false;
+    if (payload.publishedAt) {
+      const publishedTime = new Date(payload.publishedAt).getTime();
+      if (!isNaN(publishedTime)) {
+        const hoursSincePublished = (Date.now() - publishedTime) / (1000 * 60 * 60);
+        isEarlyApplicant = hoursSincePublished >= 0 && hoursSincePublished <= 48;
+      }
+    }
 
     // Standardize Country and Region
     const countryInfo = normalizeCountryAndRegion(payload.locationText);

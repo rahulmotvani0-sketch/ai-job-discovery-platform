@@ -198,4 +198,22 @@ export class GoogleOAuthManager {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
   }
+
+  /**
+   * Remotely revokes a Google OAuth token via Google's revocation endpoint.
+   */
+  async revokeToken(token: string): Promise<boolean> {
+    if (!token) return true;
+    try {
+      const res = await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      return res.ok;
+    } catch (err) {
+      logger.warn(`Failed to remotely revoke Google OAuth token: ${err}`);
+      return false;
+    }
+  }
 }
+

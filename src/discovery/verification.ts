@@ -22,22 +22,30 @@ const EXPIRED_PATTERNS = [
 ];
 
 const RESTRICTIVE_US_PATTERNS = [
-  /must be located in the united states/i,
-  /us citizens? only/i,
+  /\bus only\b/i,
+  /\bu\.s\. only\b/i,
+  /united states only/i,
+  /must be located in (?:the )?united states/i,
+  /us citizens?/i,
   /only candidates based in the us/i,
   /us residency required/i,
   /no international applicants/i,
   /must be eligible to work in the us without sponsorship/i,
   /authorized to work in the us only/i,
+  /\bus based\b/i,
 ];
 
 const GLOBAL_OR_INDIA_PATTERNS = [
   /worldwide/i,
   /anywhere/i,
+  /work from anywhere/i,
   /global remote/i,
-  /india/i,
+  /remote (?:[-–—]\s*)?(?:worldwide|global|anywhere|india|apac)/i,
+  /\bindia\b/i,
   /remote - india/i,
-  /apac/i,
+  /\bapac\b/i,
+  /south asia/i,
+  /bengaluru|bangalore|hyderabad|pune|mumbai|delhi|gurgaon|noida|chennai/i,
   /all locations/i,
   /remote \(global\)/i,
   /open to international/i,
@@ -95,14 +103,10 @@ export class VacancyVerificationAgent {
     } else if (hasGlobalClause) {
       acceptsIndia = true;
     } else {
-      // Default: If location says "Remote" without explicit US restrictions, mark as potential global
-      if (/remote/i.test(locationText)) {
-        acceptsIndia = true;
-        reasons.push('Location labeled as Remote with no conflicting regional restriction.');
-      } else {
-        acceptsIndia = false;
-        reasons.push('Non-remote location or ambiguous regional eligibility.');
-      }
+      // In accordance with truth-in-eligibility rules: Unknown eligibility must remain unknown.
+      // Do not convert generic 'Remote' or missing regional details into affirmative India eligibility.
+      acceptsIndia = false;
+      reasons.push('Ambiguous regional eligibility: Requires explicit evidence of India, APAC, or Worldwide hiring.');
     }
 
     if (!isExpired) {
@@ -148,4 +152,16 @@ export class VacancyVerificationAgent {
       return { statusCode: 0, accessible: true }; // Don't discard immediately on network timeout, let description decide
     }
   }
+}
+
+export function verifyIndiaEligibility(locationText: string, descriptionText: string): boolean {
+  return VacancyVerificationAgent.verifyContent(descriptionText, locationText).acceptsIndia;
+}
+
+export function isEarlyApplicant(publishedAt?: string, maxHours: number = 48): boolean {
+  if (!publishedAt) return false;
+  const pubDate = new Date(publishedAt).getTime();
+  if (isNaN(pubDate)) return false;
+  const hoursSince = (Date.now() - pubDate) / (1000 * 60 * 60);
+  return hoursSince >= 0 && hoursSince <= maxHours;
 }
