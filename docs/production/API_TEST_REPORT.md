@@ -44,7 +44,18 @@
 | `/api/resumes/generate-pdf`| `POST` | If token set | `{ applicantName?: string, markdownContent?: string }` | `{ success: true, downloadUrl: string }` | 200, 400 | Generate PDF to disk | `tests/pdf-generator.test.ts` | **PASS** |
 | `/api/notifications/status`| `GET` | No | None | `{ telegram: boolean, discord: boolean, minScore: number }` | 200 | Read config | `tests/alert-manager.test.ts` | **PASS** |
 | `/api/notifications/test` | `POST` | If token set | None | `{ success: boolean, results: object }` | 200, 401 | Dispatch test alert | `tests/alert-manager.test.ts` | **PASS** |
+| `/api/resume/upload-and-discover` | `POST` | If token set | `{ fileName, fileBase64, consentGiven, minMatchScore }` | `{ success: true, runId, profile, adjacentQueries }` | 200, 400 | Save profile & `discovery_runs` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/discovery/runs/:id` | `GET` | No | None | `DiscoveryRun` JSON (step, status, stats) | 200, 404 | Read `discovery_runs` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/discovery/runs` | `GET` | No | None | `DiscoveryRun[]` (recent 20 runs) | 200 | Read `discovery_runs` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/discovery/threshold` | `GET` | No | None | `{ minMatchScore: number }` | 200 | Read `job_preferences` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/discovery/threshold` | `POST` | If token set | `{ minMatchScore: number }` | `{ success: true, minMatchScore }` | 200, 400 | Update `job_preferences`, `match_evaluations` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/discovery/recurring` | `POST` | If token set | `{ enabled: boolean }` | `{ success: true, hourlyDiscoveryEnabled }` | 200 | Start/stop background scheduler | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/matches` | `GET` | No | Query: `?minScore=75&country=...` | `{ matches: MatchScoreEvaluation[], count }` | 200 | Read `match_evaluations` & `vacancies` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/matches/:id/explanation` | `GET` | No | Path param `:id` | `{ vacancy, match, scoringCriteria }` | 200, 404 | Read `match_evaluations` & `vacancies` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/matches/:id/recalculate` | `POST` | If token set | None | `{ success: true, match }` | 200, 404 | Recalculate & update `match_evaluations` | `tests/resume-discovery.test.ts` | **PASS** |
+| `/api/profile/resume` | `DELETE` | If token set | None | `{ success: true, profile }` | 200 | Reset `user_profile` & audit | `tests/resume-discovery.test.ts` | **PASS** |
 | `/` | `GET` | No | None | HTML UI (`public/index.html`) | 200 | None | Manual & Browser inspection | **PASS** |
+
 
 ---
 

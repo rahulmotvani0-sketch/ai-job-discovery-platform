@@ -1,6 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { logger } from './core/logger.js';
 import { DatabaseManager } from './core/database.js';
 import { AccountManager } from './core/accounts.js';
@@ -12,9 +13,11 @@ import { DirectGmailService } from './integrations/google/gmail.js';
 import { DirectGoogleDriveService } from './integrations/google/drive.js';
 import { DirectGoogleSheetsService } from './integrations/google/sheets.js';
 import { ModelRouter } from './ai/providers/router.js';
+import { JobMatchingAgent } from './ai/agents/matcher.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES, loadAuthoritativeProfile } from './core/profile.js';
 import { AtsPdfGenerator } from './applications/pdf-generator.js';
-import type { InferenceMode, Vacancy, UserProfile } from './types/index.js';
+import { ResumeIntelligenceEngine } from './applications/resume-intelligence.js';
+import type { InferenceMode, Vacancy, UserProfile, DiscoveryRun } from './types/index.js';
 import { config } from './config/index.js';
 import { GoogleOAuthManager } from './integrations/google/oauth.js';
 import {
@@ -254,87 +257,186 @@ export class ApplicationServer {
 
           if (pathname === '/api/profile/upload-resume' && req.method === 'POST') {
             const body = await this.parseBody(req);
-            const content = body.resumeContent || '';
-            if (!content || typeof content !== 'string') {
-              return this.sendJson(res, 400, { error: 'resumeContent text is required' });
-            }
+            let fileBuffer: Buffer | undefined;
+            const fileName = body.fileName || 'resume.txt';
 
-            const current = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
-
-            // Extract email
-            const emailMatch = content.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
-            const email = emailMatch ? emailMatch[0] : current.email;
-
-            // Extract phone
-            const phoneMatch = content.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-            const phone = phoneMatch ? phoneMatch[0] : current.phone;
-
-            // Extract links
-            const githubMatch = content.match(/https?:\/\/(?:www\.)?github\.com\/[A-Za-z0-9_-]+/i);
-            const linkedinMatch = content.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[A-Za-z0-9_-]+/i);
-
-            // Extract Name from first header line if present
-            const lines = content.split('\n').map((l: string) => l.trim()).filter(Boolean);
-            let fullName = current.fullName;
-            if (lines.length > 0 && lines[0].startsWith('# ')) {
-              fullName = lines[0].replace(/^#\s+/, '').trim();
-            } else if (lines.length > 0 && !lines[0].includes('@') && lines[0].length < 40) {
-              fullName = lines[0];
-            }
-
-            // Extract skills by scanning popular keywords
-            const techKeywords: Record<string, string[]> = {
-              cloudPlatforms: ['AWS', 'GCP', 'Azure', 'DigitalOcean', 'Cloudflare'],
-              containersAndOrchestration: ['Docker', 'Kubernetes', 'Helm', 'ArgoCD', 'Podman', 'OpenShift'],
-              infrastructureAsCode: ['Terraform', 'Terragrunt', 'Ansible', 'Pulumi', 'CloudFormation'],
-              ciCdAndGitOps: ['GitHub Actions', 'GitLab CI', 'Jenkins', 'CircleCI', 'Tekton'],
-              devSecOpsAndSecurity: ['SonarQube', 'Snyk', 'Trivy', 'Vault', 'OWASP'],
-              observabilityAndMonitoring: ['Prometheus', 'Grafana', 'Datadog', 'OpenTelemetry', 'ELK', 'Jaeger'],
-              programmingAndScripting: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Java', 'Rust', 'Bash', 'C++'],
-              networkingAndAdmin: ['Linux', 'Ubuntu', 'TCP/IP', 'Nginx', 'DNS'],
-            };
-
-            const detectedSkills: UserProfile['skills'] = {
-              ...current.skills,
-              cloudPlatforms: [...(current.skills.cloudPlatforms || [])],
-              infrastructureAsCode: [...(current.skills.infrastructureAsCode || [])],
-              containersAndOrchestration: [...(current.skills.containersAndOrchestration || [])],
-              ciCdAndGitOps: [...(current.skills.ciCdAndGitOps || [])],
-              devSecOpsAndSecurity: [...(current.skills.devSecOpsAndSecurity || [])],
-              observabilityAndMonitoring: [...(current.skills.observabilityAndMonitoring || [])],
-              programmingAndScripting: [...(current.skills.programmingAndScripting || [])],
-              networkingAndAdmin: [...(current.skills.networkingAndAdmin || [])],
-            };
-            for (const [category, keywords] of Object.entries(techKeywords)) {
-              for (const kw of keywords) {
-                const regex = new RegExp(`\\b${kw.replace('+', '\\+')}\\b`, 'i');
-                if (regex.test(content)) {
-                  const list = detectedSkills[category] || [];
-                  detectedSkills[category] = list;
-                  if (!list.includes(kw)) {
-                    list.push(kw);
-                  }
-                }
+            if (body.fileBase64) {
+              try {
+                fileBuffer = Buffer.from(body.fileBase64, 'base64');
+              } catch {
+                return this.sendJson(res, 400, { error: 'Invalid base64 payload' });
               }
+            } else if (body.resumeContent) {
+              fileBuffer = Buffer.from(body.resumeContent, 'utf-8');
+            } else {
+              return this.sendJson(res, 400, { error: 'Either fileBase64 or resumeContent is required' });
             }
 
-            const updatedProfile = {
-              ...current,
-              fullName: fullName || current.fullName,
-              email: email || current.email,
-              phone: phone || current.phone,
-              githubUrl: githubMatch ? githubMatch[0] : current.githubUrl,
-              linkedinUrl: linkedinMatch ? linkedinMatch[0] : current.linkedinUrl,
-              skills: detectedSkills,
-              updatedAt: new Date().toISOString(),
-            };
+            try {
+              const currentProfile = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
+              const parsedDoc = await ResumeIntelligenceEngine.parseDocument(fileBuffer, fileName);
+              const analysis = ResumeIntelligenceEngine.analyzeCandidateResume(parsedDoc.text, currentProfile);
 
-            this.db.saveUserProfile(updatedProfile);
+              this.db.saveUserProfile(analysis.profile);
+              return this.sendJson(res, 200, {
+                success: true,
+                message: 'Resume parsed and profile updated successfully',
+                profile: analysis.profile,
+                extractedFacts: analysis.extractedFacts,
+                adjacentQueries: analysis.adjacentSearchTitles,
+                fileType: parsedDoc.fileType,
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 400, { error: err.message });
+            }
+          }
+
+          if (pathname === '/api/resume/upload-and-discover' && req.method === 'POST') {
+            const body = await this.parseBody(req);
+            let fileBuffer: Buffer | undefined;
+            const fileName = body.fileName || 'resume.txt';
+            let parsedDoc: { text: string; fileType: string } | undefined;
+            const currentProfile = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
+
+            if (body.useExistingProfile) {
+              const allSkills = Object.values(currentProfile.skills || {}).flat().filter(Boolean);
+              const expList = currentProfile.experiences || [];
+              const expText = expList.map(e => `${e.role} at ${e.company}: ${(e.achievements || []).join('. ')}`).join('\n');
+              const text = currentProfile.summary 
+                ? `${currentProfile.fullName}\n${currentProfile.title || ''}\n${currentProfile.summary}\nSkills: ${allSkills.join(', ')}\nExperience:\n${expText}`
+                : `${currentProfile.fullName || 'Candidate'}\nSkills: ${allSkills.join(', ')}\nExperience:\n${expText}`;
+              parsedDoc = { text, fileType: 'profile' };
+            } else if (body.fileBase64) {
+              try {
+                fileBuffer = Buffer.from(body.fileBase64, 'base64');
+              } catch {
+                return this.sendJson(res, 400, { error: 'Invalid base64 payload' });
+              }
+            } else if (body.resumeContent) {
+              fileBuffer = Buffer.from(body.resumeContent, 'utf-8');
+            } else {
+              return this.sendJson(res, 400, { error: 'Either fileBase64, resumeContent, or useExistingProfile is required' });
+            }
+
+            try {
+              if (!parsedDoc && fileBuffer) {
+                parsedDoc = await ResumeIntelligenceEngine.parseDocument(fileBuffer, fileName);
+              }
+              if (!parsedDoc) {
+                return this.sendJson(res, 400, { error: 'Failed to process resume document' });
+              }
+              const analysis = ResumeIntelligenceEngine.analyzeCandidateResume(parsedDoc.text, currentProfile);
+
+              this.db.saveUserProfile(analysis.profile);
+
+              const runId = randomUUID();
+              const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
+              const threshold = body.minMatchScore !== undefined ? Number(body.minMatchScore) : (prefs.minMatchScore ?? 75.0);
+
+              const run: DiscoveryRun = {
+                id: runId,
+                triggerType: 'RESUME_UPLOAD',
+                status: 'RUNNING',
+                currentStep: 'RESUME_UPLOADED',
+                stepMessage: `Resume document (${fileName}) parsed successfully. Structured candidate profile saved.`,
+                totalSourcesSearched: 8,
+                discoveredCount: 0,
+                evaluatedCount: 0,
+                qualifiedCount: 0,
+                minScoreThreshold: threshold,
+                startedAt: new Date().toISOString(),
+              };
+              this.db.saveDiscoveryRun(run);
+
+              const autoStart = body.autoStartDiscovery !== false && body.consentGiven !== false;
+              if (autoStart) {
+                this.orchestrator.runResumeBasedDiscovery({
+                  runId,
+                  profile: analysis.profile,
+                  prefs,
+                  minScoreThreshold: threshold,
+                  adjacentQueries: analysis.adjacentSearchTitles,
+                }).catch((err) => {
+                  logger.error(`Error in resume discovery run ${runId}: ${err}`);
+                });
+              }
+
+              return this.sendJson(res, 200, {
+                success: true,
+                runId,
+                profile: analysis.profile,
+                extractedFacts: analysis.extractedFacts,
+                adjacentQueries: analysis.adjacentSearchTitles,
+                fileType: parsedDoc.fileType,
+                discoveryStarted: autoStart,
+                minScoreThreshold: threshold,
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 400, { error: err.message });
+            }
+          }
+
+          if (pathname.startsWith('/api/discovery/runs/') && req.method === 'GET') {
+            const id = pathname.replace('/api/discovery/runs/', '');
+            const run = this.db.getDiscoveryRun(id);
+            if (!run) return this.sendJson(res, 404, { error: 'Discovery run not found' });
+            return this.sendJson(res, 200, run);
+          }
+
+          if (pathname === '/api/discovery/runs' && req.method === 'GET') {
+            const runs = this.db.listDiscoveryRuns(20);
+            return this.sendJson(res, 200, runs);
+          }
+
+          if (pathname === '/api/discovery/threshold') {
+            if (req.method === 'GET') {
+              const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
+              return this.sendJson(res, 200, { minMatchScore: prefs.minMatchScore ?? 75.0 });
+            }
+            if (req.method === 'POST') {
+              const body = await this.parseBody(req);
+              const threshold = Number(body.minMatchScore);
+              if (isNaN(threshold) || threshold < 0 || threshold > 100) {
+                return this.sendJson(res, 400, { error: 'minMatchScore must be a number between 0 and 100' });
+              }
+              const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
+              prefs.minMatchScore = threshold;
+              this.db.savePreferences(prefs);
+
+              try {
+                (this.db as any).db.prepare(`
+                  UPDATE match_evaluations 
+                  SET qualifies_75 = (CASE WHEN overall_score >= ? AND (mandatory_blockers IS NULL OR mandatory_blockers = '[]') THEN 1 ELSE 0 END)
+                `).run(threshold);
+              } catch {}
+
+              return this.sendJson(res, 200, { success: true, minMatchScore: threshold });
+            }
+          }
+
+          if (pathname === '/api/discovery/recurring' && req.method === 'POST') {
+            const body = await this.parseBody(req);
+            const enabled = Boolean(body.enabled);
+            const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
+            prefs.hourlyDiscoveryEnabled = enabled;
+            this.db.savePreferences(prefs);
+            if (enabled) {
+              this.scheduler.start();
+            } else {
+              this.scheduler.stop();
+            }
             return this.sendJson(res, 200, {
               success: true,
-              message: 'Resume parsed and profile updated successfully',
-              profile: updatedProfile,
+              hourlyDiscoveryEnabled: enabled,
+              schedulerStatus: this.scheduler.getStatus(),
             });
+          }
+
+          if (pathname === '/api/profile/resume' && req.method === 'DELETE') {
+            const baseProfile = DEFAULT_USER_PROFILE;
+            this.db.saveUserProfile(baseProfile);
+            this.db.recordAuditEvent('RESET_RESUME_PROFILE', 'authorized_user', 'user_profile', baseProfile.id, { reason: 'User requested profile reset/deletion' });
+            return this.sendJson(res, 200, { success: true, message: 'Resume profile reset to baseline defaults.', profile: baseProfile });
           }
 
           if (pathname === '/api/preferences') {
@@ -536,6 +638,57 @@ export class ApplicationServer {
             const evaluation = this.db.getMatchEvaluationByVacancyId(id);
             const draft = this.db.getApplicationDraftByVacancyId(id);
             return this.sendJson(res, 200, { ...vacancy, evaluation, draft });
+          }
+
+          // AI Resume Matches API
+          if (pathname === '/api/matches' && req.method === 'GET') {
+            const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
+            const defaultMin = prefs.minMatchScore ?? 75.0;
+            const minScore = url.searchParams.get('minScore') !== null ? Number(url.searchParams.get('minScore')) : defaultMin;
+            const country = url.searchParams.get('country') || undefined;
+            const category = url.searchParams.get('category') || undefined;
+            const search = url.searchParams.get('search') || undefined;
+            const isEarlyApplicant = url.searchParams.get('early') === 'true' ? true : undefined;
+            const isSaved = url.searchParams.get('saved') === 'true' ? true : undefined;
+
+            const vacancies = this.db.listVacancies({ 
+              minScore, 
+              country, 
+              category, 
+              search, 
+              isEarlyApplicant, 
+              isSaved, 
+              limit: 100 
+            });
+
+            // Inclusive qualification check: overallScore >= minScore
+            const qualifying = vacancies.filter(v => v.matchScore && v.matchScore.overallScore >= minScore);
+            return this.sendJson(res, 200, qualifying);
+          }
+
+          if (pathname.startsWith('/api/matches/') && pathname.endsWith('/explanation') && req.method === 'GET') {
+            const parts = pathname.split('/');
+            const vacancyId = parts[3];
+            const vacancy = this.db.getVacancyById(vacancyId);
+            if (!vacancy) return this.sendJson(res, 404, { error: 'Vacancy not found' });
+            const evaluation = this.db.getMatchEvaluationByVacancyId(vacancyId);
+            if (!evaluation) return this.sendJson(res, 404, { error: 'Evaluation not found for vacancy' });
+            return this.sendJson(res, 200, { vacancy, evaluation });
+          }
+
+          if (pathname.startsWith('/api/matches/') && pathname.endsWith('/recalculate') && req.method === 'POST') {
+            const parts = pathname.split('/');
+            const vacancyId = parts[3];
+            const vacancy = this.db.getVacancyById(vacancyId);
+            if (!vacancy) return this.sendJson(res, 404, { error: 'Vacancy not found' });
+            const profile = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
+            const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
+            const evaluation = JobMatchingAgent.evaluateMatch(vacancy, profile, prefs);
+            this.db.saveMatchEvaluation(evaluation);
+            if (evaluation.qualifies75) {
+              this.db.updateVacancyStatus(vacancy.id, 'QUALIFIED');
+            }
+            return this.sendJson(res, 200, { success: true, evaluation });
           }
 
           if (pathname === '/api/discovery/scan' && req.method === 'POST') {

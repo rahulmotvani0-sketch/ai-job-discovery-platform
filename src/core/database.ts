@@ -12,7 +12,9 @@ import type {
   UserProfile, 
   JobPreferences,
   ConnectedAccount,
-  LLMConfiguration
+  LLMConfiguration,
+  DiscoveryRun,
+  DiscoveryStep
 } from '../types/index.js';
 
 export class DatabaseManager {
@@ -236,6 +238,17 @@ export class DatabaseManager {
     try { this.db.exec("ALTER TABLE vacancies ADD COLUMN category TEXT DEFAULT 'DevOps';"); } catch {}
     try { this.db.exec("ALTER TABLE application_drafts ADD COLUMN sending_account_id TEXT;"); } catch {}
     try { this.db.exec("ALTER TABLE application_drafts ADD COLUMN tailored_pdf_path TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE user_preferences ADD COLUMN min_match_score REAL DEFAULT 75.0;"); } catch {}
+    try { this.db.exec("ALTER TABLE match_evaluations ADD COLUMN qualifies_75 INTEGER DEFAULT 0;"); } catch {}
+    try { this.db.exec("ALTER TABLE match_evaluations ADD COLUMN mandatory_blockers TEXT DEFAULT '[]';"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN trigger_type TEXT DEFAULT 'RESUME_UPLOAD';"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN status TEXT DEFAULT 'RUNNING';"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN current_step TEXT DEFAULT 'SEARCH_COMPLETED';"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN step_message TEXT DEFAULT '';"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN total_sources INTEGER DEFAULT 0;"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN evaluated_count INTEGER DEFAULT 0;"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN min_score_threshold REAL DEFAULT 75.0;"); } catch {}
+    try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN error_message TEXT;"); } catch {}
   }
 
   // User Profile
@@ -284,8 +297,8 @@ export class DatabaseManager {
       INSERT INTO user_preferences (
         id, target_roles_json, min_experience_years, max_experience_years, min_compensation_inr_lpa,
         prioritize_remote, allow_hybrid, base_country, eligible_countries_json, search_international,
-        daily_qualified_target, hourly_discovery_enabled, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        daily_qualified_target, hourly_discovery_enabled, min_match_score, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         target_roles_json = excluded.target_roles_json,
         min_experience_years = excluded.min_experience_years,
@@ -298,6 +311,7 @@ export class DatabaseManager {
         search_international = excluded.search_international,
         daily_qualified_target = excluded.daily_qualified_target,
         hourly_discovery_enabled = excluded.hourly_discovery_enabled,
+        min_match_score = excluded.min_match_score,
         updated_at = excluded.updated_at
     `);
     stmt.run(
@@ -313,6 +327,7 @@ export class DatabaseManager {
       prefs.searchInternational ? 1 : 0,
       prefs.dailyQualifiedTarget,
       prefs.hourlyDiscoveryEnabled ? 1 : 0,
+      prefs.minMatchScore !== undefined ? prefs.minMatchScore : 75.0,
       new Date().toISOString()
     );
   }
@@ -333,6 +348,7 @@ export class DatabaseManager {
       searchInternational: row.search_international === 1,
       dailyQualifiedTarget: row.daily_qualified_target,
       hourlyDiscoveryEnabled: row.hourly_discovery_enabled === 1,
+      minMatchScore: row.min_match_score !== undefined && row.min_match_score !== null ? row.min_match_score : 75.0,
     };
   }
 
@@ -439,7 +455,7 @@ export class DatabaseManager {
     const offset = filter?.offset ?? 0;
     
     let query = `
-      SELECT v.*, m.id as m_id, m.overall_score, m.tier, m.category_scores, m.matching_skills, m.missing_skills, m.evidence_explanation, m.evaluated_at
+      SELECT v.*, m.id as m_id, m.overall_score, m.tier, m.category_scores, m.matching_skills, m.missing_skills, m.evidence_explanation, m.evaluated_at, m.qualifies_75, m.mandatory_blockers
       FROM vacancies v
       LEFT JOIN match_evaluations m ON v.id = m.vacancy_id
       WHERE 1=1
@@ -498,6 +514,8 @@ export class DatabaseManager {
           id: r.m_id,
           vacancyId: v.id,
           overallScore: r.overall_score,
+          qualifies75: r.qualifies_75 === 1,
+          mandatoryBlockers: r.mandatory_blockers ? JSON.parse(r.mandatory_blockers) : [],
           tier: r.tier,
           categoryScores: JSON.parse(r.category_scores),
           matchingSkills: JSON.parse(r.matching_skills),
@@ -523,8 +541,8 @@ export class DatabaseManager {
   // Match Evaluations
   saveMatchEvaluation(evalData: MatchScoreEvaluation): void {
     const stmt = this.db.prepare(`
-      INSERT INTO match_evaluations (id, vacancy_id, overall_score, tier, category_scores, matching_skills, missing_skills, evidence_explanation, evaluated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO match_evaluations (id, vacancy_id, overall_score, tier, category_scores, matching_skills, missing_skills, evidence_explanation, evaluated_at, qualifies_75, mandatory_blockers)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         overall_score = excluded.overall_score,
         tier = excluded.tier,
@@ -532,7 +550,9 @@ export class DatabaseManager {
         matching_skills = excluded.matching_skills,
         missing_skills = excluded.missing_skills,
         evidence_explanation = excluded.evidence_explanation,
-        evaluated_at = excluded.evaluated_at
+        evaluated_at = excluded.evaluated_at,
+        qualifies_75 = excluded.qualifies_75,
+        mandatory_blockers = excluded.mandatory_blockers
     `);
     stmt.run(
       evalData.id,
@@ -543,7 +563,9 @@ export class DatabaseManager {
       JSON.stringify(evalData.matchingSkills),
       JSON.stringify(evalData.missingSkills),
       evalData.evidenceExplanation,
-      evalData.evaluatedAt
+      evalData.evaluatedAt,
+      evalData.qualifies75 ? 1 : 0,
+      JSON.stringify(evalData.mandatoryBlockers || [])
     );
   }
 
@@ -555,6 +577,8 @@ export class DatabaseManager {
       id: row.id,
       vacancyId: row.vacancy_id,
       overallScore: row.overall_score,
+      qualifies75: row.qualifies_75 === 1,
+      mandatoryBlockers: row.mandatory_blockers ? JSON.parse(row.mandatory_blockers) : [],
       tier: row.tier,
       categoryScores: JSON.parse(row.category_scores),
       matchingSkills: JSON.parse(row.matching_skills),
@@ -714,10 +738,121 @@ export class DatabaseManager {
     }
   }
 
+  // Discovery Runs
+  saveDiscoveryRun(run: DiscoveryRun): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO discovery_runs (
+        id, started_at, finished_at, source, vacancies_discovered, vacancies_new,
+        vacancies_qualified, errors_count, telemetry_json, trigger_type, status,
+        current_step, step_message, total_sources, evaluated_count, min_score_threshold, error_message
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        finished_at = excluded.finished_at,
+        source = excluded.source,
+        vacancies_discovered = excluded.vacancies_discovered,
+        vacancies_new = excluded.vacancies_new,
+        vacancies_qualified = excluded.vacancies_qualified,
+        errors_count = excluded.errors_count,
+        telemetry_json = excluded.telemetry_json,
+        trigger_type = excluded.trigger_type,
+        status = excluded.status,
+        current_step = excluded.current_step,
+        step_message = excluded.step_message,
+        total_sources = excluded.total_sources,
+        evaluated_count = excluded.evaluated_count,
+        min_score_threshold = excluded.min_score_threshold,
+        error_message = excluded.error_message
+    `);
+    stmt.run(
+      run.id,
+      run.startedAt,
+      run.completedAt || null,
+      run.triggerType,
+      run.discoveredCount,
+      0,
+      run.qualifiedCount,
+      run.error ? 1 : 0,
+      JSON.stringify(run),
+      run.triggerType,
+      run.status,
+      run.currentStep,
+      run.stepMessage,
+      run.totalSourcesSearched,
+      run.evaluatedCount,
+      run.minScoreThreshold,
+      run.error || null
+    );
+  }
+
+  getDiscoveryRun(id: string): DiscoveryRun | null {
+    const stmt = this.db.prepare('SELECT * FROM discovery_runs WHERE id = ?');
+    const row = stmt.get(id) as any;
+    if (!row) return null;
+    return {
+      id: row.id,
+      triggerType: (row.trigger_type || 'RESUME_UPLOAD') as any,
+      status: (row.status || 'RUNNING') as any,
+      currentStep: (row.current_step || 'SEARCH_COMPLETED') as any,
+      stepMessage: row.step_message || '',
+      totalSourcesSearched: row.total_sources || 0,
+      discoveredCount: row.vacancies_discovered || 0,
+      evaluatedCount: row.evaluated_count || 0,
+      qualifiedCount: row.vacancies_qualified || 0,
+      minScoreThreshold: row.min_score_threshold !== undefined && row.min_score_threshold !== null ? row.min_score_threshold : 75.0,
+      error: row.error_message || undefined,
+      startedAt: row.started_at,
+      completedAt: row.finished_at || undefined,
+    };
+  }
+
+  listDiscoveryRuns(limit = 10): DiscoveryRun[] {
+    const stmt = this.db.prepare('SELECT * FROM discovery_runs ORDER BY started_at DESC LIMIT ?');
+    const rows = stmt.all(limit) as any[];
+    return rows.map(row => ({
+      id: row.id,
+      triggerType: (row.trigger_type || 'RESUME_UPLOAD') as any,
+      status: (row.status || 'RUNNING') as any,
+      currentStep: (row.current_step || 'SEARCH_COMPLETED') as any,
+      stepMessage: row.step_message || '',
+      totalSourcesSearched: row.total_sources || 0,
+      discoveredCount: row.vacancies_discovered || 0,
+      evaluatedCount: row.evaluated_count || 0,
+      qualifiedCount: row.vacancies_qualified || 0,
+      minScoreThreshold: row.min_score_threshold !== undefined && row.min_score_threshold !== null ? row.min_score_threshold : 75.0,
+      error: row.error_message || undefined,
+      startedAt: row.started_at,
+      completedAt: row.finished_at || undefined,
+    }));
+  }
+
+  updateDiscoveryRunStep(
+    id: string,
+    step: DiscoveryStep,
+    message: string,
+    stats?: Partial<DiscoveryRun>
+  ): void {
+    const existing = this.getDiscoveryRun(id);
+    if (!existing) return;
+    const updated: DiscoveryRun = {
+      ...existing,
+      currentStep: step,
+      stepMessage: message,
+      status: step === 'SEARCH_COMPLETED' ? 'COMPLETED' : step === 'FAILED' ? 'FAILED' : 'RUNNING',
+      totalSourcesSearched: stats?.totalSourcesSearched !== undefined ? stats.totalSourcesSearched : existing.totalSourcesSearched,
+      discoveredCount: stats?.discoveredCount !== undefined ? stats.discoveredCount : existing.discoveredCount,
+      evaluatedCount: stats?.evaluatedCount !== undefined ? stats.evaluatedCount : existing.evaluatedCount,
+      qualifiedCount: stats?.qualifiedCount !== undefined ? stats.qualifiedCount : existing.qualifiedCount,
+      minScoreThreshold: stats?.minScoreThreshold !== undefined ? stats.minScoreThreshold : existing.minScoreThreshold,
+      completedAt: (step === 'SEARCH_COMPLETED' || step === 'FAILED') ? new Date().toISOString() : existing.completedAt,
+      error: stats?.error !== undefined ? stats.error : existing.error,
+    };
+    this.saveDiscoveryRun(updated);
+  }
+
   // Telemetry & Metrics
   getDashboardMetrics(): Record<string, any> {
     const totalDiscovered = (this.db.prepare('SELECT COUNT(*) as c FROM vacancies').get() as any).c;
-    const totalQualified = (this.db.prepare('SELECT COUNT(*) as c FROM vacancies v JOIN match_evaluations m ON v.id = m.vacancy_id WHERE m.overall_score >= 70').get() as any).c;
+    const totalQualified = (this.db.prepare('SELECT COUNT(*) as c FROM vacancies v JOIN match_evaluations m ON v.id = m.vacancy_id WHERE m.overall_score >= 75').get() as any).c;
     const draftsAwaitingApproval = (this.db.prepare("SELECT COUNT(*) as c FROM application_drafts WHERE status = 'APPROVED' OR status = 'PENDING_REVIEW'").get() as any).c;
     const totalSubmitted = (this.db.prepare('SELECT COUNT(*) as c FROM application_submissions').get() as any).c;
     const interviewInvites = (this.db.prepare("SELECT COUNT(*) as c FROM application_submissions WHERE status = 'INTERVIEW_INVITE'").get() as any).c;

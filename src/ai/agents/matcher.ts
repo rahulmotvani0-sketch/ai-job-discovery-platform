@@ -130,14 +130,21 @@ export class JobMatchingAgent {
       explanations.push('Practical: Full-time employment aligns with candidate preference (5/5 pts).');
     }
 
-    // Calculate total score
+    // Calculate total score (rounded to 2 decimal places for boundary stability)
     let overallScore = technicalSkillsScore + expScore + respScore + cloudScore + locationScore + compScore + otherScore;
-    overallScore = Math.max(0, Math.min(100, Math.round(overallScore * 10) / 10));
+    overallScore = Math.max(0, Math.min(100, Math.round(overallScore * 100) / 100));
 
-    // Cap score if location strictly excludes India
+    const mandatoryBlockers: string[] = [];
+
+    // Cap score if location strictly excludes candidate country
     if (vacancy.isRemote && !vacancy.acceptsIndia) {
       overallScore = Math.min(overallScore, 48.0);
+      mandatoryBlockers.push('Geographic restriction: Role requires domestic residency and excludes candidate base country.');
     }
+
+    const minThreshold = prefs.minMatchScore !== undefined ? prefs.minMatchScore : 75.0;
+    // Inclusive comparison: >= minThreshold qualifies, exact 75.0 qualifies (74.99 fails, 75.00 passes, 75.01 passes)
+    const qualifies75 = Math.round(overallScore * 100) >= Math.round(minThreshold * 100) && mandatoryBlockers.length === 0;
 
     let tier: MatchScoreEvaluation['tier'] = 'Deprioritized';
     if (overallScore >= 85) tier = 'Excellent';
@@ -148,6 +155,8 @@ export class JobMatchingAgent {
       id: randomUUID(),
       vacancyId: vacancy.id,
       overallScore,
+      qualifies75,
+      mandatoryBlockers: mandatoryBlockers.length > 0 ? mandatoryBlockers : undefined,
       tier,
       categoryScores: {
         technicalSkills: technicalSkillsScore,

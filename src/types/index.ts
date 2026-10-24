@@ -75,6 +75,7 @@ export interface JobPreferences {
   searchInternational: boolean;
   dailyQualifiedTarget: number;
   hourlyDiscoveryEnabled: boolean;
+  minMatchScore?: number; // Default 75
 }
 
 export interface RawJobPayload {
@@ -139,6 +140,8 @@ export interface MatchScoreEvaluation {
   id: string;
   vacancyId: string;
   overallScore: number; // 0 - 100
+  qualifies75?: boolean; // True if overallScore >= minScoreThreshold (default 75.00)
+  mandatoryBlockers?: string[];
   tier: 'Excellent' | 'Strong' | 'Possible' | 'Deprioritized'; // >=85, 70-84, 55-69, <55
   categoryScores: {
     technicalSkills: number; // max 30
@@ -153,6 +156,32 @@ export interface MatchScoreEvaluation {
   missingSkills: string[];
   evidenceExplanation: string;
   evaluatedAt: string;
+}
+
+export type DiscoveryStep =
+  | 'RESUME_UPLOADED'
+  | 'EXTRACTING_RESUME_INFO'
+  | 'ANALYZING_CANDIDATE_PROFILE'
+  | 'SEARCHING_JOB_SOURCES'
+  | 'EVALUATING_JOB_MATCHES'
+  | 'SAVING_QUALIFYING_JOBS'
+  | 'SEARCH_COMPLETED'
+  | 'FAILED';
+
+export interface DiscoveryRun {
+  id: string;
+  triggerType: 'RESUME_UPLOAD' | 'MANUAL' | 'SCHEDULED';
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  currentStep: DiscoveryStep;
+  stepMessage: string;
+  totalSourcesSearched: number;
+  discoveredCount: number;
+  evaluatedCount: number;
+  qualifiedCount: number; // >= 75%
+  minScoreThreshold: number;
+  error?: string;
+  startedAt: string;
+  completedAt?: string;
 }
 
 export interface ApplicationDraft {

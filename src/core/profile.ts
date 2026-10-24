@@ -27,6 +27,7 @@ export const DEFAULT_JOB_PREFERENCES: JobPreferences = {
   searchInternational: true,
   dailyQualifiedTarget: 10,
   hourlyDiscoveryEnabled: false,
+  minMatchScore: 75.0,
 };
 
 export const DEFAULT_USER_PROFILE: UserProfile = {

@@ -51,3 +51,6 @@ Every connector was tested against configuration validation, timeout resilience,
    - Under no circumstances does the system submit an application or dispatch an email without explicit human approval in `src/applications/approval-gate.ts`.
 3. **Resilience to Upstream Outages:**
    - If an external ATS returns an HTTP 500 or rate limits (HTTP 429), the orchestrator catches the exception at the connector boundary, logs a warning, and continues scraping other configured sources without interrupting the platform.
+4. **Real Feed Autonomous Discovery:**
+   - The 8 real ATS connectors feed directly into `MasterOrchestrator.runResumeBasedDiscovery`. Vacancies discovered from live feeds are evaluated against the parsed candidate profile, enforcing the inclusive >= 75.00% match threshold. No mock or fabricated vacancies are introduced.
+

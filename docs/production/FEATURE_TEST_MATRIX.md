@@ -29,12 +29,14 @@
 | **FEAT-014** | Autonomous Pipeline Orchestrator & Cron Scheduler | System Status Bar, "Run Discovery Now" | `MasterOrchestrator` (`src/automation/orchestrator.ts`), `JobScheduler` (`src/automation/scheduler.ts`) | `orchestrator_runs` | Croner | PASS (`tests/e2e-workflow.test.ts`) | PASS (`tests/e2e-workflow.test.ts`) | PASS (`tests/e2e-workflow.test.ts`) | PASS (Idempotent job execution) | **PASS** |
 | **FEAT-015** | Immutable Cryptographic Audit Trail | Audit Logs Tab (`#view-audit`) | `DatabaseManager.recordAuditEvent` (`src/core/database.ts`), `GET /api/audit-logs` | `audit_events` | `node:crypto` (SHA-256) | PASS (`tests/foundation.test.ts`) | PASS (`tests/foundation.test.ts`) | PASS (`tests/e2e-workflow.test.ts`) | PASS (SHA-256 hash chaining on all actions) | **PASS** |
 | **FEAT-016** | Native SQLite Database & Schema Migrations | N/A (Core Layer) | `DatabaseManager` (`src/core/database.ts`) | All 7 tables | `node:sqlite` | PASS (`tests/foundation.test.ts`) | PASS (`tests/foundation.test.ts`) | PASS (`tests/e2e-workflow.test.ts`) | PASS (WAL mode, parameterized SQL queries) | **PASS** |
+| **FEAT-017** | AI Resume-Based Automatic Job Discovery (PDF/DOCX/TXT extraction, 7-stage state machine, inclusive >=75% qualification rule, match breakdown modal) | AI Resume Matches Tab (`#view-ai-matches`), Stepper, Breakdown Modal | `ResumeIntelligenceEngine` (`src/applications/resume-intelligence.ts`), `MasterOrchestrator.runResumeBasedDiscovery`, `POST /api/resume/upload-and-discover`, `GET /api/discovery/runs/:id`, `GET /api/matches`, `GET /api/matches/:id/explanation` | `discovery_runs`, `match_evaluations`, `user_preferences` | `pdf-parse`, `adm-zip`, 8 Real ATS Connectors | PASS (`tests/resume-discovery.test.ts`) | PASS (`tests/resume-discovery.test.ts`) | PASS (`tests/resume-discovery.test.ts`) | PASS (5 MB limit, explicit user consent, location residency exclusions) | **PASS** |
 
 ---
 
 ## Summary of Feature Inventory Status
-- **Total Discovered Features:** 16
-- **PASS:** 16 (100% coverage across unit, integration, and E2E suites)
+- **Total Discovered Features:** 17
+- **PASS:** 17 (100% coverage across unit, integration, and E2E suites)
 - **FAIL:** 0
 - **BLOCKED:** 0 (Mock/simulation fallback implemented for unconfigured external APIs)
 - **NOT TESTED:** 0
+

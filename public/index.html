@@ -666,6 +666,181 @@
       border-radius: 9999px;
       margin-left: 0.5rem;
     }
+
+    /* Stepper & Discovery Progress Styles */
+    .stepper-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      margin: 1.5rem 0;
+      padding: 0 0.5rem;
+    }
+
+    .stepper-progress-line {
+      position: absolute;
+      top: 18px;
+      left: 30px;
+      right: 30px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 1;
+    }
+
+    .stepper-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent-cyan));
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .step-node {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: default;
+    }
+
+    .step-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #0f1422;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+
+    .step-node.completed .step-circle {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .step-node.active .step-circle {
+      background: var(--primary);
+      border-color: #fff;
+      color: #fff;
+      box-shadow: 0 0 16px var(--primary-glow);
+      animation: pulseGlow 1.5s infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 16px var(--primary-glow); }
+      50% { transform: scale(1.08); box-shadow: 0 0 24px var(--primary-glow); }
+    }
+
+    .step-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-top: 0.45rem;
+      max-width: 90px;
+      line-height: 1.25;
+      transition: color 0.3s ease;
+    }
+
+    .step-node.active .step-label {
+      color: #fff;
+    }
+
+    .step-node.completed .step-label {
+      color: var(--accent-emerald);
+    }
+
+    /* Resume Upload Zone */
+    .resume-dropzone {
+      border: 2px dashed rgba(99, 102, 241, 0.35);
+      border-radius: 16px;
+      padding: 2.2rem;
+      text-align: center;
+      background: rgba(16, 22, 36, 0.45);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .resume-dropzone:hover, .resume-dropzone.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.08);
+      transform: translateY(-2px);
+    }
+
+    /* Score Badges & Match Cards */
+    .match-score-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      font-family: var(--font-heading);
+    }
+
+    .score-excellent {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #34d399;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+
+    .score-strong {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      color: #818cf8;
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .score-possible {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fbbf24;
+    }
+
+    .skill-tag-matched {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .skill-tag-missing {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .source-tag {
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: var(--accent-cyan);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
   </style>
 </head>
 <body>
@@ -682,6 +857,7 @@
 
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('explorer')">Discovered Vacancies</button>
+      <button class="nav-tab" id="nav-tab-ai-matches" onclick="switchTab('ai-matches')">✨ AI Resume Matches</button>
       <button class="nav-tab" onclick="switchTab('pipeline')">Review & Approvals</button>
       <button class="nav-tab" onclick="switchTab('profile')">My Profile & Resume</button>
       <button class="nav-tab" onclick="switchTab('alerts')">Mobile Alerts</button>
@@ -1055,7 +1231,312 @@
       </div>
       <div id="submissions-list" class="vacancies-container"></div>
     </div>
+
+    <!-- AI Resume Matches View -->
+    <div id="view-ai-matches" style="display: none;">
+      <!-- Hero / Section Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+            <span class="source-tag" style="background: rgba(99, 102, 241, 0.2); border-color: var(--primary);">PRODUCTION INTELLIGENCE</span>
+            <span class="meta-pill" style="color: var(--accent-emerald);">Verified &ge; 75% Matches</span>
+          </div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700;">AI Resume-Based Automatic Job Discovery</h2>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Autonomous matching across configured ATS sources. Jobs qualify exclusively when verified candidate-to-job match score is 75% or higher.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <button id="recurring-discovery-toggle" class="btn btn-secondary" onclick="toggleRecurringDiscovery()" style="font-size: 0.82rem;">
+            <span id="recurring-status-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #64748b; margin-right: 0.4rem;"></span>
+            Hourly Discovery: <span id="recurring-toggle-text">OFF</span>
+          </button>
+          <button class="btn btn-primary" onclick="triggerDiscoveryScan()" style="font-size: 0.82rem;">
+            ⚡ Run Discovery Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Real Task Progress Stepper Card -->
+      <div class="settings-card" id="discovery-stepper-card" style="margin-bottom: 1.5rem; border-color: var(--border-focus); background: rgba(16, 22, 36, 0.9);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan);">
+            Real-Time Task Progress State Machine
+          </div>
+          <div id="discovery-run-status-badge" class="meta-pill" style="color: var(--accent-cyan); font-weight: 700;">
+            Ready
+          </div>
+        </div>
+
+        <!-- 7-Stage Stepper -->
+        <div class="stepper-container">
+          <div class="stepper-progress-line">
+            <div class="stepper-progress-fill" id="stepper-progress-fill"></div>
+          </div>
+          <div class="step-node" id="step-node-1">
+            <div class="step-circle" id="step-circle-1">1</div>
+            <div class="step-label">Resume Uploaded</div>
+          </div>
+          <div class="step-node" id="step-node-2">
+            <div class="step-circle" id="step-circle-2">2</div>
+            <div class="step-label">Extracting Info</div>
+          </div>
+          <div class="step-node" id="step-node-3">
+            <div class="step-circle" id="step-circle-3">3</div>
+            <div class="step-label">Candidate Profile</div>
+          </div>
+          <div class="step-node" id="step-node-4">
+            <div class="step-circle" id="step-circle-4">4</div>
+            <div class="step-label">Searching Sources</div>
+          </div>
+          <div class="step-node" id="step-node-5">
+            <div class="step-circle" id="step-circle-5">5</div>
+            <div class="step-label">Evaluating Matches</div>
+          </div>
+          <div class="step-node" id="step-node-6">
+            <div class="step-circle" id="step-circle-6">6</div>
+            <div class="step-label">Saving Qualifying</div>
+          </div>
+          <div class="step-node" id="step-node-7">
+            <div class="step-circle" id="step-circle-7">7</div>
+            <div class="step-label">Search Completed</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(8, 11, 18, 0.6); padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border-subtle); margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.82rem; color: #cbd5e1;" id="discovery-step-message">
+            Upload your resume or trigger discovery to evaluate real job opportunities against your profile.
+          </div>
+          <div style="display: flex; gap: 1rem; font-size: 0.78rem; font-family: var(--font-mono);">
+            <span>Discovered: <strong id="step-stat-discovered" style="color: #fff;">0</strong></span>
+            <span>Evaluated: <strong id="step-stat-evaluated" style="color: var(--accent-cyan);">0</strong></span>
+            <span>Qualified (&ge;75%): <strong id="step-stat-qualified" style="color: var(--accent-emerald);">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resume Intelligence & Profile Card -->
+      <div class="settings-grid" style="margin-bottom: 1.5rem;">
+        <!-- Resume Upload Zone Card -->
+        <div class="settings-card">
+          <div class="section-title">Upload Candidate Resume (PDF / DOCX / Text)</div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Automatic text extraction, skills classification, and dynamic search query expansion. Strict 5 MB maximum size limit.
+          </p>
+          
+          <div class="resume-dropzone" id="ai-matches-dropzone" onclick="document.getElementById('ai-resume-file-input').click()">
+            <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📄</div>
+            <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem;">
+              Drop your Resume here, or <span style="color: var(--primary); text-decoration: underline;">Browse Files</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim);" id="ai-resume-selected-name">
+              Supports PDF (.pdf), Microsoft Word (.docx), or Markdown/Text (.txt, .md) up to 5 MB
+            </div>
+            <input type="file" id="ai-resume-file-input" accept=".pdf,.docx,.txt,.md" style="display: none;" onchange="handleAiResumeSelected(event)">
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" id="ai-consent-checkbox" checked style="accent-color: var(--primary);">
+              Explicit consent for automatic job matching & analysis
+            </label>
+            <button id="btn-upload-discover" class="btn btn-primary" onclick="submitResumeForDiscovery()" style="font-size: 0.82rem;">
+              🚀 Analyze & Start Auto-Discovery
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Candidate Profile & Adjacent Roles Card -->
+        <div class="settings-card" id="ai-profile-summary-card">
+          <div class="section-title">Active Candidate Profile & Search Queries</div>
+          <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1rem;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent-purple)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; color: #fff;">
+              <span id="ai-candidate-initials">TP</span>
+            </div>
+            <div>
+              <div id="ai-candidate-name" style="font-weight: 700; font-size: 1.05rem;">Candidate Name</div>
+              <div id="ai-candidate-title" style="font-size: 0.8rem; color: var(--accent-cyan);">Software & Cloud Infrastructure Engineer</div>
+            </div>
+          </div>
+
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;">
+            Generated Adjacent Search Queries:
+          </div>
+          <div id="ai-adjacent-queries" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
+            <span class="source-tag">DevOps Engineer</span>
+            <span class="source-tag">Platform Engineer</span>
+            <span class="source-tag">Site Reliability Engineer</span>
+            <span class="source-tag">Kubernetes Platform Engineer</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted);">
+            <span id="ai-profile-updated-at">Profile synchronized</span>
+            <button class="btn btn-secondary" onclick="switchTab('profile')" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;">Edit Profile &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Controls Toolbar -->
+      <div class="settings-card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <!-- 75% Qualification Rule Threshold Slider -->
+            <div style="display: flex; align-items: center; gap: 0.6rem; background: rgba(8, 11, 18, 0.6); padding: 0.4rem 0.85rem; border-radius: 10px; border: 1px solid var(--border-subtle);">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Match Threshold:</span>
+              <input type="range" id="threshold-slider" min="50" max="95" step="1" value="75" oninput="handleThresholdSliderChange(this.value)" style="accent-color: var(--primary); width: 110px; cursor: pointer;">
+              <span id="threshold-val-badge" class="match-score-pill score-excellent" style="font-size: 0.75rem; padding: 0.15rem 0.5rem;">&ge; 75%</span>
+            </div>
+            
+            <div style="font-size: 0.75rem; color: var(--text-dim);">
+              (75% is the verified qualification rule)
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <input type="text" id="ai-matches-search" placeholder="Search title, skills, company..." class="input-field" style="width: 220px; font-size: 0.82rem; padding: 0.45rem 0.8rem;" oninput="filterAiMatches()">
+            <select id="ai-matches-sort" class="select-field" style="font-size: 0.82rem; padding: 0.45rem 0.8rem;" onchange="filterAiMatches()">
+              <option value="score">Sort by Score (High to Low)</option>
+              <option value="recency">Sort by Recency</option>
+              <option value="company">Sort by Company</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Filter Chips Row -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+          <select id="ai-filter-country" class="select-field" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;" onchange="filterAiMatches()">
+            <option value="All">All Locations & Countries</option>
+            <option value="Worldwide">Worldwide / Global</option>
+            <option value="India">India / Remote (India)</option>
+            <option value="United States">United States</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="Germany">Germany / EU</option>
+            <option value="Singapore">Singapore</option>
+          </select>
+
+          <select id="ai-filter-category" class="select-field" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;" onchange="filterAiMatches()">
+            <option value="All">All Tech Disciplines</option>
+            <option value="DevOps">DevOps</option>
+            <option value="SRE">Site Reliability Engineer (SRE)</option>
+            <option value="Platform Engineer">Platform Engineer</option>
+            <option value="Cloud Infrastructure">Cloud Infrastructure</option>
+            <option value="Full-Stack">Full-Stack Engineer</option>
+            <option value="Backend">Backend Software Engineer</option>
+            <option value="Frontend">Frontend Engineer</option>
+            <option value="AI & Machine Learning">AI & Machine Learning</option>
+            <option value="Data Engineering">Data Engineering</option>
+          </select>
+
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--text-muted); cursor: pointer; background: rgba(255, 255, 255, 0.04); padding: 0.35rem 0.65rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <input type="checkbox" id="ai-filter-remote-only" onchange="filterAiMatches()" style="accent-color: var(--primary);">
+            Remote Only
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--text-muted); cursor: pointer; background: rgba(255, 255, 255, 0.04); padding: 0.35rem 0.65rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <input type="checkbox" id="ai-filter-early-only" onchange="filterAiMatches()" style="accent-color: var(--accent-amber);">
+            🔥 Early Applicant (&le;48h)
+          </label>
+        </div>
+      </div>
+
+      <!-- Results Header & Counter -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div style="font-size: 0.95rem; font-weight: 700; color: #fff;">
+          Personalized AI Matches: <span id="ai-matches-count" style="color: var(--accent-cyan);">0 Qualifying Opportunities</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-dim);" id="ai-matches-subtext">
+          Showing verified real listings with verified match scores &ge; 75.00%
+        </div>
+      </div>
+
+      <!-- Qualifying Vacancies Cards List -->
+      <div id="ai-matches-grid" class="vacancies-container"></div>
+
+      <!-- Honest Empty State -->
+      <div id="ai-matches-empty" style="display: none; text-align: center; padding: 3.5rem 1.5rem; background: var(--bg-card); border-radius: 16px; border: 1px dashed var(--border-subtle); margin: 1rem 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎯</div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;" id="ai-matches-empty-title">No Jobs Meet the 75% Match Threshold Yet</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 580px; margin: 0 auto 1.5rem;" id="ai-matches-empty-desc">
+          Automated discovery completed across all configured sources, but no active jobs reached the 75% qualification bar.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="handleThresholdSliderChange(65)">Adjust Threshold to 65%</button>
+          <button class="btn btn-primary" onclick="triggerDiscoveryScan()">Run Multi-Source Discovery</button>
+        </div>
+      </div>
+    </div>
   </main>
+
+  <!-- Match Explanation Modal -->
+  <div class="modal-backdrop" id="match-explanation-modal">
+    <div class="modal-window" style="max-width: 840px;">
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+            <span class="source-tag" id="expl-source-badge">GREENHOUSE</span>
+            <span class="match-score-pill" id="expl-score-pill">88% MATCH</span>
+          </div>
+          <h2 id="expl-job-title" style="font-size: 1.25rem; font-weight: 700;">Job Title</h2>
+          <div id="expl-company-name" style="font-size: 0.85rem; color: var(--accent-cyan);">Company Name</div>
+        </div>
+        <button class="btn btn-secondary" onclick="closeMatchExplanationModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Hard Constraints Bar -->
+        <div id="expl-hard-constraints-box" style="padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1.25rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);">
+          <div id="expl-hard-constraints-title" style="font-weight: 700; font-size: 0.82rem; color: #34d399; margin-bottom: 0.2rem;">
+            ✓ Hard Eligibility Constraints Passed
+          </div>
+          <div id="expl-hard-constraints-desc" style="font-size: 0.75rem; color: #cbd5e1;">
+            Location and residency requirements verified. No mandatory exclusion blockers detected.
+          </div>
+        </div>
+
+        <!-- 7-Dimension Score Breakdown -->
+        <div class="section-title">7-Dimension Match Scoring Breakdown (0–100%)</div>
+        <div style="background: rgba(8, 11, 18, 0.6); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;" id="expl-category-scores-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Matched & Missing Skills -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+          <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: #34d399; margin-bottom: 0.5rem;">
+              ✓ Matched Technical Skills
+            </div>
+            <div id="expl-matched-skills" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; padding: 1rem;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.5rem;">
+              ⚠ Missing or Adjacent Skills
+            </div>
+            <div id="expl-missing-skills" style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Supporting Evidence & Justification -->
+        <div class="section-title">Transparent AI Evidence & Match Explanation</div>
+        <div class="code-preview" id="expl-evidence-text" style="line-height: 1.6; color: #e2e8f0; font-family: var(--font-body); font-size: 0.85rem;">
+          Loading evidence...
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="expl-recalculate-btn" onclick="recalculateCurrentMatch()">
+          🔄 Recalculate Score
+        </button>
+        <button class="btn btn-secondary" onclick="closeMatchExplanationModal()">Close</button>
+        <a id="expl-original-link" href="#" target="_blank" class="btn btn-primary">
+          View Original Job ↗
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- Application Review Modal -->
   <div class="modal-backdrop" id="review-modal">
@@ -2024,6 +2505,668 @@
       }
     }
 
+    // ==========================================
+    // AI Resume-Based Automatic Job Discovery Logic
+    // ==========================================
+    let selectedResumeFile = null;
+    let currentAiMatches = [];
+    let currentThreshold = 75;
+    let activeDiscoveryPollInterval = null;
+    let currentModalVacancyId = null;
+    let isRecurringDiscoveryEnabled = false;
+    let thresholdDebounceTimer = null;
+
+    function setupResumeDropzone() {
+      const dropzone = document.getElementById('ai-matches-dropzone');
+      if (!dropzone || dropzone._setupDone) return;
+      dropzone._setupDone = true;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('drag-active');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('drag-active');
+        }, false);
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          processResumeFileInput(files[0]);
+        }
+      }, false);
+    }
+
+    function handleAiResumeSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (file) {
+        processResumeFileInput(file);
+      }
+    }
+
+    function processResumeFileInput(file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size exceeds 5 MB limit. Please select a resume smaller than 5 MB.');
+        return;
+      }
+      const allowedExts = ['.pdf', '.docx', '.txt', '.md'];
+      const ext = '.' + file.name.split('.').pop().toLowerCase();
+      if (!allowedExts.includes(ext)) {
+        alert('Supported resume formats: .pdf, .docx, .txt, .md');
+        return;
+      }
+
+      selectedResumeFile = file;
+      const sizeStr = file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+        : (file.size / 1024).toFixed(1) + ' KB';
+      
+      const label = document.getElementById('ai-resume-selected-name');
+      if (label) {
+        label.innerHTML = `✓ Ready to parse: <strong style="color: var(--accent-cyan);">${escapeHtml(file.name)}</strong> (${sizeStr})`;
+      }
+    }
+
+    async function submitResumeForDiscovery() {
+      const consent = document.getElementById('ai-consent-checkbox');
+      if (consent && !consent.checked) {
+        alert('Explicit user consent is required for automatic candidate profiling and multi-source job matching.');
+        return;
+      }
+
+      if (!selectedResumeFile) {
+        return triggerDiscoveryScan();
+      }
+
+      const btn = document.getElementById('btn-upload-discover');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Reading & Parsing Resume...';
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const base64Data = (e.target.result).split(',')[1];
+            btn.innerHTML = '⚡ Analyzing Profile & Starting Search...';
+
+            const res = await fetch('/api/resume/upload-and-discover', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fileName: selectedResumeFile.name,
+                fileBase64: base64Data,
+                consentGiven: true,
+                minMatchScore: currentThreshold
+              })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to process resume');
+
+            if (data.profile) {
+              updateCandidateProfileCard(data.profile, data.adjacentQueries);
+            }
+
+            startPollingDiscoveryRun(data.runId);
+          } catch (err) {
+            alert('Resume discovery error: ' + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        };
+
+        reader.onerror = () => {
+          alert('Failed to read the selected file');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        };
+
+        reader.readAsDataURL(selectedResumeFile);
+      } catch (err) {
+        alert('Error starting discovery: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    async function triggerDiscoveryScan() {
+      const consent = document.getElementById('ai-consent-checkbox');
+      if (consent && !consent.checked) {
+        alert('Explicit user consent is required for automatic candidate profiling and multi-source job matching.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/resume/upload-and-discover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            useExistingProfile: true,
+            consentGiven: true,
+            minMatchScore: currentThreshold
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to trigger discovery');
+
+        if (data.profile) {
+          updateCandidateProfileCard(data.profile, data.adjacentQueries);
+        }
+        startPollingDiscoveryRun(data.runId);
+      } catch (err) {
+        alert('Discovery scan failed: ' + err.message);
+      }
+    }
+
+    function updateCandidateProfileCard(profile, adjacentQueries) {
+      if (!profile) return;
+      const initialsEl = document.getElementById('ai-candidate-initials');
+      const nameEl = document.getElementById('ai-candidate-name');
+      const titleEl = document.getElementById('ai-candidate-title');
+      const queriesEl = document.getElementById('ai-adjacent-queries');
+      const updatedEl = document.getElementById('ai-profile-updated-at');
+
+      if (nameEl) nameEl.textContent = profile.name || 'Candidate Profile';
+      if (titleEl) titleEl.textContent = profile.title || 'Software & Cloud Infrastructure Engineer';
+      if (initialsEl && profile.name) {
+        const parts = profile.name.trim().split(/\s+/);
+        initialsEl.textContent = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+      }
+
+      if (queriesEl) {
+        const queries = (adjacentQueries && adjacentQueries.length > 0) ? adjacentQueries : (profile.targetRoles || ['DevOps Engineer', 'Platform Engineer', 'Site Reliability Engineer']);
+        queriesEl.innerHTML = queries.map(q => `<span class="source-tag">${escapeHtml(q)}</span>`).join('');
+      }
+
+      if (updatedEl) {
+        updatedEl.textContent = 'Synchronized with active profile';
+      }
+    }
+
+    function setStepperState(currentStep, status, message, stats) {
+      const stepIndexMap = {
+        'RESUME_UPLOADED': 1,
+        'EXTRACTING_RESUME_INFO': 2,
+        'ANALYZING_CANDIDATE_PROFILE': 3,
+        'SEARCHING_JOB_SOURCES': 4,
+        'EVALUATING_JOB_MATCHES': 5,
+        'SAVING_QUALIFYING_JOBS': 6,
+        'SEARCH_COMPLETED': 7
+      };
+
+      const stepNum = stepIndexMap[currentStep] || 1;
+      const isCompleted = status === 'COMPLETED' || currentStep === 'SEARCH_COMPLETED';
+
+      for (let i = 1; i <= 7; i++) {
+        const node = document.getElementById(`step-node-${i}`);
+        const circle = document.getElementById(`step-circle-${i}`);
+        if (!node || !circle) continue;
+
+        node.classList.remove('active', 'completed');
+        if (i < stepNum || (isCompleted && i <= 7)) {
+          node.classList.add('completed');
+          circle.innerHTML = '✓';
+        } else if (i === stepNum && !isCompleted) {
+          node.classList.add('active');
+          circle.textContent = i;
+        } else {
+          circle.textContent = i;
+        }
+      }
+
+      const progressFill = document.getElementById('stepper-progress-fill');
+      if (progressFill) {
+        const pct = isCompleted ? 100 : Math.max(0, Math.min(100, ((stepNum - 1) / 6) * 100));
+        progressFill.style.width = pct + '%';
+      }
+
+      const badge = document.getElementById('discovery-run-status-badge');
+      if (badge) {
+        badge.textContent = status || 'READY';
+        if (status === 'COMPLETED') {
+          badge.style.color = 'var(--accent-emerald)';
+        } else if (status === 'FAILED') {
+          badge.style.color = '#ef4444';
+        } else {
+          badge.style.color = 'var(--accent-cyan)';
+        }
+      }
+
+      const msgEl = document.getElementById('discovery-step-message');
+      if (msgEl && message) {
+        msgEl.textContent = message;
+      }
+
+      if (stats) {
+        const discEl = document.getElementById('step-stat-discovered');
+        const evalEl = document.getElementById('step-stat-evaluated');
+        const qualEl = document.getElementById('step-stat-qualified');
+        if (discEl) discEl.textContent = stats.discoveredCount || 0;
+        if (evalEl) evalEl.textContent = stats.evaluatedCount || 0;
+        if (qualEl) qualEl.textContent = stats.qualifiedCount || 0;
+      }
+    }
+
+    function startPollingDiscoveryRun(runId) {
+      if (activeDiscoveryPollInterval) clearInterval(activeDiscoveryPollInterval);
+      setStepperState('RESUME_UPLOADED', 'RUNNING', 'Starting resume parsing and autonomous discovery...', null);
+
+      activeDiscoveryPollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/discovery/runs/${runId}`);
+          if (!res.ok) return;
+          const run = await res.json();
+
+          setStepperState(run.currentStep, run.status, run.stepMessage, {
+            discoveredCount: run.discoveredCount,
+            evaluatedCount: run.evaluatedCount,
+            qualifiedCount: run.qualifiedCount
+          });
+
+          if (run.status === 'COMPLETED' || run.status === 'FAILED') {
+            clearInterval(activeDiscoveryPollInterval);
+            activeDiscoveryPollInterval = null;
+            if (run.status === 'COMPLETED') {
+              loadAiMatches();
+            }
+          }
+        } catch (err) {
+          console.error('Error polling discovery run:', err);
+        }
+      }, 750);
+    }
+
+    async function loadAiMatchesView() {
+      setupResumeDropzone();
+
+      try {
+        const threshRes = await fetch('/api/discovery/threshold');
+        if (threshRes.ok) {
+          const tData = await threshRes.json();
+          currentThreshold = tData.minMatchScore !== undefined ? tData.minMatchScore : 75;
+          const slider = document.getElementById('threshold-slider');
+          const badge = document.getElementById('threshold-val-badge');
+          if (slider) slider.value = currentThreshold;
+          if (badge) badge.textContent = `≥ ${currentThreshold}%`;
+        }
+
+        const prefsRes = await fetch('/api/preferences');
+        if (prefsRes.ok) {
+          const prefs = await prefsRes.json();
+          isRecurringDiscoveryEnabled = !!prefs.hourlyDiscoveryEnabled;
+          updateRecurringButtonUI();
+        }
+
+        const profRes = await fetch('/api/profile');
+        if (profRes.ok) {
+          const profile = await profRes.json();
+          updateCandidateProfileCard(profile);
+        }
+
+        const runsRes = await fetch('/api/discovery/runs');
+        if (runsRes.ok) {
+          const runs = await runsRes.json();
+          if (runs && runs.length > 0) {
+            const latest = runs[0];
+            setStepperState(latest.currentStep, latest.status, latest.stepMessage, {
+              discoveredCount: latest.discoveredCount,
+              evaluatedCount: latest.evaluatedCount,
+              qualifiedCount: latest.qualifiedCount
+            });
+          }
+        }
+
+        await loadAiMatches();
+      } catch (err) {
+        console.error('Error loading AI matches view:', err);
+      }
+    }
+
+    async function loadAiMatches() {
+      try {
+        const res = await fetch(`/api/matches?minScore=${currentThreshold}`);
+        const data = await res.json();
+        currentAiMatches = data.matches || [];
+        filterAiMatches();
+      } catch (err) {
+        console.error('Error fetching AI matches:', err);
+      }
+    }
+
+    function handleThresholdSliderChange(val) {
+      currentThreshold = Number(val);
+      const badge = document.getElementById('threshold-val-badge');
+      if (badge) badge.textContent = `≥ ${currentThreshold}%`;
+
+      clearTimeout(thresholdDebounceTimer);
+      thresholdDebounceTimer = setTimeout(async () => {
+        try {
+          await fetch('/api/discovery/threshold', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ minMatchScore: currentThreshold })
+          });
+          loadAiMatches();
+        } catch (err) {
+          console.error('Error updating threshold:', err);
+        }
+      }, 300);
+    }
+
+    function filterAiMatches() {
+      const search = (document.getElementById('ai-matches-search')?.value || '').toLowerCase().trim();
+      const country = document.getElementById('ai-filter-country')?.value || 'All';
+      const category = document.getElementById('ai-filter-category')?.value || 'All';
+      const remoteOnly = document.getElementById('ai-filter-remote-only')?.checked || false;
+      const earlyOnly = document.getElementById('ai-filter-early-only')?.checked || false;
+      const sortBy = document.getElementById('ai-matches-sort')?.value || 'score';
+
+      let filtered = currentAiMatches.filter(m => {
+        const v = m.vacancy || {};
+        if (m.overallScore < currentThreshold) return false;
+        if (m.mandatoryBlockers && m.mandatoryBlockers.length > 0) return false;
+
+        if (search) {
+          const matchTarget = `${v.title || ''} ${v.company || ''} ${v.location || ''} ${(m.matchedSkills || []).join(' ')} ${(v.tags || []).join(' ')}`.toLowerCase();
+          if (!matchTarget.includes(search)) return false;
+        }
+
+        if (country !== 'All') {
+          if (country === 'Worldwide' && !v.isRemote && !((v.location || '').toLowerCase().includes('worldwide') || (v.location || '').toLowerCase().includes('anywhere'))) {
+            return false;
+          } else if (country !== 'Worldwide' && !((v.location || '').toLowerCase().includes(country.toLowerCase()))) {
+            return false;
+          }
+        }
+
+        if (category !== 'All') {
+          const catLower = category.toLowerCase();
+          const target = `${v.title || ''} ${v.category || ''} ${(v.tags || []).join(' ')}`.toLowerCase();
+          if (!target.includes(catLower)) return false;
+        }
+
+        if (remoteOnly && !v.isRemote) return false;
+        if (earlyOnly && !v.isEarlyApplicant) return false;
+
+        return true;
+      });
+
+      filtered.sort((a, b) => {
+        if (sortBy === 'score') return b.overallScore - a.overallScore;
+        if (sortBy === 'recency') return new Date(b.vacancy?.discoveredAt || 0).getTime() - new Date(a.vacancy?.discoveredAt || 0).getTime();
+        if (sortBy === 'company') return (a.vacancy?.company || '').localeCompare(b.vacancy?.company || '');
+        return 0;
+      });
+
+      renderAiMatches(filtered);
+    }
+
+    function renderAiMatches(matches) {
+      const grid = document.getElementById('ai-matches-grid');
+      const empty = document.getElementById('ai-matches-empty');
+      const countEl = document.getElementById('ai-matches-count');
+      const subtextEl = document.getElementById('ai-matches-subtext');
+
+      if (countEl) countEl.textContent = `${matches.length} Qualifying Opportunities`;
+      if (subtextEl) subtextEl.textContent = `Showing verified real listings with verified match scores ≥ ${currentThreshold}.00%`;
+
+      if (!matches || matches.length === 0) {
+        if (grid) grid.style.display = 'none';
+        if (empty) {
+          empty.style.display = 'block';
+          const emptyTitle = document.getElementById('ai-matches-empty-title');
+          const emptyDesc = document.getElementById('ai-matches-empty-desc');
+          if (emptyTitle) emptyTitle.textContent = `No Jobs Meet the ${currentThreshold}% Match Threshold Yet`;
+          if (emptyDesc) emptyDesc.textContent = `Autonomous discovery evaluated active real vacancies across all configured sources, but none met or exceeded ${currentThreshold}%. Try adjusting the threshold slider or running a fresh scan.`;
+        }
+        return;
+      }
+
+      if (empty) empty.style.display = 'none';
+      if (grid) {
+        grid.style.display = 'grid';
+        grid.innerHTML = matches.map(m => {
+          const v = m.vacancy || {};
+          const scoreClass = m.overallScore >= 80 ? 'score-excellent' : 'score-good';
+          const matchedSkillsList = (m.matchedSkills || []).slice(0, 5).map(s => `<span class="skill-tag-matched">✓ ${escapeHtml(s)}</span>`).join('');
+          const missingSkillsList = (m.missingSkills || []).slice(0, 3).map(s => `<span class="skill-tag-missing">⚠ ${escapeHtml(s)}</span>`).join('');
+
+          return `
+            <div class="vacancy-card" style="border-top: 3px solid ${m.overallScore >= 80 ? 'var(--accent-emerald)' : 'var(--primary)'};">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <span class="source-tag">${escapeHtml(v.source || 'ATS')}</span>
+                  ${v.isEarlyApplicant ? '<span class="meta-pill" style="color: var(--accent-amber); font-weight: 700;">🔥 Early Applicant</span>' : ''}
+                  ${v.isRemote ? '<span class="meta-pill" style="color: var(--accent-cyan);">🌐 Remote</span>' : ''}
+                </div>
+                <div class="match-score-pill ${scoreClass}">
+                  ${m.overallScore.toFixed(0)}% MATCH
+                </div>
+              </div>
+
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem; color: #fff;">
+                ${escapeHtml(v.title || 'Untitled Role')}
+              </h3>
+              
+              <div style="font-size: 0.88rem; color: var(--accent-cyan); font-weight: 600; margin-bottom: 0.5rem;">
+                ${escapeHtml(v.company || 'Unknown Company')} 
+                <span style="color: var(--text-muted); font-weight: normal; font-size: 0.8rem;">• ${escapeHtml(v.location || 'Remote')}</span>
+              </div>
+
+              <div style="margin: 0.75rem 0; display: flex; flex-direction: column; gap: 0.4rem;">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                  ${matchedSkillsList}
+                </div>
+                ${missingSkillsList ? `<div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">${missingSkillsList}</div>` : ''}
+              </div>
+
+              <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; margin-bottom: 1rem; border-left: 2px solid var(--border-subtle); padding-left: 0.5rem;">
+                ${escapeHtml((m.rationale || 'High composite score across technical skills and role scope.').substring(0, 160))}...
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+                <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" onclick="showMatchExplanationModal('${escapeHtml(v.id)}')">
+                  📊 Match Breakdown
+                </button>
+                <div style="display: flex; gap: 0.4rem;">
+                  <a href="${escapeHtml(v.url || '#')}" target="_blank" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
+                    Job Link ↗
+                  </a>
+                  <button class="btn btn-primary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" onclick="stageVacancyForReview('${escapeHtml(v.id)}')">
+                    Review Application
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    async function showMatchExplanationModal(vacancyId) {
+      currentModalVacancyId = vacancyId;
+      const modal = document.getElementById('match-explanation-modal');
+      if (!modal) return;
+
+      modal.classList.add('active');
+
+      try {
+        const res = await fetch(`/api/matches/${vacancyId}/explanation`);
+        if (!res.ok) throw new Error('Failed to load match explanation');
+        const data = await res.json();
+
+        const v = data.vacancy || {};
+        const m = data.match || {};
+        const scores = m.categoryScores || {};
+
+        document.getElementById('expl-source-badge').textContent = (v.source || 'ATS').toUpperCase();
+        const scorePill = document.getElementById('expl-score-pill');
+        scorePill.textContent = `${(m.overallScore || 0).toFixed(0)}% MATCH`;
+        scorePill.className = `match-score-pill ${(m.overallScore >= 80 ? 'score-excellent' : 'score-good')}`;
+
+        document.getElementById('expl-job-title').textContent = v.title || 'Role Title';
+        document.getElementById('expl-company-name').textContent = `${v.company || 'Company'} • ${v.location || 'Remote'}`;
+
+        const hardBox = document.getElementById('expl-hard-constraints-box');
+        const hardTitle = document.getElementById('expl-hard-constraints-title');
+        const hardDesc = document.getElementById('expl-hard-constraints-desc');
+        if (m.mandatoryBlockers && m.mandatoryBlockers.length > 0) {
+          hardBox.style.background = 'rgba(239, 68, 68, 0.1)';
+          hardBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          hardTitle.textContent = '❌ Mandatory Exclusion Blocker Detected';
+          hardTitle.style.color = '#ef4444';
+          hardDesc.textContent = m.mandatoryBlockers.join('; ');
+        } else {
+          hardBox.style.background = 'rgba(16, 185, 129, 0.1)';
+          hardBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          hardTitle.textContent = '✓ Hard Eligibility Constraints Passed';
+          hardTitle.style.color = '#34d399';
+          hardDesc.textContent = 'Location, work authorization, and residency requirements verified. No disqualifying blockers detected.';
+        }
+
+        const categories = [
+          { key: 'skillsScore', name: 'Core Skills & Tech Stack' },
+          { key: 'experienceScore', name: 'Experience Level & Seniority' },
+          { key: 'domainScore', name: 'Domain & System Architecture' },
+          { key: 'roleFitScore', name: 'Role Responsibilities & Scope' },
+          { key: 'industryScore', name: 'Industry & Business Alignment' },
+          { key: 'educationScore', name: 'Educational & Cert Background' },
+          { key: 'locationScore', name: 'Location & Work Authorization' }
+        ];
+
+        const grid = document.getElementById('expl-category-scores-grid');
+        if (grid) {
+          grid.innerHTML = categories.map(c => {
+            const val = Math.round(scores[c.key] ?? 75);
+            return `
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-bottom: 0.25rem;">
+                  <span style="color: #cbd5e1;">${c.name}</span>
+                  <span style="font-weight: 700; color: ${val >= 80 ? 'var(--accent-emerald)' : 'var(--accent-cyan)'}; font-family: var(--font-mono);">${val}%</span>
+                </div>
+                <div style="height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
+                  <div style="width: ${val}%; height: 100%; background: ${val >= 80 ? 'linear-gradient(90deg, var(--accent-emerald), #10b981)' : 'linear-gradient(90deg, var(--primary), var(--accent-cyan))'}; border-radius: 4px;"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        const matchedEl = document.getElementById('expl-matched-skills');
+        if (matchedEl) {
+          const list = m.matchedSkills || [];
+          matchedEl.innerHTML = list.length > 0 
+            ? list.map(s => `<span class="skill-tag-matched">✓ ${escapeHtml(s)}</span>`).join('')
+            : '<span style="font-size: 0.75rem; color: var(--text-dim);">No exact direct skill matches indexed.</span>';
+        }
+
+        const missingEl = document.getElementById('expl-missing-skills');
+        if (missingEl) {
+          const list = m.missingSkills || [];
+          missingEl.innerHTML = list.length > 0 
+            ? list.map(s => `<span class="skill-tag-missing">⚠ ${escapeHtml(s)}</span>`).join('')
+            : '<span style="font-size: 0.75rem; color: var(--accent-emerald);">No critical missing skills. High taxonomy coverage.</span>';
+        }
+
+        const evidenceEl = document.getElementById('expl-evidence-text');
+        if (evidenceEl) {
+          evidenceEl.textContent = m.rationale || 'Detailed reasoning calculated by scoring engine based on candidate profile skills, years of experience, and job requirements.';
+        }
+
+        const linkEl = document.getElementById('expl-original-link');
+        if (linkEl) {
+          linkEl.href = v.url || '#';
+        }
+      } catch (err) {
+        alert('Could not load match explanation: ' + err.message);
+      }
+    }
+
+    function closeMatchExplanationModal() {
+      const modal = document.getElementById('match-explanation-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    async function recalculateCurrentMatch() {
+      if (!currentModalVacancyId) return;
+      const btn = document.getElementById('expl-recalculate-btn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Recalculating...';
+
+      try {
+        const res = await fetch(`/api/matches/${currentModalVacancyId}/recalculate`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Recalculation failed');
+
+        await showMatchExplanationModal(currentModalVacancyId);
+        loadAiMatches();
+      } catch (err) {
+        alert('Recalculation failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function stageVacancyForReview(vacancyId) {
+      const vacancy = allVacancies.find(v => v.id === vacancyId) || (currentAiMatches.find(m => m.vacancyId === vacancyId)?.vacancy);
+      if (vacancy) {
+        reviewApplication(vacancy.id);
+      }
+    }
+
+    async function toggleRecurringDiscovery() {
+      try {
+        const newStatus = !isRecurringDiscoveryEnabled;
+        const res = await fetch('/api/discovery/recurring', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: newStatus })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update recurring discovery');
+
+        isRecurringDiscoveryEnabled = data.hourlyDiscoveryEnabled;
+        updateRecurringButtonUI();
+      } catch (err) {
+        alert('Error changing recurring discovery: ' + err.message);
+      }
+    }
+
+    function updateRecurringButtonUI() {
+      const dot = document.getElementById('recurring-status-dot');
+      const text = document.getElementById('recurring-toggle-text');
+      if (dot && text) {
+        if (isRecurringDiscoveryEnabled) {
+          dot.style.background = 'var(--accent-emerald)';
+          dot.style.boxShadow = '0 0 8px var(--accent-emerald)';
+          text.textContent = 'ON';
+          text.style.color = 'var(--accent-emerald)';
+          text.style.fontWeight = '700';
+        } else {
+          dot.style.background = '#64748b';
+          dot.style.boxShadow = 'none';
+          text.textContent = 'OFF';
+          text.style.color = '#94a3b8';
+          text.style.fontWeight = 'normal';
+        }
+      }
+    }
+
     // View Switching
     function switchTab(tab, evt) {
       evt = evt || (typeof window !== 'undefined' ? window.event : null);
@@ -2044,8 +3187,12 @@
       document.getElementById('view-accounts').style.display = tab === 'accounts' ? 'block' : 'none';
       document.getElementById('view-ai-settings').style.display = tab === 'ai-settings' ? 'block' : 'none';
       document.getElementById('view-history').style.display = tab === 'history' ? 'block' : 'none';
+      const aiMatchesView = document.getElementById('view-ai-matches');
+      if (aiMatchesView) aiMatchesView.style.display = tab === 'ai-matches' ? 'block' : 'none';
 
-      if (tab === 'pipeline') {
+      if (tab === 'ai-matches') {
+        loadAiMatchesView();
+      } else if (tab === 'pipeline') {
         const awaiting = allVacancies.filter(v => v.status === 'QUALIFIED' || v.status === 'DRAFTED' || v.status === 'AWAITING_APPROVAL');
         renderVacancies(awaiting, 'pipeline-list');
       } else if (tab === 'profile') {
