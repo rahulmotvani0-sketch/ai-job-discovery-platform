@@ -15,7 +15,9 @@ import type {
   LLMConfiguration,
   DiscoveryRun,
   DiscoveryStep,
-  SavedSearch
+  SavedSearch,
+  InterviewFollowUpDraft,
+  SchedulingPreferences
 } from '../types/index.js';
 import type { 
   JobSourceDefinition, 
@@ -170,7 +172,7 @@ export class DatabaseManager {
 
       CREATE TABLE IF NOT EXISTS recruiter_interactions (
         id TEXT PRIMARY KEY,
-        submission_id TEXT NOT NULL REFERENCES application_submissions(id) ON DELETE CASCADE,
+        submission_id TEXT,
         thread_id TEXT NOT NULL,
         message_id TEXT NOT NULL,
         sender_email TEXT NOT NULL,
@@ -179,10 +181,48 @@ export class DatabaseManager {
         detected_intent TEXT NOT NULL,
         action_required INTEGER NOT NULL,
         action_details TEXT,
-        received_at TEXT NOT NULL
+        received_at TEXT NOT NULL,
+        company_name TEXT,
+        job_title TEXT,
+        candidate_availability TEXT,
+        reply_status TEXT DEFAULT 'NONE',
+        sent_reply_at TEXT,
+        reply_message_id TEXT
       );
 
       CREATE INDEX IF NOT EXISTS idx_interactions_thread ON recruiter_interactions(thread_id);
+
+      CREATE TABLE IF NOT EXISTS interview_follow_up_drafts (
+        id TEXT PRIMARY KEY,
+        interaction_id TEXT NOT NULL,
+        submission_id TEXT,
+        recipient_email TEXT NOT NULL,
+        company_name TEXT NOT NULL,
+        job_title TEXT NOT NULL,
+        intent TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        suggested_slots_json TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'PENDING_APPROVAL',
+        approved_at TEXT,
+        sent_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_interview_drafts_interaction ON interview_follow_up_drafts(interaction_id);
+      CREATE INDEX IF NOT EXISTS idx_interview_drafts_status ON interview_follow_up_drafts(status);
+
+      CREATE TABLE IF NOT EXISTS candidate_scheduling_preferences (
+        id TEXT PRIMARY KEY,
+        timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
+        working_days_json TEXT NOT NULL,
+        time_windows_json TEXT NOT NULL,
+        meeting_platforms_json TEXT NOT NULL,
+        notice_hours INTEGER NOT NULL DEFAULT 24,
+        meeting_duration_minutes INTEGER NOT NULL DEFAULT 45,
+        updated_at TEXT NOT NULL
+      );
 
       CREATE TABLE IF NOT EXISTS discovery_runs (
         id TEXT PRIMARY KEY,
@@ -341,6 +381,53 @@ export class DatabaseManager {
     try { this.db.exec("ALTER TABLE vacancies ADD COLUMN max_experience_years INTEGER;"); } catch {}
     try { this.db.exec("ALTER TABLE vacancies ADD COLUMN visa_sponsorship INTEGER DEFAULT 0;"); } catch {}
     try { this.db.exec("ALTER TABLE vacancies ADD COLUMN relocation_assistance INTEGER DEFAULT 0;"); } catch {}
+    try { this.db.exec("ALTER TABLE recruiter_interactions ADD COLUMN company_name TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE recruiter_interactions ADD COLUMN job_title TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE recruiter_interactions ADD COLUMN candidate_availability TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE recruiter_interactions ADD COLUMN reply_status TEXT DEFAULT 'NONE';"); } catch {}
+    try { this.db.exec("ALTER TABLE recruiter_interactions ADD COLUMN sent_reply_at TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE recruiter_interactions ADD COLUMN reply_message_id TEXT;"); } catch {}
+    try {
+      const tableInfo = this.db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='recruiter_interactions'").get() as { sql?: string } | undefined;
+      if (tableInfo?.sql && tableInfo.sql.includes('submission_id TEXT NOT NULL')) {
+        this.db.exec("PRAGMA foreign_keys=off;");
+        this.db.exec(`
+          CREATE TABLE IF NOT EXISTS recruiter_interactions_new (
+            id TEXT PRIMARY KEY,
+            submission_id TEXT,
+            thread_id TEXT NOT NULL,
+            message_id TEXT NOT NULL,
+            sender_email TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            snippet TEXT NOT NULL,
+            detected_intent TEXT NOT NULL,
+            action_required INTEGER NOT NULL,
+            action_details TEXT,
+            received_at TEXT NOT NULL,
+            company_name TEXT,
+            job_title TEXT,
+            candidate_availability TEXT,
+            reply_status TEXT DEFAULT 'NONE',
+            sent_reply_at TEXT,
+            reply_message_id TEXT
+          );
+          INSERT OR REPLACE INTO recruiter_interactions_new (
+            id, submission_id, thread_id, message_id, sender_email, subject, snippet,
+            detected_intent, action_required, action_details, received_at,
+            company_name, job_title, candidate_availability, reply_status, sent_reply_at, reply_message_id
+          ) SELECT 
+            id, submission_id, thread_id, message_id, sender_email, subject, snippet,
+            detected_intent, action_required, action_details, received_at,
+            company_name, job_title, candidate_availability, reply_status, sent_reply_at, reply_message_id
+          FROM recruiter_interactions;
+          DROP TABLE recruiter_interactions;
+          ALTER TABLE recruiter_interactions_new RENAME TO recruiter_interactions;
+        `);
+        this.db.exec("PRAGMA foreign_keys=on;");
+      }
+    } catch {}
+    try { this.db.exec("CREATE INDEX IF NOT EXISTS idx_interactions_intent ON recruiter_interactions(detected_intent);"); } catch {}
+    try { this.db.exec("CREATE INDEX IF NOT EXISTS idx_interactions_reply_status ON recruiter_interactions(reply_status);"); } catch {}
 
     // Seed source registry if empty
     try {
@@ -935,12 +1022,32 @@ export class DatabaseManager {
   // Recruiter Interactions
   saveRecruiterInteraction(interaction: RecruiterInteraction): void {
     const stmt = this.db.prepare(`
-      INSERT INTO recruiter_interactions (id, submission_id, thread_id, message_id, sender_email, subject, snippet, detected_intent, action_required, action_details, received_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO recruiter_interactions (
+        id, submission_id, thread_id, message_id, sender_email, subject, snippet,
+        detected_intent, action_required, action_details, received_at,
+        company_name, job_title, candidate_availability, reply_status, sent_reply_at, reply_message_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        submission_id = excluded.submission_id,
+        thread_id = excluded.thread_id,
+        message_id = excluded.message_id,
+        sender_email = excluded.sender_email,
+        subject = excluded.subject,
+        snippet = excluded.snippet,
+        detected_intent = excluded.detected_intent,
+        action_required = excluded.action_required,
+        action_details = excluded.action_details,
+        received_at = excluded.received_at,
+        company_name = COALESCE(excluded.company_name, recruiter_interactions.company_name),
+        job_title = COALESCE(excluded.job_title, recruiter_interactions.job_title),
+        candidate_availability = COALESCE(excluded.candidate_availability, recruiter_interactions.candidate_availability),
+        reply_status = COALESCE(excluded.reply_status, recruiter_interactions.reply_status),
+        sent_reply_at = COALESCE(excluded.sent_reply_at, recruiter_interactions.sent_reply_at),
+        reply_message_id = COALESCE(excluded.reply_message_id, recruiter_interactions.reply_message_id)
     `);
     stmt.run(
       interaction.id,
-      interaction.submissionId,
+      interaction.submissionId || null,
       interaction.threadId,
       interaction.messageId,
       interaction.senderEmail,
@@ -949,14 +1056,311 @@ export class DatabaseManager {
       interaction.detectedIntent,
       interaction.actionRequired ? 1 : 0,
       interaction.actionDetails ?? null,
-      interaction.receivedAt
+      interaction.receivedAt,
+      interaction.companyName ?? null,
+      interaction.jobTitle ?? null,
+      interaction.candidateAvailabilityOptions ? JSON.stringify(interaction.candidateAvailabilityOptions) : null,
+      interaction.replyStatus ?? 'NONE',
+      interaction.sentReplyAt ?? null,
+      interaction.replyMessageId ?? null
     );
 
-    if (interaction.detectedIntent === 'INTERVIEW_INVITATION') {
-      this.db.prepare("UPDATE application_submissions SET status = 'INTERVIEW_INVITE' WHERE id = ?").run(interaction.submissionId);
-    } else if (interaction.detectedIntent === 'REJECTION') {
-      this.db.prepare("UPDATE application_submissions SET status = 'REJECTED' WHERE id = ?").run(interaction.submissionId);
+    if (interaction.submissionId) {
+      if (interaction.detectedIntent === 'INTERVIEW_INVITATION') {
+        this.db.prepare("UPDATE application_submissions SET status = 'INTERVIEW_INVITE' WHERE id = ?").run(interaction.submissionId);
+      } else if (interaction.detectedIntent === 'REJECTION') {
+        this.db.prepare("UPDATE application_submissions SET status = 'REJECTED' WHERE id = ?").run(interaction.submissionId);
+      }
     }
+  }
+
+  getRecruiterInteractionById(id: string): RecruiterInteraction | null {
+    const row = this.db.prepare('SELECT * FROM recruiter_interactions WHERE id = ?').get(id) as any;
+    if (!row) return null;
+    return this.mapRecruiterInteractionRow(row);
+  }
+
+  listRecruiterInteractions(options?: { intent?: string; actionRequired?: boolean; limit?: number }): RecruiterInteraction[] {
+    let sql = 'SELECT * FROM recruiter_interactions';
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (options?.intent) {
+      conditions.push('detected_intent = ?');
+      params.push(options.intent);
+    }
+    if (options?.actionRequired !== undefined) {
+      conditions.push('action_required = ?');
+      params.push(options.actionRequired ? 1 : 0);
+    }
+    if (conditions.length > 0) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+    sql += ' ORDER BY received_at DESC';
+    if (options?.limit) {
+      sql += ` LIMIT ${Math.max(1, options.limit)}`;
+    }
+    const rows = this.db.prepare(sql).all(...params) as any[];
+    return rows.map(r => this.mapRecruiterInteractionRow(r));
+  }
+
+  updateRecruiterInteraction(id: string, updates: Partial<RecruiterInteraction>): void {
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (updates.replyStatus !== undefined) {
+      fields.push('reply_status = ?');
+      values.push(updates.replyStatus);
+    }
+    if (updates.sentReplyAt !== undefined) {
+      fields.push('sent_reply_at = ?');
+      values.push(updates.sentReplyAt);
+    }
+    if (updates.replyMessageId !== undefined) {
+      fields.push('reply_message_id = ?');
+      values.push(updates.replyMessageId);
+    }
+    if (updates.actionRequired !== undefined) {
+      fields.push('action_required = ?');
+      values.push(updates.actionRequired ? 1 : 0);
+    }
+    if (updates.companyName !== undefined) {
+      fields.push('company_name = ?');
+      values.push(updates.companyName);
+    }
+    if (updates.jobTitle !== undefined) {
+      fields.push('job_title = ?');
+      values.push(updates.jobTitle);
+    }
+    if (fields.length === 0) return;
+    values.push(id);
+    this.db.prepare(`UPDATE recruiter_interactions SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  private mapRecruiterInteractionRow(r: any): RecruiterInteraction {
+    let slots: string[] | undefined = undefined;
+    if (r.candidate_availability) {
+      try { slots = JSON.parse(r.candidate_availability); } catch {}
+    }
+    return {
+      id: r.id,
+      submissionId: r.submission_id || '',
+      threadId: r.thread_id,
+      messageId: r.message_id,
+      senderEmail: r.sender_email,
+      subject: r.subject,
+      snippet: r.snippet,
+      detectedIntent: r.detected_intent,
+      actionRequired: Boolean(r.action_required),
+      actionDetails: r.action_details ?? undefined,
+      receivedAt: r.received_at,
+      companyName: r.company_name ?? undefined,
+      jobTitle: r.job_title ?? undefined,
+      candidateAvailabilityOptions: slots,
+      replyStatus: r.reply_status ?? 'NONE',
+      sentReplyAt: r.sent_reply_at ?? undefined,
+      replyMessageId: r.reply_message_id ?? undefined,
+    };
+  }
+
+  // Interview Follow-Up Drafts
+  saveInterviewFollowUpDraft(draft: InterviewFollowUpDraft): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO interview_follow_up_drafts (
+        id, interaction_id, submission_id, recipient_email, company_name, job_title,
+        intent, subject, body, suggested_slots_json, status, approved_at, sent_at,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        recipient_email = excluded.recipient_email,
+        company_name = excluded.company_name,
+        job_title = excluded.job_title,
+        intent = excluded.intent,
+        subject = excluded.subject,
+        body = excluded.body,
+        suggested_slots_json = excluded.suggested_slots_json,
+        status = excluded.status,
+        approved_at = COALESCE(excluded.approved_at, interview_follow_up_drafts.approved_at),
+        sent_at = COALESCE(excluded.sent_at, interview_follow_up_drafts.sent_at),
+        updated_at = excluded.updated_at
+    `);
+    stmt.run(
+      draft.id,
+      draft.interactionId,
+      draft.submissionId ?? null,
+      draft.recipientEmail,
+      draft.companyName,
+      draft.jobTitle,
+      draft.intent,
+      draft.subject,
+      draft.body,
+      JSON.stringify(draft.suggestedSlots || []),
+      draft.status,
+      draft.approvedAt ?? null,
+      draft.sentAt ?? null,
+      draft.createdAt,
+      draft.updatedAt ?? new Date().toISOString()
+    );
+  }
+
+  getInterviewFollowUpDraftById(id: string): InterviewFollowUpDraft | null {
+    const row = this.db.prepare('SELECT * FROM interview_follow_up_drafts WHERE id = ?').get(id) as any;
+    if (!row) return null;
+    return this.mapInterviewFollowUpDraftRow(row);
+  }
+
+  getInterviewFollowUpDraftByInteractionId(interactionId: string): InterviewFollowUpDraft | null {
+    const row = this.db.prepare('SELECT * FROM interview_follow_up_drafts WHERE interaction_id = ? ORDER BY created_at DESC LIMIT 1').get(interactionId) as any;
+    if (!row) return null;
+    return this.mapInterviewFollowUpDraftRow(row);
+  }
+
+  listInterviewFollowUpDrafts(filter?: { status?: string; limit?: number }): InterviewFollowUpDraft[] {
+    let sql = 'SELECT * FROM interview_follow_up_drafts';
+    const params: any[] = [];
+    if (filter?.status) {
+      sql += ' WHERE status = ?';
+      params.push(filter.status);
+    }
+    sql += ' ORDER BY created_at DESC';
+    if (filter?.limit) {
+      sql += ` LIMIT ${Math.max(1, filter.limit)}`;
+    }
+    const rows = this.db.prepare(sql).all(...params) as any[];
+    return rows.map(r => this.mapInterviewFollowUpDraftRow(r));
+  }
+
+  updateInterviewFollowUpDraft(id: string, updates: Partial<InterviewFollowUpDraft>): void {
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (updates.subject !== undefined) {
+      fields.push('subject = ?');
+      values.push(updates.subject);
+    }
+    if (updates.body !== undefined) {
+      fields.push('body = ?');
+      values.push(updates.body);
+    }
+    if (updates.suggestedSlots !== undefined) {
+      fields.push('suggested_slots_json = ?');
+      values.push(JSON.stringify(updates.suggestedSlots));
+    }
+    if (updates.status !== undefined) {
+      fields.push('status = ?');
+      values.push(updates.status);
+    }
+    if (updates.approvedAt !== undefined) {
+      fields.push('approved_at = ?');
+      values.push(updates.approvedAt);
+    }
+    if (updates.sentAt !== undefined) {
+      fields.push('sent_at = ?');
+      values.push(updates.sentAt);
+    }
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+
+    values.push(id);
+    this.db.prepare(`UPDATE interview_follow_up_drafts SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  private mapInterviewFollowUpDraftRow(r: any): InterviewFollowUpDraft {
+    let slots: string[] = [];
+    if (r.suggested_slots_json) {
+      try { slots = JSON.parse(r.suggested_slots_json); } catch {}
+    }
+    return {
+      id: r.id,
+      interactionId: r.interaction_id,
+      submissionId: r.submission_id ?? undefined,
+      recipientEmail: r.recipient_email,
+      companyName: r.company_name,
+      jobTitle: r.job_title,
+      intent: r.intent,
+      subject: r.subject,
+      body: r.body,
+      suggestedSlots: slots,
+      status: r.status,
+      approvedAt: r.approved_at ?? undefined,
+      sentAt: r.sent_at ?? undefined,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at ?? undefined,
+    };
+  }
+
+  // Scheduling Preferences
+  getSchedulingPreferences(): SchedulingPreferences {
+    const row = this.db.prepare('SELECT * FROM candidate_scheduling_preferences LIMIT 1').get() as any;
+    if (!row) {
+      return {
+        timezone: 'Asia/Kolkata',
+        workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        timeWindows: [
+          { start: '14:00', end: '17:00' },
+          { start: '18:00', end: '21:00' }
+        ],
+        meetingPlatforms: ['Google Meet', 'Zoom', 'Microsoft Teams'],
+        noticeHours: 24,
+        meetingDurationMinutes: 45
+      };
+    }
+
+    let workingDays: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    let timeWindows: { start: string; end: string }[] = [{ start: '14:00', end: '18:00' }];
+    let meetingPlatforms: string[] = ['Google Meet', 'Zoom'];
+
+    try { workingDays = JSON.parse(row.working_days_json); } catch {}
+    try { timeWindows = JSON.parse(row.time_windows_json); } catch {}
+    try { meetingPlatforms = JSON.parse(row.meeting_platforms_json); } catch {}
+
+    return {
+      timezone: row.timezone || 'Asia/Kolkata',
+      workingDays,
+      timeWindows,
+      meetingPlatforms,
+      noticeHours: row.notice_hours ?? 24,
+      meetingDurationMinutes: row.meeting_duration_minutes ?? 45
+    };
+  }
+
+  saveSchedulingPreferences(prefs: Partial<SchedulingPreferences>): SchedulingPreferences {
+    const current = this.getSchedulingPreferences();
+    const merged: SchedulingPreferences = {
+      timezone: prefs.timezone || current.timezone,
+      workingDays: prefs.workingDays || current.workingDays,
+      timeWindows: prefs.timeWindows || current.timeWindows,
+      meetingPlatforms: prefs.meetingPlatforms || current.meetingPlatforms,
+      noticeHours: prefs.noticeHours !== undefined ? prefs.noticeHours : current.noticeHours,
+      meetingDurationMinutes: prefs.meetingDurationMinutes !== undefined ? prefs.meetingDurationMinutes : current.meetingDurationMinutes,
+    };
+
+    const stmt = this.db.prepare(`
+      INSERT INTO candidate_scheduling_preferences (
+        id, timezone, working_days_json, time_windows_json, meeting_platforms_json,
+        notice_hours, meeting_duration_minutes, updated_at
+      ) VALUES ('default_prefs', ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        timezone = excluded.timezone,
+        working_days_json = excluded.working_days_json,
+        time_windows_json = excluded.time_windows_json,
+        meeting_platforms_json = excluded.meeting_platforms_json,
+        notice_hours = excluded.notice_hours,
+        meeting_duration_minutes = excluded.meeting_duration_minutes,
+        updated_at = excluded.updated_at
+    `);
+
+    stmt.run(
+      merged.timezone,
+      JSON.stringify(merged.workingDays),
+      JSON.stringify(merged.timeWindows),
+      JSON.stringify(merged.meetingPlatforms),
+      merged.noticeHours,
+      merged.meetingDurationMinutes,
+      new Date().toISOString()
+    );
+
+    return merged;
   }
 
   // Discovery Runs
@@ -1105,6 +1509,19 @@ export class DatabaseManager {
     `);
     stmt.run(id, action, actor, entityType, entityId, JSON.stringify(details), new Date().toISOString());
     logger.audit(action, actor, { entityType, entityId, ...details });
+  }
+
+  listAuditEvents(limit: number = 20): Array<{ id: string; action: string; actor: string; entityType: string; entityId: string; details: any; timestamp: string }> {
+    const rows = this.db.prepare(`SELECT * FROM audit_events ORDER BY timestamp DESC LIMIT ?`).all(limit) as any[];
+    return rows.map(r => ({
+      id: r.id,
+      action: r.action,
+      actor: r.actor,
+      entityType: r.entity_type,
+      entityId: r.entity_id,
+      details: JSON.parse(r.details_json || '{}'),
+      timestamp: r.timestamp,
+    }));
   }
 
   // Helper row mappers
@@ -2011,6 +2428,8 @@ export class DatabaseManager {
   }
 
   close(): void {
-    this.db.close();
+    try {
+      this.db.close();
+    } catch {}
   }
 }

@@ -1,5 +1,5 @@
 import { logger } from '../core/logger.js';
-import type { Vacancy, MatchScoreEvaluation } from '../types/index.js';
+import type { Vacancy, MatchScoreEvaluation, RecruiterInteraction, InterviewFollowUpDraft } from '../types/index.js';
 
 export interface AlertConfig {
   telegramBotToken?: string;
@@ -201,6 +201,123 @@ export class AlertNotificationManager {
     };
 
     return this.notifyOpportunity(mockVacancy, mockEval);
+  }
+
+  /**
+   * Dispatches high-priority mobile alerts for recruiter interactions (interview invites, assessments, offers).
+   */
+  async notifyRecruiterInteraction(
+    interaction: RecruiterInteraction,
+    draft?: InterviewFollowUpDraft
+  ): Promise<AlertDispatchResult> {
+    const isHighPriority = ['INTERVIEW_INVITATION', 'TECHNICAL_ASSESSMENT', 'OFFER', 'AVAILABILITY_REQUEST'].includes(interaction.detectedIntent);
+    if (!isHighPriority) {
+      return { telegramSent: false, discordSent: false, message: 'Non-urgent interaction, alert skipped' };
+    }
+
+    let telegramSent = false;
+    let discordSent = false;
+    const errors: string[] = [];
+
+    const intentEmoji: Record<string, string> = {
+      INTERVIEW_INVITATION: '🎉 INTERVIEW INVITATION',
+      TECHNICAL_ASSESSMENT: '💻 TECHNICAL ASSESSMENT',
+      AVAILABILITY_REQUEST: '📅 AVAILABILITY REQUEST',
+      OFFER: '🏆 JOB OFFER RECEIVED',
+    };
+
+    const header = intentEmoji[interaction.detectedIntent] || '📬 RECRUITER RESPONSE';
+    const company = interaction.companyName || 'Target Company';
+    const role = interaction.jobTitle ? ` for "${interaction.jobTitle}"` : '';
+
+    // 1. Telegram
+    if (this.isTelegramConfigured()) {
+      try {
+        const text = [
+          `<b>${header}</b>`,
+          `<b>Company:</b> ${company}`,
+          `<b>From:</b> ${interaction.senderEmail}`,
+          `<b>Subject:</b> ${interaction.subject}`,
+          `\n<i>"${interaction.snippet}"</i>`,
+          draft ? `\n✅ <i>AI follow-up reply drafted. Review and approve in dashboard.</i>` : '',
+        ].filter(Boolean).join('\n');
+
+        const url = `https://api.telegram.org/bot${this.telegramBotToken}/sendMessage`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: this.telegramChatId,
+            text,
+            parse_mode: 'HTML',
+          }),
+        });
+        if (res.ok) {
+          telegramSent = true;
+          logger.info(`Telegram interaction alert sent for ${company}`);
+        } else {
+          const body = await res.text();
+          errors.push(`Telegram API error: ${body}`);
+        }
+      } catch (err: any) {
+        errors.push(`Telegram network error: ${err.message}`);
+      }
+    }
+
+    // 2. Discord
+    if (this.isDiscordConfigured()) {
+      try {
+        const payload = {
+          username: 'JOB DISCOVERY AI — Recruiter Radar',
+          avatar_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&q=80',
+          embeds: [
+            {
+              title: `${header}${role}`,
+              color: interaction.detectedIntent === 'OFFER' ? 0xf59e0b : 0x8b5cf6,
+              description: interaction.snippet,
+              fields: [
+                { name: '🏢 Company', value: company, inline: true },
+                { name: '✉️ Recruiter', value: interaction.senderEmail, inline: true },
+                { name: '📋 Subject', value: interaction.subject, inline: false },
+                ...(draft?.suggestedSlots && draft.suggestedSlots.length > 0 ? [{
+                  name: '🗓️ Proposed Slots',
+                  value: draft.suggestedSlots.slice(0, 3).join('\n'),
+                  inline: false,
+                }] : []),
+              ],
+              footer: { text: 'JOB DISCOVERY AI — Interview Scheduling Engine' },
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+
+        const res = await fetch(this.discordWebhookUrl!, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          discordSent = true;
+          logger.info(`Discord interaction alert sent for ${company}`);
+        } else {
+          const body = await res.text();
+          errors.push(`Discord error: ${body}`);
+        }
+      } catch (err: any) {
+        errors.push(`Discord network error: ${err.message}`);
+      }
+    }
+
+    if (!this.isConfigured()) {
+      logger.info(`[Simulation/Mock Alert] ${header} from ${company} (${interaction.senderEmail}): "${interaction.subject}". Configure TELEGRAM_BOT_TOKEN or DISCORD_WEBHOOK_URL for live mobile push.`);
+    }
+
+    return {
+      telegramSent,
+      discordSent,
+      message: (telegramSent || discordSent) ? 'Recruiter alert dispatched' : 'No mobile alert dispatched',
+      error: errors.length > 0 ? errors.join('; ') : undefined,
+    };
   }
 
   private formatTelegramMessage(vacancy: Vacancy, evaluation: MatchScoreEvaluation): string {

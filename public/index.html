@@ -1061,6 +1061,7 @@
       <button class="nav-tab" onclick="switchTab('ai-settings')">AI Models & Routing</button>
       <button class="nav-tab" onclick="switchTab('history')">Submission History</button>
       <button class="nav-tab" id="nav-tab-global-discovery" onclick="switchTab('global-discovery')">🌐 Source Registry & Coverage</button>
+      <button class="nav-tab" id="nav-tab-interviews" onclick="switchTab('interviews')">📬 Recruiter Inbox & Interviews <span id="interviews-nav-badge" style="display:none; background: #8b5cf6; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px; margin-left: 5px;">0</span></button>
     </div>
 
     <div class="user-pill" id="global-status-pill">
@@ -1817,6 +1818,71 @@
         <p style="color: var(--text-muted); font-size: 0.85rem;">Verified SHA-256 transmission logs, Google Sheets synchronization, and recruiter responses.</p>
       </div>
       <div id="submissions-list" class="vacancies-container"></div>
+    </div>
+
+    <!-- Recruiter Inbox & Interview Follow-Up Hub View -->
+    <div id="view-interviews" style="display: none;">
+      <!-- Hero / Section Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+            <span class="source-tag" style="background: rgba(139, 92, 246, 0.2); border-color: #8b5cf6; color: #c084fc;">INTERVIEW RADAR</span>
+            <span class="meta-pill" style="color: var(--accent-emerald);">Automated Intent Classification & Grounded Scheduling</span>
+          </div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700;">Recruiter Inbox & Interview Scheduling Engine</h2>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Intelligently analyzes inbound recruiter replies, detects interview invitations & coding assessments, and auto-drafts tailored availability confirmations with an approval gate before transmission.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <button class="btn btn-secondary" onclick="syncRecruiterInboxUI()" id="sync-inbox-btn" style="font-size: 0.82rem;">
+            🔄 Sync Recruiter Inbox
+          </button>
+          <button class="btn btn-secondary" onclick="openSchedulingPreferencesModal()" style="font-size: 0.82rem;">
+            ⚙️ Scheduling Preferences
+          </button>
+          <button class="btn btn-primary" onclick="openSimulateRecruiterModal()" style="font-size: 0.82rem;">
+            🧪 Test / Simulate Response
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="metrics-grid" style="margin-bottom: 1.5rem;">
+        <div class="metric-card">
+          <div class="metric-label">Inbound Recruiter Emails</div>
+          <div class="metric-value" id="metric-interviews-total" style="color: #60a5fa;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Synchronized via Gmail</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Interview Invitations</div>
+          <div class="metric-value" id="metric-interviews-invites" style="color: #c084fc;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Active meeting requests</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Pending Action Required</div>
+          <div class="metric-value" id="metric-interviews-pending" style="color: #fbbf24;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Awaiting your approval</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Follow-Up Replies Sent</div>
+          <div class="metric-value" id="metric-interviews-sent" style="color: #34d399;">0</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Thread-preserved replies</div>
+        </div>
+      </div>
+
+      <!-- Filter Chips -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center;">
+        <button class="filter-chip active" id="chip-intent-all" onclick="filterInterviewsByIntent('ALL')">All Interactions (<span id="count-intent-all">0</span>)</button>
+        <button class="filter-chip" id="chip-intent-invites" onclick="filterInterviewsByIntent('INTERVIEW_INVITATION')">🎉 Interview Invites (<span id="count-intent-invites">0</span>)</button>
+        <button class="filter-chip" id="chip-intent-action" onclick="filterInterviewsByIntent('ACTION_REQUIRED')">⚠️ Action Required (<span id="count-intent-action">0</span>)</button>
+        <button class="filter-chip" id="chip-intent-assessments" onclick="filterInterviewsByIntent('TECHNICAL_ASSESSMENT')">💻 Assessments (<span id="count-intent-assessments">0</span>)</button>
+        <button class="filter-chip" id="chip-intent-offers" onclick="filterInterviewsByIntent('OFFER')">🏆 Offers (<span id="count-intent-offers">0</span>)</button>
+        <button class="filter-chip" id="chip-intent-rejections" onclick="filterInterviewsByIntent('REJECTION')">Archive / Rejections (<span id="count-intent-rejections">0</span>)</button>
+      </div>
+
+      <!-- Recruiter Interactions & Follow-Up List -->
+      <div id="interviews-list-container" class="vacancies-container">
+        <!-- Rendered dynamically -->
+      </div>
     </div>
 
     <!-- AI Resume Matches View -->
@@ -2609,6 +2675,158 @@
     </div>
   </div>
 
+  <!-- Candidate Scheduling Preferences Modal -->
+  <div class="modal-backdrop" id="scheduling-prefs-modal">
+    <div class="modal-window" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <span class="source-tag" style="background: rgba(139, 92, 246, 0.2); border-color: #8b5cf6; color: #c084fc;">PREFERENCES</span>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem;">Candidate Scheduling Preferences</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Configure your real-time availability window, timezone, and meeting rules for auto-drafting follow-ups.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="closeSchedulingPreferencesModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Timezone</label>
+            <input type="text" id="pref-timezone" class="input-field" placeholder="Asia/Kolkata or America/New_York" style="width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Preferred Meeting Platform</label>
+            <select id="pref-meeting-tool" class="input-field" style="width: 100%;">
+              <option value="Google Meet">Google Meet</option>
+              <option value="Zoom">Zoom</option>
+              <option value="Microsoft Teams">Microsoft Teams</option>
+              <option value="Either Google Meet or Zoom">Either Google Meet or Zoom</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Working Days</label>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-1" value="1"> Mon</label>
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-2" value="2"> Tue</label>
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-3" value="3"> Wed</label>
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-4" value="4"> Thu</label>
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-5" value="5"> Fri</label>
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-6" value="6"> Sat</label>
+            <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem;"><input type="checkbox" id="pref-day-0" value="0"> Sun</label>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Daily Available Windows (e.g. 14:00-17:00, 18:00-21:00)</label>
+          <input type="text" id="pref-time-windows" class="input-field" placeholder="14:00-17:00, 18:00-21:00" style="width: 100%;">
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">Comma-separated 24-hour ranges in your local timezone.</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Default Duration</label>
+            <input type="number" id="pref-duration" class="input-field" min="15" max="180" step="15" value="45" style="width: 100%;">
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Minutes</span>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Advance Notice</label>
+            <input type="number" id="pref-notice" class="input-field" min="1" max="168" value="24" style="width: 100%;">
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Hours</span>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Buffer Between Calls</label>
+            <input type="number" id="pref-buffer" class="input-field" min="0" max="60" step="5" value="15" style="width: 100%;">
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Minutes</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: var(--radius-sm);">
+          <input type="checkbox" id="pref-autodraft" checked style="cursor: pointer;">
+          <label for="pref-autodraft" style="font-size: 0.82rem; cursor: pointer; color: var(--text-main);">
+            <strong>Enable Autonomous Draft Generation:</strong> Automatically generate grounded availability reply drafts upon receiving interview invites (held for your manual approval).
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button class="btn btn-secondary" onclick="closeSchedulingPreferencesModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveSchedulingPreferencesUI()">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulate Inbound Recruiter Response Modal -->
+  <div class="modal-backdrop" id="simulate-recruiter-modal">
+    <div class="modal-window" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <span class="source-tag" style="background: rgba(16, 185, 129, 0.2); border-color: var(--accent-emerald); color: #34d399;">TEST BENCH</span>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem;">Simulate Inbound Recruiter Communication</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Test intent classification, grounded availability slot generation, and auto-drafting in real-time.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="closeSimulateRecruiterModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Choose Pre-configured Test Scenario</label>
+          <select id="sim-scenario" class="input-field" style="width: 100%;" onchange="handleSimulateScenarioChange()">
+            <option value="interview_invite">🎉 Interview Invitation (Requests Availability)</option>
+            <option value="technical_assessment">💻 Technical Coding Assessment (Take-Home / HackerRank)</option>
+            <option value="availability_request">📅 Availability Request (Multi-day Slot Confirmation)</option>
+            <option value="offer">🏆 Job Offer Announcement</option>
+            <option value="rejection">Archive / Rejection Notice</option>
+            <option value="custom">✏️ Custom Recruiter Email</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Sender Name</label>
+            <input type="text" id="sim-sender-name" class="input-field" value="Sarah Jenkins" style="width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Sender Email</label>
+            <input type="email" id="sim-sender-email" class="input-field" value="sarah.jenkins@techcorp.io" style="width: 100%;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Company Name</label>
+            <input type="text" id="sim-company-name" class="input-field" value="TechCorp Systems" style="width: 100%;">
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Target Role / Job Title</label>
+            <input type="text" id="sim-job-title" class="input-field" value="Staff Full Stack Engineer" style="width: 100%;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 0.75rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Subject Line</label>
+          <input type="text" id="sim-subject" class="input-field" value="Invitation to Interview: Staff Full Stack Engineer at TechCorp" style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 0.75rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Inbound Email Body</label>
+          <textarea id="sim-body" class="input-field" rows="5" style="width: 100%; font-family: inherit; font-size: 0.85rem; line-height: 1.4;">Hi,
+
+Thank you for your application for the Staff Full Stack Engineer role at TechCorp Systems! We were very impressed with your background.
+
+We would love to invite you to an initial 45-minute technical conversation over Google Meet with our engineering director next week.
+
+Could you please share 2-3 time windows that work best for you between Wednesday and Friday?
+
+Best regards,
+Sarah Jenkins
+Senior Technical Talent Partner</textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button class="btn btn-secondary" onclick="closeSimulateRecruiterModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitSimulatedRecruiterUI()" id="sim-submit-btn">⚡ Ingest & Process Email</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let allVacancies = [];
     let currentDraft = null;
@@ -2641,6 +2859,23 @@
         allVacancies = await vacRes.json();
         applyFilters();
         loadSchedulerStatus();
+
+        try {
+          const intRes = await fetch('/api/recruiter-interactions');
+          if (intRes.ok) {
+            const intData = await intRes.json();
+            const pendingCount = (intData.interactions || []).filter(i => i.actionRequired || i.replyStatus === 'PENDING_APPROVAL').length;
+            const badge = document.getElementById('interviews-nav-badge');
+            if (badge) {
+              if (pendingCount > 0) {
+                badge.textContent = pendingCount;
+                badge.style.display = 'inline-block';
+              } else {
+                badge.style.display = 'none';
+              }
+            }
+          }
+        } catch (e) {}
       } catch (err) {
         console.error('Failed to load dashboard:', err);
       }
@@ -5141,8 +5376,12 @@
       if (aiMatchesView) aiMatchesView.style.display = tab === 'ai-matches' ? 'block' : 'none';
       const globalDiscView = document.getElementById('view-global-discovery');
       if (globalDiscView) globalDiscView.style.display = tab === 'global-discovery' ? 'block' : 'none';
+      const interviewsView = document.getElementById('view-interviews');
+      if (interviewsView) interviewsView.style.display = tab === 'interviews' ? 'block' : 'none';
 
-      if (tab === 'global-discovery') {
+      if (tab === 'interviews') {
+        loadInterviewsView();
+      } else if (tab === 'global-discovery') {
         loadGlobalDiscoveryView();
       } else if (tab === 'ai-matches') {
         loadAiMatchesView();
@@ -5446,6 +5685,550 @@
       } catch (err) {
         alert(`Error: ${err.message}`);
       }
+    }
+
+    // ==========================================
+    // Recruiter Response & Interview Scheduling Controller
+    // ==========================================
+    let allRecruiterInteractions = [];
+    let allInterviewDrafts = [];
+    let selectedInterviewIntent = 'ALL';
+    let currentSchedulingPreferences = null;
+
+    const SIMULATION_SCENARIOS = {
+      interview_invite: {
+        senderName: "Sarah Jenkins",
+        senderEmail: "sarah.jenkins@techcorp.io",
+        companyName: "TechCorp Systems",
+        jobTitle: "Staff Full Stack Engineer",
+        subject: "Invitation to Interview: Staff Full Stack Engineer at TechCorp",
+        body: "Hi,\n\nThank you for your application for the Staff Full Stack Engineer role at TechCorp Systems! We were very impressed with your background.\n\nWe would love to invite you to an initial 45-minute technical conversation over Google Meet with our engineering director next week.\n\nCould you please share 2-3 time windows that work best for you between Wednesday and Friday?\n\nBest regards,\nSarah Jenkins\nSenior Technical Talent Partner"
+      },
+      technical_assessment: {
+        senderName: "Alex Rivera",
+        senderEmail: "recruiting@innovatelabs.com",
+        companyName: "InnovateLabs",
+        jobTitle: "Senior TypeScript / Node Engineer",
+        subject: "Next Steps: Technical Coding Assessment - InnovateLabs",
+        body: "Hello,\n\nThanks for your interest in the Senior TypeScript / Node Engineer position at InnovateLabs. We'd like to invite you to complete a 75-minute coding challenge on HackerRank.\n\nPlease complete the challenge using the link below within the next 5 days:\nhttps://hackerrank.com/test/demo-challenge-token\n\nLet us know if you have any questions.\n\nAlex Rivera\nEngineering Recruiting Team"
+      },
+      availability_request: {
+        senderName: "Marcus Vance",
+        senderEmail: "m.vance@cloudscale.net",
+        companyName: "CloudScale Networks",
+        jobTitle: "Principal Distributed Systems Architect",
+        subject: "Availability Request for Initial Technical Screen",
+        body: "Hi,\n\nHope you are having a productive week. We are reviewing your candidacy for our Principal Distributed Systems Architect opening and would like to coordinate a phone or video screen.\n\nCould you send over a few slots across the next few business days where you are free for a 45-minute discussion?\n\nThanks,\nMarcus Vance"
+      },
+      offer: {
+        senderName: "Elena Rostova",
+        senderEmail: "elena@quantumscale.ai",
+        companyName: "QuantumScale AI",
+        jobTitle: "Lead AI Platform Engineer",
+        subject: "Formal Offer of Employment: Lead AI Platform Engineer - QuantumScale",
+        body: "Dear candidate,\n\nOn behalf of everyone at QuantumScale AI, we are absolutely delighted to offer you the position of Lead AI Platform Engineer! The team was deeply impressed with your technical architecture skills and vision during the interview rounds.\n\nAttached is the formal offer letter and compensation package. Please let us know if you'd like to schedule a call to review the details.\n\nWarm regards,\nElena Rostova\nVP of People"
+      },
+      rejection: {
+        senderName: "Talent Acquisition Team",
+        senderEmail: "no-reply@globalfin.io",
+        companyName: "GlobalFin Tech",
+        jobTitle: "Senior Backend Developer",
+        subject: "Update on your application for Senior Backend Developer",
+        body: "Hi,\n\nThank you so much for taking the time to interview with GlobalFin Tech. While our engineering team was impressed by your expertise, we have decided to proceed with another candidate whose experience is a closer match for the immediate needs of this position.\n\nWe wish you the very best in your job search.\n\nBest regards,\nGlobalFin Talent Acquisition"
+      },
+      custom: {
+        senderName: "",
+        senderEmail: "",
+        companyName: "",
+        jobTitle: "",
+        subject: "",
+        body: ""
+      }
+    };
+
+    function handleSimulateScenarioChange() {
+      const scenarioKey = document.getElementById('sim-scenario')?.value || 'interview_invite';
+      const scenario = SIMULATION_SCENARIOS[scenarioKey];
+      if (!scenario) return;
+
+      const nameEl = document.getElementById('sim-sender-name');
+      const emailEl = document.getElementById('sim-sender-email');
+      const compEl = document.getElementById('sim-company-name');
+      const roleEl = document.getElementById('sim-job-title');
+      const subjEl = document.getElementById('sim-subject');
+      const bodyEl = document.getElementById('sim-body');
+
+      if (nameEl) nameEl.value = scenario.senderName;
+      if (emailEl) emailEl.value = scenario.senderEmail;
+      if (compEl) compEl.value = scenario.companyName;
+      if (roleEl) roleEl.value = scenario.jobTitle;
+      if (subjEl) subjEl.value = scenario.subject;
+      if (bodyEl) bodyEl.value = scenario.body;
+    }
+
+    function openSimulateRecruiterModal() {
+      handleSimulateScenarioChange();
+      const modal = document.getElementById('simulate-recruiter-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeSimulateRecruiterModal() {
+      const modal = document.getElementById('simulate-recruiter-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitSimulatedRecruiterUI() {
+      const btn = document.getElementById('sim-submit-btn');
+      const origText = btn ? btn.textContent : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⚡ Processing Inbound Email...';
+      }
+
+      try {
+        const payload = {
+          senderName: document.getElementById('sim-sender-name')?.value?.trim() || 'Recruiter',
+          senderEmail: document.getElementById('sim-sender-email')?.value?.trim() || 'recruiter@example.com',
+          companyName: document.getElementById('sim-company-name')?.value?.trim() || 'Innovative Tech',
+          jobTitle: document.getElementById('sim-job-title')?.value?.trim() || 'Software Engineer',
+          subject: document.getElementById('sim-subject')?.value?.trim() || 'Update regarding your application',
+          body: document.getElementById('sim-body')?.value?.trim() || ''
+        };
+
+        const res = await fetch('/api/recruiter-interactions/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          closeSimulateRecruiterModal();
+          alert(`✓ Inbound email analyzed successfully!\n• Detected Intent: ${data.interaction?.detectedIntent}\n• Follow-Up Draft: ${data.draft ? 'Generated (Pending Approval)' : 'None Required'}`);
+          await loadInterviewsView();
+        } else {
+          alert(`Simulation failed: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert(`Error running simulation: ${err.message}`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = origText;
+        }
+      }
+    }
+
+    async function openSchedulingPreferencesModal() {
+      const modal = document.getElementById('scheduling-prefs-modal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      try {
+        const res = await fetch('/api/scheduling/preferences');
+        if (res.ok) {
+          const data = await res.json();
+          const prefs = data.preferences || {};
+          currentSchedulingPreferences = prefs;
+
+          const tzEl = document.getElementById('pref-timezone');
+          if (tzEl) tzEl.value = prefs.timezone || 'Asia/Kolkata';
+
+          const toolEl = document.getElementById('pref-meeting-tool');
+          if (toolEl && prefs.meetingPlatforms && prefs.meetingPlatforms.length) {
+            toolEl.value = prefs.meetingPlatforms[0];
+          }
+
+          const workingDays = Array.isArray(prefs.workingDays) ? prefs.workingDays.map(String) : ['1','2','3','4','5'];
+          for (let i = 0; i <= 6; i++) {
+            const cb = document.getElementById(`pref-day-${i}`);
+            if (cb) cb.checked = workingDays.includes(String(i));
+          }
+
+          const windows = Array.isArray(prefs.timeWindows) 
+            ? prefs.timeWindows.map(w => `${w.start}-${w.end}`).join(', ') 
+            : '14:00-17:00, 18:00-21:00';
+          const winEl = document.getElementById('pref-time-windows');
+          if (winEl) winEl.value = windows;
+
+          const durEl = document.getElementById('pref-duration');
+          if (durEl) durEl.value = prefs.meetingDurationMinutes || 45;
+
+          const notEl = document.getElementById('pref-notice');
+          if (notEl) notEl.value = prefs.noticeHours || 24;
+
+          const bufEl = document.getElementById('pref-buffer');
+          if (bufEl) bufEl.value = 15;
+        }
+      } catch (err) {
+        console.error('Error fetching preferences:', err);
+      }
+    }
+
+    function closeSchedulingPreferencesModal() {
+      const modal = document.getElementById('scheduling-prefs-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function saveSchedulingPreferencesUI() {
+      try {
+        const days = [];
+        for (let i = 0; i <= 6; i++) {
+          const cb = document.getElementById(`pref-day-${i}`);
+          if (cb && cb.checked) days.push(String(i));
+        }
+
+        const rawWindows = document.getElementById('pref-time-windows')?.value || '';
+        const timeWindows = rawWindows.split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
+          .map(w => {
+            const parts = w.split('-').map(p => p.trim());
+            return { start: parts[0] || '14:00', end: parts[1] || '17:00' };
+          });
+
+        const preferences = {
+          timezone: document.getElementById('pref-timezone')?.value?.trim() || 'Asia/Kolkata',
+          workingDays: days.length ? days : ['1','2','3','4','5'],
+          timeWindows: timeWindows.length ? timeWindows : [{ start: '14:00', end: '17:00' }, { start: '18:00', end: '21:00' }],
+          meetingPlatforms: [document.getElementById('pref-meeting-tool')?.value || 'Google Meet'],
+          noticeHours: parseInt(document.getElementById('pref-notice')?.value || '24', 10),
+          meetingDurationMinutes: parseInt(document.getElementById('pref-duration')?.value || '45', 10)
+        };
+
+        const res = await fetch('/api/scheduling/preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ preferences })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert('✓ Candidate scheduling preferences saved successfully!');
+          closeSchedulingPreferencesModal();
+        } else {
+          alert(`Error saving preferences: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert(`Error saving preferences: ${err.message}`);
+      }
+    }
+
+    async function syncRecruiterInboxUI() {
+      const btn = document.getElementById('sync-inbox-btn');
+      const origText = btn ? btn.textContent : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '🔄 Synchronizing Gmail...';
+      }
+
+      try {
+        const res = await fetch('/api/recruiter-interactions/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert(`✓ Recruiter Inbox Synchronized!\n• Messages checked: ${data.syncedCount ?? 0}\n• New interactions: ${data.processedCount ?? 0}\n• Follow-up drafts prepared: ${data.draftsCount ?? 0}`);
+          await loadInterviewsView();
+        } else {
+          alert(`Inbox sync: ${data.error || 'No active Gmail connection or no new recruiter emails found'}`);
+        }
+      } catch (err) {
+        alert(`Inbox sync failed: ${err.message}`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = origText;
+        }
+      }
+    }
+
+    async function approveInterviewDraftUI(draftId) {
+      if (!confirm('Security Confirmation:\n\nAre you sure you want to approve and send this follow-up email via Gmail? Thread preservation will be maintained.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/interview-drafts/${draftId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert('✓ Follow-up email approved and dispatched via Gmail thread successfully!');
+          await loadInterviewsView();
+        } else {
+          alert(`Approval failed: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert(`Error approving draft: ${err.message}`);
+      }
+    }
+
+    async function dismissInterviewDraftUI(draftId) {
+      if (!confirm('Are you sure you want to dismiss this follow-up draft?')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/interview-drafts/${draftId}/dismiss`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          await loadInterviewsView();
+        } else {
+          alert(`Dismissal failed: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert(`Error dismissing draft: ${err.message}`);
+      }
+    }
+
+    function filterInterviewsByIntent(intent) {
+      selectedInterviewIntent = intent;
+      const chips = [
+        { id: 'chip-intent-all', intent: 'ALL' },
+        { id: 'chip-intent-invites', intent: 'INTERVIEW_INVITATION' },
+        { id: 'chip-intent-action', intent: 'ACTION_REQUIRED' },
+        { id: 'chip-intent-assessments', intent: 'TECHNICAL_ASSESSMENT' },
+        { id: 'chip-intent-offers', intent: 'OFFER' },
+        { id: 'chip-intent-rejections', intent: 'REJECTION' }
+      ];
+
+      chips.forEach(c => {
+        const el = document.getElementById(c.id);
+        if (el) {
+          if (c.intent === intent) el.classList.add('active');
+          else el.classList.remove('active');
+        }
+      });
+
+      renderInterviewsList();
+    }
+
+    async function loadInterviewsView() {
+      try {
+        const [intRes, draftsRes] = await Promise.all([
+          fetch('/api/recruiter-interactions'),
+          fetch('/api/interview-drafts')
+        ]);
+
+        if (intRes.ok) {
+          const intData = await intRes.json();
+          allRecruiterInteractions = intData.interactions || [];
+        }
+
+        if (draftsRes.ok) {
+          const draftsData = await draftsRes.json();
+          allInterviewDrafts = draftsData.drafts || [];
+        }
+
+        const draftMap = new Map();
+        allInterviewDrafts.forEach(d => {
+          if (d.interactionId) draftMap.set(d.interactionId, d);
+        });
+
+        allRecruiterInteractions.forEach(item => {
+          item.draft = draftMap.get(item.id);
+        });
+
+        // Compute Metric Counts
+        const totalCount = allRecruiterInteractions.length;
+        const inviteCount = allRecruiterInteractions.filter(i => i.detectedIntent === 'INTERVIEW_INVITATION').length;
+        const pendingCount = allRecruiterInteractions.filter(i => (i.actionRequired && i.replyStatus !== 'SENT') || (i.draft && i.draft.status === 'PENDING_APPROVAL')).length;
+        const sentCount = allRecruiterInteractions.filter(i => i.replyStatus === 'SENT' || (i.draft && i.draft.status === 'SENT')).length;
+        const assessCount = allRecruiterInteractions.filter(i => i.detectedIntent === 'TECHNICAL_ASSESSMENT').length;
+        const offerCount = allRecruiterInteractions.filter(i => i.detectedIntent === 'OFFER').length;
+        const rejectCount = allRecruiterInteractions.filter(i => i.detectedIntent === 'REJECTION').length;
+
+        // Update Top Metric Cards
+        const totalEl = document.getElementById('metric-interviews-total');
+        if (totalEl) totalEl.textContent = totalCount;
+        const invEl = document.getElementById('metric-interviews-invites');
+        if (invEl) invEl.textContent = inviteCount;
+        const pendEl = document.getElementById('metric-interviews-pending');
+        if (pendEl) pendEl.textContent = pendingCount;
+        const sentEl = document.getElementById('metric-interviews-sent');
+        if (sentEl) sentEl.textContent = sentCount;
+
+        // Update Nav Badge
+        const navBadge = document.getElementById('interviews-nav-badge');
+        if (navBadge) {
+          if (pendingCount > 0) {
+            navBadge.textContent = pendingCount;
+            navBadge.style.display = 'inline-block';
+          } else {
+            navBadge.style.display = 'none';
+          }
+        }
+
+        // Update Filter Chip Counts
+        const cAll = document.getElementById('count-intent-all');
+        if (cAll) cAll.textContent = totalCount;
+        const cInv = document.getElementById('count-intent-invites');
+        if (cInv) cInv.textContent = inviteCount;
+        const cAct = document.getElementById('count-intent-action');
+        if (cAct) cAct.textContent = pendingCount;
+        const cAss = document.getElementById('count-intent-assessments');
+        if (cAss) cAss.textContent = assessCount;
+        const cOff = document.getElementById('count-intent-offers');
+        if (cOff) cOff.textContent = offerCount;
+        const cRej = document.getElementById('count-intent-rejections');
+        if (cRej) cRej.textContent = rejectCount;
+
+        renderInterviewsList();
+      } catch (err) {
+        console.error('Error loading interviews view:', err);
+      }
+    }
+
+    function renderInterviewsList() {
+      const container = document.getElementById('interviews-list-container');
+      if (!container) return;
+
+      let filtered = allRecruiterInteractions;
+      if (selectedInterviewIntent === 'ACTION_REQUIRED') {
+        filtered = filtered.filter(i => (i.actionRequired && i.replyStatus !== 'SENT') || (i.draft && i.draft.status === 'PENDING_APPROVAL'));
+      } else if (selectedInterviewIntent !== 'ALL') {
+        filtered = filtered.filter(i => i.detectedIntent === selectedInterviewIntent);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 3rem 2rem; text-align: center; color: var(--text-muted); width: 100%;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📬</div>
+            <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">No Recruiter Communications Found</h3>
+            <p style="font-size: 0.85rem; max-width: 480px; margin: 0 auto 1.5rem auto;">
+              No inbound emails match the selected intent filter. Test the engine by simulating an inbound interview invite or synchronize your Gmail inbox.
+            </p>
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+              <button class="btn btn-primary" onclick="openSimulateRecruiterModal()" style="font-size: 0.85rem;">🧪 Simulate Inbound Recruiter Email</button>
+              <button class="btn btn-secondary" onclick="syncRecruiterInboxUI()" style="font-size: 0.85rem;">🔄 Sync Recruiter Inbox</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const intentStyles = {
+        INTERVIEW_INVITATION: { bg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6', color: '#c084fc', icon: '🎉', label: 'Interview Invitation' },
+        TECHNICAL_ASSESSMENT: { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', color: '#22d3ee', icon: '💻', label: 'Technical Assessment' },
+        AVAILABILITY_REQUEST: { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', color: '#60a5fa', icon: '📅', label: 'Availability Request' },
+        OFFER: { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', color: '#fbbf24', icon: '🏆', label: 'Formal Offer' },
+        REJECTION: { bg: 'rgba(100, 116, 139, 0.15)', border: '#64748b', color: '#94a3b8', icon: '📁', label: 'Archive / Rejection' },
+        ACKNOWLEDGEMENT: { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', color: '#34d399', icon: '📬', label: 'Application Acknowledged' },
+        INFORMATION_REQUEST: { bg: 'rgba(236, 72, 153, 0.15)', border: '#ec4899', color: '#f472b6', icon: '❓', label: 'Information Requested' },
+        OTHER: { bg: 'rgba(148, 163, 184, 0.15)', border: '#94a3b8', color: '#cbd5e1', icon: '✉️', label: 'Recruiter Message' }
+      };
+
+      container.innerHTML = filtered.map(item => {
+        const intentMeta = intentStyles[item.detectedIntent] || intentStyles.OTHER;
+        const draft = item.draft;
+        const company = item.companyName || 'Recruiter Communication';
+        const role = item.jobTitle || 'Target Opportunity';
+        const dateStr = item.receivedAt ? new Date(item.receivedAt).toLocaleString() : 'Recently';
+
+        // Slots pill rendering
+        let slotsHtml = '';
+        const slots = (draft && draft.suggestedSlots && draft.suggestedSlots.length) 
+          ? draft.suggestedSlots 
+          : (item.candidateAvailabilityOptions || []);
+        if (slots.length) {
+          slotsHtml = `
+            <div style="margin: 0.85rem 0; padding: 0.65rem 0.85rem; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+                🗓️ Grounded Candidate Availability Slots (${slots.length})
+              </div>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                ${slots.map(s => `<span style="font-size: 0.75rem; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); color: #67e8f9; padding: 3px 8px; border-radius: 4px;">${s}</span>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Draft action box rendering
+        let draftHtml = '';
+        if (draft) {
+          const isPending = draft.status === 'PENDING_APPROVAL';
+          const isSent = draft.status === 'SENT';
+          const isApproved = draft.status === 'APPROVED';
+
+          const statusBadge = isPending 
+            ? `<span style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">AWAITING SECURITY APPROVAL</span>`
+            : (isSent 
+                ? `<span style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); color: #34d399; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">✓ SENT VIA GMAIL</span>`
+                : `<span style="background: rgba(100, 116, 139, 0.2); border: 1px solid rgba(100, 116, 139, 0.5); color: #94a3b8; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">${draft.status}</span>`);
+
+          draftHtml = `
+            <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">Auto-Generated Follow-Up Draft</span>
+                  ${statusBadge}
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Thread Preserved: ${item.threadId || 'Direct'}</div>
+              </div>
+              <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; font-size: 0.82rem; font-family: monospace; white-space: pre-wrap; line-height: 1.45; color: #e2e8f0; margin-bottom: 0.75rem;">
+                <div style="color: var(--accent-cyan); font-weight: 600; margin-bottom: 0.35rem; font-family: var(--font-body);">Subject: ${draft.subject}</div>
+${draft.body}
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end;">
+                ${isPending ? `
+                  <button class="btn btn-secondary" onclick="dismissInterviewDraftUI('${draft.id}')" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">✕ Dismiss</button>
+                  <button class="btn btn-primary" onclick="approveInterviewDraftUI('${draft.id}')" style="font-size: 0.78rem; padding: 0.35rem 0.85rem; background: #059669; border-color: #059669;">✓ Approve & Dispatch Reply</button>
+                ` : (isSent ? `
+                  <span style="font-size: 0.75rem; color: #34d399; font-weight: 600;">✓ Email dispatched via Gmail thread at ${draft.sentAt ? new Date(draft.sentAt).toLocaleTimeString() : 'Recent'}</span>
+                ` : `
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">${draft.status}</span>
+                `)}
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); transition: border-color 0.2s;" onmouseenter="this.style.borderColor='var(--accent-purple)'" onmouseleave="this.style.borderColor='var(--border-color)'">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                  <span style="background: ${intentMeta.bg}; border: 1px solid ${intentMeta.border}; color: ${intentMeta.color}; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">
+                    ${intentMeta.icon} ${intentMeta.label}
+                  </span>
+                  ${item.actionRequired ? `<span style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px;">⚠️ ACTION REQUIRED</span>` : ''}
+                </div>
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">${company}</h3>
+                <div style="font-size: 0.85rem; color: var(--accent-cyan); font-weight: 500;">${role}</div>
+              </div>
+              <div style="text-align: right; font-size: 0.75rem; color: var(--text-muted);">
+                <div>${dateStr}</div>
+                <div style="margin-top: 2px; color: #94a3b8;">${item.senderEmail}</div>
+              </div>
+            </div>
+
+            <!-- Subject & Body Snippet -->
+            <div style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+              <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.25rem;">
+                ${item.subject || 'No subject'}
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); border-left: 3px solid ${intentMeta.border};">
+                ${item.snippet || 'No message content available.'}
+              </div>
+            </div>
+
+            ${slotsHtml}
+            ${draftHtml}
+          </div>
+        `;
+      }).join('');
     }
 
     // Check for OAuth callback notification

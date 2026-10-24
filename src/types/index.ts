@@ -282,6 +282,16 @@ export interface ApplicationSubmission {
   sheetsRowIndex?: number;
   auditHash: string;
 }
+export type RecruiterIntent = 
+  | 'INTERVIEW_INVITATION' 
+  | 'TECHNICAL_ASSESSMENT' 
+  | 'AVAILABILITY_REQUEST' 
+  | 'INFORMATION_REQUEST' 
+  | 'OFFER' 
+  | 'REJECTION' 
+  | 'ACKNOWLEDGEMENT' 
+  | 'ASSESSMENT_LINK' 
+  | 'OTHER';
 
 export interface RecruiterInteraction {
   id: string;
@@ -291,10 +301,43 @@ export interface RecruiterInteraction {
   senderEmail: string;
   subject: string;
   snippet: string;
-  detectedIntent: 'ACKNOWLEDGEMENT' | 'ASSESSMENT_LINK' | 'INTERVIEW_INVITATION' | 'REJECTION' | 'OTHER';
+  detectedIntent: RecruiterIntent;
   actionRequired: boolean;
   actionDetails?: string;
   receivedAt: string;
+  companyName?: string;
+  jobTitle?: string;
+  candidateAvailabilityOptions?: string[];
+  replyStatus?: 'NONE' | 'DRAFTED' | 'APPROVED' | 'SENT' | 'DISMISSED';
+  sentReplyAt?: string;
+  replyMessageId?: string;
+}
+
+export interface InterviewFollowUpDraft {
+  id: string;
+  interactionId: string;
+  submissionId?: string;
+  recipientEmail: string;
+  companyName: string;
+  jobTitle: string;
+  intent: RecruiterIntent;
+  subject: string;
+  body: string;
+  suggestedSlots: string[];
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'SENT' | 'DISMISSED';
+  approvedAt?: string;
+  sentAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SchedulingPreferences {
+  timezone: string;
+  workingDays: string[];
+  timeWindows: { start: string; end: string }[];
+  meetingPlatforms: string[];
+  noticeHours: number;
+  meetingDurationMinutes: number;
 }
 
 // ==========================================

@@ -45,12 +45,18 @@ export class ApplicationServer {
   private rateLimiter: InMemoryRateLimiter;
   private server?: ReturnType<typeof createServer>;
 
-  constructor(options?: { port?: number; host?: string; dbPath?: string }) {
+  constructor(options?: {
+    port?: number;
+    host?: string;
+    dbPath?: string;
+    db?: DatabaseManager;
+    orchestrator?: MasterOrchestrator;
+  }) {
     this.port = options?.port || config.port || 3300;
     this.host = options?.host || config.host || '127.0.0.1';
 
     const dbPath = options?.dbPath || process.env.DB_PATH || join(process.cwd(), 'data', 'job_platform.db');
-    this.db = new DatabaseManager(dbPath);
+    this.db = options?.db || new DatabaseManager(dbPath);
     this.accountManager = new AccountManager(this.db);
     this.cloudConfigManager = new CloudConfigManager(this.db);
 
@@ -69,7 +75,7 @@ export class ApplicationServer {
     const sheetsService = new DirectGoogleSheetsService();
     this.router = new ModelRouter({ db: this.db });
 
-    this.orchestrator = new MasterOrchestrator({
+    this.orchestrator = options?.orchestrator || new MasterOrchestrator({
       db: this.db,
       discoveryManager,
       router: this.router,
@@ -1000,7 +1006,7 @@ export class ApplicationServer {
             return this.sendJson(res, 200, drafts);
           }
 
-          if (pathname.endsWith('/approve') && req.method === 'POST') {
+          if (pathname.startsWith('/api/drafts/') && pathname.endsWith('/approve') && req.method === 'POST') {
             const parts = pathname.split('/');
             const draftId = parts[3];
             const body = await this.parseBody(req);
@@ -1009,7 +1015,7 @@ export class ApplicationServer {
             return this.sendJson(res, 200, { success: true, submission });
           }
 
-          if (pathname.endsWith('/reject') && req.method === 'POST') {
+          if (pathname.startsWith('/api/drafts/') && pathname.endsWith('/reject') && req.method === 'POST') {
             const parts = pathname.split('/');
             const draftId = parts[3];
             const body = await this.parseBody(req);
@@ -1141,6 +1147,143 @@ export class ApplicationServer {
           if (pathname === '/api/notifications/test' && req.method === 'POST') {
             const result = await this.orchestrator.getAlertManager().sendTestAlert();
             return this.sendJson(res, 200, result);
+          }
+
+          // ==========================================
+          // Recruiter Interactions & Interview Follow-Up Engine API
+          // ==========================================
+          if (pathname === '/api/recruiter-interactions' && req.method === 'GET') {
+            const intent = url.searchParams.get('intent') || undefined;
+            const actionRequired = url.searchParams.has('actionRequired') ? url.searchParams.get('actionRequired') === 'true' : undefined;
+            const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+            const interactions = this.db.listRecruiterInteractions({ intent, actionRequired, limit });
+            const totalInvites = interactions.filter(i => i.detectedIntent === 'INTERVIEW_INVITATION').length;
+            const pendingActions = interactions.filter(i => i.actionRequired && i.replyStatus !== 'SENT').length;
+            return this.sendJson(res, 200, {
+              interactions,
+              total: interactions.length,
+              totalInvites,
+              pendingActions,
+            });
+          }
+
+          if (pathname.startsWith('/api/recruiter-interactions/') && !pathname.endsWith('/simulate') && !pathname.endsWith('/sync') && req.method === 'GET') {
+            const id = pathname.replace('/api/recruiter-interactions/', '');
+            const interaction = this.db.getRecruiterInteractionById(id);
+            if (!interaction) {
+              return this.sendJson(res, 404, { error: `Interaction ${id} not found` });
+            }
+            const draft = this.db.getInterviewFollowUpDraftByInteractionId(id);
+            return this.sendJson(res, 200, { interaction, draft });
+          }
+
+          if (pathname === '/api/recruiter-interactions/simulate' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              const snippet = body.snippet || body.body || '';
+              if (!body.senderEmail || !body.subject || !snippet) {
+                return this.sendJson(res, 400, { error: 'senderEmail, subject, and snippet/body are required.' });
+              }
+              const payload = {
+                ...body,
+                snippet,
+              };
+              const result = await this.orchestrator.getInterviewEngine().processInboundInteraction(payload);
+              return this.sendJson(res, 201, {
+                success: true,
+                interaction: result.interaction,
+                draft: result.draft,
+                alertDispatched: result.alertDispatched,
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message });
+            }
+          }
+
+          if (pathname === '/api/recruiter-interactions/sync' && req.method === 'POST') {
+            try {
+              const query = (await this.parseBody(req)).query;
+              const result = await this.orchestrator.getInterviewEngine().syncRecruiterInbox(query);
+              return this.sendJson(res, 200, {
+                success: true,
+                ...result,
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message });
+            }
+          }
+
+          if (pathname === '/api/interview-drafts' && req.method === 'GET') {
+            const status = url.searchParams.get('status') || undefined;
+            const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+            const drafts = this.db.listInterviewFollowUpDrafts({ status, limit });
+            return this.sendJson(res, 200, { drafts, total: drafts.length });
+          }
+
+          if (pathname.startsWith('/api/interview-drafts/') && !pathname.endsWith('/approve') && !pathname.endsWith('/dismiss') && req.method === 'GET') {
+            const id = pathname.replace('/api/interview-drafts/', '');
+            const draft = this.db.getInterviewFollowUpDraftById(id);
+            if (!draft) {
+              return this.sendJson(res, 404, { error: `Interview draft ${id} not found` });
+            }
+            return this.sendJson(res, 200, { draft });
+          }
+
+          if (pathname.startsWith('/api/interview-drafts/') && !pathname.endsWith('/approve') && !pathname.endsWith('/dismiss') && req.method === 'PUT') {
+            const id = pathname.replace('/api/interview-drafts/', '');
+            const body = await this.parseBody(req);
+            this.db.updateInterviewFollowUpDraft(id, body);
+            const updated = this.db.getInterviewFollowUpDraftById(id);
+            return this.sendJson(res, 200, { success: true, draft: updated });
+          }
+
+          if (pathname.endsWith('/approve') && pathname.startsWith('/api/interview-drafts/') && req.method === 'POST') {
+            try {
+              const draftId = pathname.replace('/api/interview-drafts/', '').replace('/approve', '');
+              const body = await this.parseBody(req);
+              const result = await this.orchestrator.getInterviewEngine().approveAndSendDraft(draftId, {
+                approvedBy: body.approvedBy || 'authorized_candidate',
+                updatedSubject: body.updatedSubject,
+                updatedBody: body.updatedBody,
+                updatedSlots: body.updatedSlots,
+              });
+              return this.sendJson(res, 200, {
+                message: 'Follow-up reply approved and sent successfully to recruiter.',
+                ...result,
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 400, { error: err.message });
+            }
+          }
+
+          if (pathname.endsWith('/dismiss') && pathname.startsWith('/api/interview-drafts/') && req.method === 'POST') {
+            try {
+              const draftId = pathname.replace('/api/interview-drafts/', '').replace('/dismiss', '');
+              const body = await this.parseBody(req);
+              this.orchestrator.getInterviewEngine().dismissDraft(draftId, body.actor || 'authorized_user');
+              return this.sendJson(res, 200, { success: true, message: 'Draft dismissed successfully' });
+            } catch (err: any) {
+              return this.sendJson(res, 400, { error: err.message });
+            }
+          }
+
+          if (pathname === '/api/scheduling/preferences' && req.method === 'GET') {
+            return this.sendJson(res, 200, this.db.getSchedulingPreferences());
+          }
+
+          if (pathname === '/api/scheduling/preferences' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              const updated = this.db.saveSchedulingPreferences(body);
+              return this.sendJson(res, 200, { success: true, preferences: updated });
+            } catch (err: any) {
+              return this.sendJson(res, 400, { error: err.message });
+            }
+          }
+
+          if (pathname === '/api/scheduling/available-slots' && req.method === 'GET') {
+            const slots = this.orchestrator.getInterviewEngine().generateAvailableSlots();
+            return this.sendJson(res, 200, { slots, count: slots.length });
           }
 
           if (pathname === '/api/resumes/generate-pdf' && req.method === 'POST') {

@@ -9,6 +9,7 @@ import { ResumeTailoringAgent } from '../applications/resume-tailor.js';
 import { ApplicationWritingAgent } from '../applications/writer.js';
 import { ApprovalGatekeeper } from '../applications/approval-gate.js';
 import { AlertNotificationManager } from '../notifications/alert-manager.js';
+import { InterviewSchedulingEngine } from './interview-engine.js';
 import type { IGmailService } from '../integrations/google/gmail.js';
 import type { IDriveService } from '../integrations/google/drive.js';
 import type { ISheetsService } from '../integrations/google/sheets.js';
@@ -51,6 +52,7 @@ export class MasterOrchestrator {
   private driveService?: IDriveService;
   private sheetsService?: ISheetsService;
   private alertManager: AlertNotificationManager;
+  private interviewEngine: InterviewSchedulingEngine;
 
   constructor(deps: {
     db: DatabaseManager;
@@ -70,6 +72,11 @@ export class MasterOrchestrator {
     this.driveService = deps.driveService;
     this.sheetsService = deps.sheetsService;
     this.alertManager = deps.alertManager || new AlertNotificationManager();
+    this.interviewEngine = new InterviewSchedulingEngine({
+      db: this.db,
+      gmailService: this.gmailService,
+      alertManager: this.alertManager,
+    });
   }
 
   getGatekeeper(): ApprovalGatekeeper {
@@ -78,6 +85,10 @@ export class MasterOrchestrator {
 
   getAlertManager(): AlertNotificationManager {
     return this.alertManager;
+  }
+
+  getInterviewEngine(): InterviewSchedulingEngine {
+    return this.interviewEngine;
   }
 
   /**
@@ -189,11 +200,11 @@ export class MasterOrchestrator {
       }
     }
 
-    // Step 3: Monitor recruiter responses in Gmail
+    // Step 3: Monitor recruiter responses and schedule interviews
     try {
-      const interactions = await this.gmailService.fetchRecruiterResponses();
-      for (const inter of interactions) {
-        this.db.saveRecruiterInteraction(inter);
+      const syncResult = await this.interviewEngine.syncRecruiterInbox();
+      if (syncResult.interactionsProcessed > 0) {
+        logger.info(`Recruiter response check: ${syncResult.interactionsProcessed} processed, ${syncResult.draftsCreated} drafts staged, ${syncResult.alertsDispatched} alerts sent.`);
       }
     } catch (err) {
       logger.debug(`Recruiter response check completed with notice: ${err}`);

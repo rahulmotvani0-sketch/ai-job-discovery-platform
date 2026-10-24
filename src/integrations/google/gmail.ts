@@ -6,6 +6,7 @@ import type { ApprovalGatekeeper } from '../../applications/approval-gate.js';
 export interface IGmailService {
   createDraft(draft: ApplicationDraft): Promise<{ draftId: string; messageId: string }>;
   sendApprovedApplication(draftId: string, gatekeeper: ApprovalGatekeeper): Promise<{ messageId: string; threadId: string }>;
+  sendFollowUpReply?(params: { recipientEmail: string; subject: string; body: string; threadId?: string; inReplyToMessageId?: string }): Promise<{ messageId: string; threadId: string }>;
   fetchRecruiterResponses(query?: string): Promise<RecruiterInteraction[]>;
 }
 
@@ -153,6 +154,75 @@ export class DirectGmailService implements IGmailService {
     });
 
     return { messageId, threadId };
+  }
+
+  /**
+   * Dispatches a follow-up reply in an existing email thread.
+   */
+  async sendFollowUpReply(params: {
+    recipientEmail: string;
+    subject: string;
+    body: string;
+    threadId?: string;
+    inReplyToMessageId?: string;
+  }): Promise<{ messageId: string; threadId: string }> {
+    logger.info(`Sending follow-up reply to ${params.recipientEmail} ("${params.subject}")...`);
+
+    if (!this.hasCredentials()) {
+      const messageId = `sim_msg_${Date.now()}`;
+      const threadId = params.threadId || `sim_thread_${Date.now()}`;
+      logger.info(`[Simulation/Test Mode] Follow-up reply sent to ${params.recipientEmail} (Thread: ${threadId})`);
+      return { messageId, threadId };
+    }
+
+    try {
+      const tokens = JSON.parse(readFileSync(this.tokenPath, 'utf-8'));
+      if (!tokens.access_token) {
+        throw new Error('No valid access token found in Google credentials file.');
+      }
+
+      const headers = [
+        `To: ${params.recipientEmail}`,
+        `Subject: ${params.subject.startsWith('Re:') ? params.subject : `Re: ${params.subject}`}`,
+        'Content-Type: text/plain; charset=utf-8',
+      ];
+      if (params.inReplyToMessageId) {
+        headers.push(`In-Reply-To: ${params.inReplyToMessageId}`);
+        headers.push(`References: ${params.inReplyToMessageId}`);
+      }
+      headers.push('', params.body);
+
+      const rawEmail = headers.join('\r\n');
+      const encoded = Buffer.from(rawEmail).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      const payload: any = { raw: encoded };
+      if (params.threadId) {
+        payload.threadId = params.threadId;
+      }
+
+      const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Gmail API send failed with HTTP ${resp.status}: ${errorText}`);
+      }
+
+      const data = await resp.json() as any;
+      return {
+        messageId: data.id || `msg_${Date.now()}`,
+        threadId: data.threadId || params.threadId || `thread_${Date.now()}`,
+      };
+    } catch (err: any) {
+      logger.error(`Failed to send follow-up reply via Gmail API: ${err.message}`);
+      throw err;
+    }
   }
 
   /**
