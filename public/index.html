@@ -1834,7 +1834,10 @@
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
           <button id="recurring-discovery-toggle" class="btn btn-secondary" onclick="toggleRecurringDiscovery()" style="font-size: 0.82rem;">
             <span id="recurring-status-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #64748b; margin-right: 0.4rem;"></span>
-            Hourly Discovery: <span id="recurring-toggle-text">OFF</span>
+            Scheduled Discovery: <span id="recurring-toggle-text">OFF</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openSchedulerModal()" style="font-size: 0.82rem;">
+            ⚙️ Schedule & Alerts
           </button>
           <button class="btn btn-primary" onclick="triggerDiscoveryScan()" style="font-size: 0.82rem;">
             ⚡ Run Discovery Now
@@ -2232,6 +2235,122 @@
     </div>
   </div>
 
+  <!-- Automated Scheduled Discovery Modal -->
+  <div class="modal-backdrop" id="scheduler-modal">
+    <div class="modal-window" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+            <span class="source-tag" style="background: rgba(99, 102, 241, 0.2); border-color: var(--primary);">BACKGROUND ENGINE</span>
+            <span id="scheduler-modal-status-badge" class="meta-pill" style="color: var(--accent-cyan); font-weight: 700;">IDLE</span>
+          </div>
+          <div class="modal-title" style="font-size: 1.25rem; font-weight: 700;">Automated Discovery Scheduler & Push Alerts</div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);">Configure background discovery cadence, target ATS platforms, and mobile push alerts.</div>
+        </div>
+        <button class="btn btn-secondary" onclick="closeSchedulerModal()" style="padding: 0.25rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <!-- Engine Switch & Live Telemetry -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 0.85rem 1rem; border-radius: var(--radius-sm);">
+          <div>
+            <div style="font-weight: 600; font-size: 0.92rem;">Background Discovery Engine</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);" id="scheduler-next-run-text">Next run: --</div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button id="scheduler-engine-toggle-btn" class="btn btn-secondary" onclick="toggleSchedulerActiveState()" style="font-size: 0.82rem;">
+              <span id="scheduler-engine-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #64748b; margin-right: 0.4rem;"></span>
+              <span id="scheduler-engine-btn-text">Turn ON</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cadence Preset -->
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.4rem;">Discovery Cadence Preset</label>
+          <select id="scheduler-preset-select" class="select-field" onchange="handleSchedulerPresetChange()" style="width: 100%; font-size: 0.88rem;">
+            <option value="hourly">Hourly (0 * * * *) - Runs every hour</option>
+            <option value="every_2_hours">Every 2 Hours (0 */2 * * *)</option>
+            <option value="every_6_hours">Every 6 Hours (0 */6 * * *)</option>
+            <option value="every_12_hours">Every 12 Hours (0 */12 * * *)</option>
+            <option value="daily_morning">Daily Morning (0 9 * * *) - 9:00 AM UTC</option>
+            <option value="daily_evening">Daily Evening (0 18 * * *) - 6:00 PM UTC</option>
+            <option value="custom">Custom Cron Expression...</option>
+          </select>
+        </div>
+
+        <!-- Custom Cron Pattern (Hidden unless custom is selected) -->
+        <div id="scheduler-custom-cron-group" style="display: none;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 0.4rem;">Custom Cron Expression (standard 5-part format)</label>
+          <input type="text" id="scheduler-custom-cron-input" class="input-field" placeholder="e.g. 0 */4 * * *" style="width: 100%; font-family: var(--font-mono); font-size: 0.85rem;" />
+        </div>
+
+        <!-- Target ATS Platforms -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <label style="font-size: 0.82rem; font-weight: 600;">Target ATS Sources</label>
+            <button class="btn btn-secondary" onclick="toggleAllSchedulerSources()" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">Toggle All</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; cursor: pointer;">
+              <input type="checkbox" class="scheduler-source-cb" value="ashby" checked /> Ashby
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; cursor: pointer;">
+              <input type="checkbox" class="scheduler-source-cb" value="lever" checked /> Lever
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; cursor: pointer;">
+              <input type="checkbox" class="scheduler-source-cb" value="smartrecruiters" checked /> SmartRecruiters
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; cursor: pointer;">
+              <input type="checkbox" class="scheduler-source-cb" value="greenhouse" checked /> Greenhouse
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; cursor: pointer;">
+              <input type="checkbox" class="scheduler-source-cb" value="workable" checked /> Workable
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; cursor: pointer;">
+              <input type="checkbox" class="scheduler-source-cb" value="recruitee" checked /> Recruitee
+            </label>
+          </div>
+        </div>
+
+        <!-- Push Alerts & Threshold -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 0.85rem 1rem; border-radius: var(--radius-sm);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+            <div style="font-weight: 600; font-size: 0.85rem;">Mobile Push Alert Routing</div>
+            <div style="display: flex; gap: 0.4rem;">
+              <span id="scheduler-telegram-status-pill" class="meta-pill" style="font-size: 0.72rem;">Telegram: Checking...</span>
+              <span id="scheduler-discord-status-pill" class="meta-pill" style="font-size: 0.72rem;">Discord: Checking...</span>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <label style="display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+                Push Notification Threshold: <strong id="scheduler-alert-threshold-val" style="color: var(--accent-emerald);">80%</strong>
+              </label>
+              <input type="range" id="scheduler-alert-threshold-slider" min="70" max="95" step="5" value="80" oninput="document.getElementById('scheduler-alert-threshold-val').textContent = this.value + '%'" style="width: 100%;" />
+            </div>
+            <div style="width: 120px;">
+              <label style="display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.25rem;">Daily Target</label>
+              <input type="number" id="scheduler-daily-target-input" class="input-field" min="1" max="50" value="10" style="width: 100%; font-size: 0.85rem; padding: 0.35rem 0.6rem;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Last Cycle Telemetry Box -->
+        <div id="scheduler-last-run-box" style="font-size: 0.78rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <div>Last Cycle: <span id="scheduler-last-run-timestamp">No background cycles executed yet</span></div>
+          <div id="scheduler-last-run-metrics" style="margin-top: 0.25rem; color: var(--text-main); font-weight: 500;"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-secondary" id="scheduler-run-now-btn" onclick="triggerSchedulerRunNow()" style="font-size: 0.82rem;">⚡ Trigger Cycle Now</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="closeSchedulerModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveSchedulerConfig()">Save & Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Match Explanation Modal -->
   <div class="modal-backdrop" id="match-explanation-modal">
     <div class="modal-window" style="max-width: 840px;">
@@ -2521,6 +2640,7 @@
 
         allVacancies = await vacRes.json();
         applyFilters();
+        loadSchedulerStatus();
       } catch (err) {
         console.error('Failed to load dashboard:', err);
       }
@@ -4756,22 +4876,225 @@
       }
     }
 
-    async function toggleRecurringDiscovery() {
+    let currentSchedulerState = null;
+
+    async function loadSchedulerStatus() {
       try {
-        const newStatus = !isRecurringDiscoveryEnabled;
-        const res = await fetch('/api/discovery/recurring', {
+        const res = await fetch('/api/scheduler/status');
+        if (res.ok) {
+          currentSchedulerState = await res.json();
+          isRecurringDiscoveryEnabled = currentSchedulerState.isRunning;
+          updateRecurringButtonUI();
+          renderSchedulerModalUI();
+        }
+      } catch (err) {
+        console.warn('Failed to load scheduler status:', err);
+      }
+    }
+
+    function renderSchedulerModalUI() {
+      if (!currentSchedulerState) return;
+      const s = currentSchedulerState;
+
+      const badge = document.getElementById('scheduler-modal-status-badge');
+      if (badge) {
+        badge.textContent = s.isRunning ? 'RUNNING' : 'IDLE';
+        badge.style.color = s.isRunning ? 'var(--accent-emerald)' : 'var(--text-muted)';
+      }
+
+      const dot = document.getElementById('scheduler-engine-dot');
+      const btnText = document.getElementById('scheduler-engine-btn-text');
+      if (dot && btnText) {
+        dot.style.background = s.isRunning ? 'var(--accent-emerald)' : '#64748b';
+        dot.style.boxShadow = s.isRunning ? '0 0 8px var(--accent-emerald)' : 'none';
+        btnText.textContent = s.isRunning ? 'Turn OFF' : 'Turn ON';
+      }
+
+      const nextText = document.getElementById('scheduler-next-run-text');
+      if (nextText) {
+        if (s.isRunning && s.nextRunTime) {
+          const nextDate = new Date(s.nextRunTime);
+          nextText.textContent = `Next cycle: ${nextDate.toLocaleTimeString()} (${nextDate.toLocaleDateString()})`;
+        } else if (s.isRunning) {
+          nextText.textContent = `Active background scheduler (${s.preset || 'hourly'})`;
+        } else {
+          nextText.textContent = 'Scheduler is paused / stopped';
+        }
+      }
+
+      const presetSelect = document.getElementById('scheduler-preset-select');
+      if (presetSelect && s.preset) {
+        presetSelect.value = s.preset;
+        handleSchedulerPresetChange();
+      }
+
+      const cronInput = document.getElementById('scheduler-custom-cron-input');
+      if (cronInput && s.cronExpression) {
+        cronInput.value = s.cronExpression;
+      }
+
+      const slider = document.getElementById('scheduler-alert-threshold-slider');
+      const sliderVal = document.getElementById('scheduler-alert-threshold-val');
+      if (slider && s.minScoreToAlert) {
+        slider.value = s.minScoreToAlert;
+        if (sliderVal) sliderVal.textContent = s.minScoreToAlert + '%';
+      }
+
+      const targetInput = document.getElementById('scheduler-daily-target-input');
+      if (targetInput && s.dailyTarget) {
+        targetInput.value = s.dailyTarget;
+      }
+
+      if (Array.isArray(s.targetSourceTypes)) {
+        document.querySelectorAll('.scheduler-source-cb').forEach(cb => {
+          cb.checked = s.targetSourceTypes.includes(cb.value);
+        });
+      }
+
+      const tgPill = document.getElementById('scheduler-telegram-status-pill');
+      if (tgPill) {
+        if (s.alertChannels?.telegram) {
+          tgPill.textContent = 'Telegram: Connected ✓';
+          tgPill.style.color = 'var(--accent-emerald)';
+          tgPill.style.borderColor = 'var(--accent-emerald)';
+        } else {
+          tgPill.textContent = 'Telegram: Unconfigured';
+          tgPill.style.color = 'var(--text-muted)';
+          tgPill.style.borderColor = 'var(--border-color)';
+        }
+      }
+
+      const dcPill = document.getElementById('scheduler-discord-status-pill');
+      if (dcPill) {
+        if (s.alertChannels?.discord) {
+          dcPill.textContent = 'Discord: Connected ✓';
+          dcPill.style.color = 'var(--accent-emerald)';
+          dcPill.style.borderColor = 'var(--accent-emerald)';
+        } else {
+          dcPill.textContent = 'Discord: Unconfigured';
+          dcPill.style.color = 'var(--text-muted)';
+          dcPill.style.borderColor = 'var(--border-color)';
+        }
+      }
+
+      const lastTs = document.getElementById('scheduler-last-run-timestamp');
+      const lastMetrics = document.getElementById('scheduler-last-run-metrics');
+      if (lastTs && s.lastRunTime) {
+        lastTs.textContent = new Date(s.lastRunTime).toLocaleString();
+      }
+      if (lastMetrics && s.lastRunResult) {
+        const r = s.lastRunResult;
+        lastMetrics.textContent = `Discovered: ${r.scanReport?.totalDiscovered ?? 0} | Evaluated: ${r.vacanciesEvaluated ?? 0} | Qualified: ${r.qualifiedCount ?? 0} | Drafts: ${r.draftsPrepared ?? 0} | Alerts Dispatched: ${r.alertsSent ?? 0}`;
+      } else if (lastMetrics) {
+        lastMetrics.textContent = `Total Runs Completed: ${s.totalRuns ?? 0} | Qualified Today: ${s.dailyQualifiedDiscovered ?? 0}/${s.dailyTarget ?? 10}`;
+      }
+    }
+
+    function openSchedulerModal() {
+      const modal = document.getElementById('scheduler-modal');
+      if (modal) {
+        modal.classList.add('active');
+        loadSchedulerStatus();
+      }
+    }
+
+    function closeSchedulerModal() {
+      const modal = document.getElementById('scheduler-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function handleSchedulerPresetChange() {
+      const select = document.getElementById('scheduler-preset-select');
+      const customGroup = document.getElementById('scheduler-custom-cron-group');
+      if (select && customGroup) {
+        customGroup.style.display = select.value === 'custom' ? 'block' : 'none';
+      }
+    }
+
+    function toggleAllSchedulerSources() {
+      const cbs = document.querySelectorAll('.scheduler-source-cb');
+      const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+      cbs.forEach(cb => cb.checked = anyUnchecked);
+    }
+
+    async function toggleSchedulerActiveState() {
+      if (!currentSchedulerState) {
+        await loadSchedulerStatus();
+      }
+      const willRun = !currentSchedulerState?.isRunning;
+      const endpoint = willRun ? '/api/scheduler/start' : '/api/scheduler/stop';
+      try {
+        const res = await fetch(endpoint, { method: 'POST' });
+        if (res.ok) {
+          currentSchedulerState = await res.json();
+          isRecurringDiscoveryEnabled = currentSchedulerState.isRunning;
+          updateRecurringButtonUI();
+          renderSchedulerModalUI();
+        }
+      } catch (err) {
+        alert('Error toggling scheduler: ' + err.message);
+      }
+    }
+
+    async function saveSchedulerConfig() {
+      const preset = document.getElementById('scheduler-preset-select').value;
+      const customCron = document.getElementById('scheduler-custom-cron-input').value.trim();
+      const minScoreToAlert = parseInt(document.getElementById('scheduler-alert-threshold-slider').value, 10);
+      const dailyTarget = parseInt(document.getElementById('scheduler-daily-target-input').value, 10);
+      const targetSourceTypes = Array.from(document.querySelectorAll('.scheduler-source-cb:checked')).map(cb => cb.value);
+
+      const payload = {
+        preset,
+        cronExpression: preset === 'custom' ? customCron : undefined,
+        minScoreToAlert,
+        dailyTarget,
+        targetSourceTypes,
+      };
+
+      try {
+        const res = await fetch('/api/scheduler/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: newStatus })
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to update recurring discovery');
-
-        isRecurringDiscoveryEnabled = data.hourlyDiscoveryEnabled;
+        if (!res.ok) throw new Error(data.error || 'Failed to update scheduler configuration');
+        currentSchedulerState = data.scheduler;
+        isRecurringDiscoveryEnabled = currentSchedulerState.isRunning;
         updateRecurringButtonUI();
+        renderSchedulerModalUI();
+        closeSchedulerModal();
       } catch (err) {
-        alert('Error changing recurring discovery: ' + err.message);
+        alert('Error saving scheduler config: ' + err.message);
       }
+    }
+
+    async function triggerSchedulerRunNow() {
+      const btn = document.getElementById('scheduler-run-now-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Running Discovery...';
+      }
+      try {
+        const res = await fetch('/api/scheduler/run-now', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to execute discovery cycle');
+        currentSchedulerState = data.scheduler;
+        renderSchedulerModalUI();
+        alert(`✓ Discovery cycle completed!\nDiscovered: ${data.result.scanReport.totalDiscovered}\nEvaluated: ${data.result.vacanciesEvaluated}\nQualified: ${data.result.qualifiedCount}\nDrafts Prepared: ${data.result.draftsPrepared}\nAlerts Sent: ${data.result.alertsSent}`);
+        loadDashboard();
+      } catch (err) {
+        alert('Error running discovery cycle: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '⚡ Trigger Cycle Now';
+        }
+      }
+    }
+
+    async function toggleRecurringDiscovery() {
+      await toggleSchedulerActiveState();
     }
 
     function updateRecurringButtonUI() {

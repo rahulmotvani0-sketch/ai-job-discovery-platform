@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { logger } from '../core/logger.js';
 import type { DatabaseManager } from '../core/database.js';
 import type { DiscoveryManager, DiscoveryScanReport } from '../discovery/connectors/manager.js';
@@ -24,10 +25,20 @@ import type {
 } from '../types/index.js';
 
 export interface EndToEndRunResult {
+  runId: string;
   scanReport: DiscoveryScanReport;
   vacanciesEvaluated: number;
   qualifiedCount: number;
   draftsPrepared: number;
+  alertsSent: number;
+}
+
+export interface PipelineRunOptions {
+  limitPerSource?: number;
+  minScoreToDraft?: number;
+  minScoreToAlert?: number;
+  sourceIds?: string[];
+  triggerType?: 'RESUME_UPLOAD' | 'MANUAL' | 'SCHEDULED';
 }
 
 export class MasterOrchestrator {
@@ -72,19 +83,48 @@ export class MasterOrchestrator {
   /**
    * Runs the complete autonomous discovery, extraction, scoring, tailoring, and draft preparation pipeline.
    */
-  async runPipeline(options?: { limitPerSource?: number; minScoreToDraft?: number }): Promise<EndToEndRunResult> {
+  async runPipeline(options?: PipelineRunOptions): Promise<EndToEndRunResult> {
+    const runId = randomUUID();
+    const triggerType = options?.triggerType || 'SCHEDULED';
     const minScore = options?.minScoreToDraft ?? 70.0;
+    const minAlertScore = options?.minScoreToAlert ?? 80.0;
     const profile = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
     const prefs = this.db.getPreferences() || DEFAULT_JOB_PREFERENCES;
 
+    // Track real discovery run in SQLite
+    const discoveryRun: DiscoveryRun = {
+      id: runId,
+      triggerType,
+      status: 'RUNNING',
+      currentStep: 'SEARCHING_JOB_SOURCES',
+      stepMessage: `Searching active sources (${options?.sourceIds?.length ? options.sourceIds.join(', ') : 'all connectors'})...`,
+      totalSourcesSearched: options?.sourceIds?.length || 0,
+      discoveredCount: 0,
+      evaluatedCount: 0,
+      qualifiedCount: 0,
+      minScoreThreshold: minScore,
+      startedAt: new Date().toISOString(),
+    };
+    this.db.saveDiscoveryRun(discoveryRun);
+
     // 1. Discover & Verify raw vacancies
-    const scanReport = await this.discoveryManager.runDiscoveryScan({ limitPerSource: options?.limitPerSource ?? 15 });
+    const scanReport = await this.discoveryManager.runDiscoveryScan({
+      limitPerSource: options?.limitPerSource ?? 15,
+      sourceIds: options?.sourceIds,
+    });
+
+    discoveryRun.totalSourcesSearched = scanReport.sourcesQueried.length;
+    discoveryRun.discoveredCount = scanReport.totalDiscovered;
+    discoveryRun.currentStep = 'EVALUATING_JOB_MATCHES';
+    discoveryRun.stepMessage = `Evaluating match score against parsed candidate profile...`;
+    this.db.saveDiscoveryRun(discoveryRun);
 
     // 2. Fetch verified vacancies that haven't been evaluated yet
-    const pendingVacancies = this.db.listVacancies({ status: 'VERIFIED', limit: 10 });
+    const pendingVacancies = this.db.listVacancies({ status: 'VERIFIED', limit: 15 });
     let vacanciesEvaluated = 0;
     let qualifiedCount = 0;
     let draftsPrepared = 0;
+    let alertsSent = 0;
 
     for (const vacancy of pendingVacancies) {
       try {
@@ -129,9 +169,16 @@ export class MasterOrchestrator {
           }
 
           // Instant Mobile Alert Dispatch (Telegram / Discord) for high-match opportunities
-          this.alertManager.notifyOpportunity(vacancy, evaluation).catch((err) => {
-            logger.debug(`Alert notification skipped: ${err}`);
-          });
+          if (evaluation.overallScore >= minAlertScore) {
+            try {
+              const alertRes = await this.alertManager.notifyOpportunity(vacancy, evaluation);
+              if (alertRes.telegramSent || alertRes.discordSent) {
+                alertsSent++;
+              }
+            } catch (err) {
+              logger.debug(`Alert notification skipped: ${err}`);
+            }
+          }
 
           logger.info(`Staged qualified application draft for ${vacancy.companyName} - "${vacancy.title}" (Score: ${evaluation.overallScore}/100, Tier: ${evaluation.tier})`);
         } else {
@@ -152,11 +199,22 @@ export class MasterOrchestrator {
       logger.debug(`Recruiter response check completed with notice: ${err}`);
     }
 
+    // Finalize DiscoveryRun state
+    discoveryRun.evaluatedCount = vacanciesEvaluated;
+    discoveryRun.qualifiedCount = qualifiedCount;
+    discoveryRun.currentStep = 'SEARCH_COMPLETED';
+    discoveryRun.stepMessage = `Completed: discovered ${scanReport.totalDiscovered}, evaluated ${vacanciesEvaluated}, ${qualifiedCount} qualified.`;
+    discoveryRun.status = 'COMPLETED';
+    discoveryRun.completedAt = new Date().toISOString();
+    this.db.saveDiscoveryRun(discoveryRun);
+
     return {
+      runId,
       scanReport,
       vacanciesEvaluated,
       qualifiedCount,
       draftsPrepared,
+      alertsSent,
     };
   }
 

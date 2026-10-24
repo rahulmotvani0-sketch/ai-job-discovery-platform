@@ -1037,6 +1037,32 @@ export class ApplicationServer {
             return this.sendJson(res, 200, this.scheduler.getStatus());
           }
 
+          if (pathname === '/api/scheduler/config' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              const updatedStatus = this.scheduler.updateConfig(body);
+              return this.sendJson(res, 200, {
+                success: true,
+                scheduler: updatedStatus,
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 400, { error: err.message });
+            }
+          }
+
+          if (pathname === '/api/scheduler/run-now' && req.method === 'POST') {
+            try {
+              const result = await this.scheduler.runNow();
+              return this.sendJson(res, 200, {
+                success: true,
+                result,
+                scheduler: this.scheduler.getStatus(),
+              });
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message });
+            }
+          }
+
           // Mobile Alerts API
           if (pathname === '/api/notifications/status' && req.method === 'GET') {
             return this.sendJson(res, 200, this.orchestrator.getAlertManager().getStatus());
