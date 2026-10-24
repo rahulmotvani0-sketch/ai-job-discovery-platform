@@ -17,7 +17,9 @@ import { JobMatchingAgent } from './ai/agents/matcher.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES, loadAuthoritativeProfile } from './core/profile.js';
 import { AtsPdfGenerator } from './applications/pdf-generator.js';
 import { ResumeIntelligenceEngine } from './applications/resume-intelligence.js';
-import type { InferenceMode, Vacancy, UserProfile, DiscoveryRun } from './types/index.js';
+import type { InferenceMode, Vacancy, UserProfile, DiscoveryRun, JobFilterCriteria, SavedSearch } from './types/index.js';
+import { filterVacancies, getAvailableFilterOptions } from './discovery/filtering.js';
+import { listAllConnectorCapabilities } from './discovery/capabilities.js';
 import { config } from './config/index.js';
 import { GoogleOAuthManager } from './integrations/google/oauth.js';
 import {
@@ -37,6 +39,7 @@ export class ApplicationServer {
   private cloudConfigManager: CloudConfigManager;
   private router: ModelRouter;
   private orchestrator: MasterOrchestrator;
+  private discoveryManager: DiscoveryManager;
   private scheduler: JobScheduler;
   private googleOAuthManager: GoogleOAuthManager;
   private rateLimiter: InMemoryRateLimiter;
@@ -59,7 +62,8 @@ export class ApplicationServer {
       logger.info('Initialized database with verified candidate profile.');
     }
 
-    const discoveryManager = new DiscoveryManager(this.db);
+    this.discoveryManager = new DiscoveryManager(this.db);
+    const discoveryManager = this.discoveryManager;
     const gmailService = new DirectGmailService();
     const driveService = new DirectGoogleDriveService();
     const sheetsService = new DirectGoogleSheetsService();
@@ -93,6 +97,10 @@ export class ApplicationServer {
 
   getOrchestrator(): MasterOrchestrator {
     return this.orchestrator;
+  }
+
+  getDiscoveryManager(): DiscoveryManager {
+    return this.discoveryManager;
   }
 
   getScheduler(): JobScheduler {
@@ -432,6 +440,137 @@ export class ApplicationServer {
             });
           }
 
+          // Global Discovery Source Registry & Coverage Endpoints
+          if (pathname === '/api/discovery/sources' && req.method === 'GET') {
+            const category = url.searchParams.get('category') as any;
+            const status = url.searchParams.get('status') as any;
+            const country = url.searchParams.get('country') || undefined;
+            const search = url.searchParams.get('search') || undefined;
+            const isEnabledParam = url.searchParams.get('isEnabled');
+            const isEnabled = isEnabledParam !== null ? isEnabledParam === 'true' || isEnabledParam === '1' : undefined;
+
+            const sources = this.db.listSources({ category, status, country, isEnabled, search });
+            return this.sendJson(res, 200, {
+              total: sources.length,
+              sources,
+            });
+          }
+
+          if (pathname.startsWith('/api/discovery/sources/') && !pathname.endsWith('/test') && !pathname.endsWith('/toggle') && req.method === 'GET') {
+            const sourceId = pathname.replace('/api/discovery/sources/', '');
+            const source = this.db.getSource(sourceId);
+            if (!source) {
+              return this.sendJson(res, 404, { error: `Source '${sourceId}' not found in registry.` });
+            }
+            return this.sendJson(res, 200, source);
+          }
+
+          if (pathname.endsWith('/toggle') && pathname.startsWith('/api/discovery/sources/') && req.method === 'POST') {
+            const parts = pathname.split('/');
+            const sourceId = parts[4];
+            const body = await this.parseBody(req);
+            const isEnabled = Boolean(body.isEnabled);
+            const updated = this.db.toggleSourceEnabled(sourceId, isEnabled);
+            if (!updated) {
+              return this.sendJson(res, 404, { error: `Source '${sourceId}' not found.` });
+            }
+            return this.sendJson(res, 200, { success: true, sourceId, isEnabled });
+          }
+
+          if (pathname.endsWith('/test') && pathname.startsWith('/api/discovery/sources/') && req.method === 'POST') {
+            const parts = pathname.split('/');
+            const sourceId = parts[4];
+            const source = this.db.getSource(sourceId);
+            if (!source) {
+              return this.sendJson(res, 404, { error: `Source '${sourceId}' not found.` });
+            }
+
+            // Test connector health
+            const connector = (this.discoveryManager as any).connectors?.find((c: any) => c.sourceType === sourceId || c.sourceId === sourceId);
+            if (connector && typeof connector.healthCheck === 'function') {
+              try {
+                const health = await connector.healthCheck();
+                const healthStatus = health.healthy ? 'HEALTHY' : 'UNHEALTHY';
+                this.db.updateSourceStatus(sourceId, source.implementationStatus, healthStatus, health.healthy ? undefined : health.message);
+                return this.sendJson(res, 200, {
+                  sourceId,
+                  healthCheck: health,
+                });
+              } catch (err: any) {
+                this.db.updateSourceStatus(sourceId, source.implementationStatus, 'UNHEALTHY', err.message);
+                return this.sendJson(res, 200, {
+                  sourceId,
+                  healthCheck: {
+                    sourceId,
+                    healthy: false,
+                    message: err.message,
+                    checkedAt: new Date().toISOString(),
+                  }
+                });
+              }
+            } else {
+              return this.sendJson(res, 200, {
+                sourceId,
+                healthCheck: {
+                  sourceId,
+                  healthy: false,
+                  message: `Source '${source.name}' has status '${source.implementationStatus}' and is not an active automated connector.`,
+                  checkedAt: new Date().toISOString(),
+                }
+              });
+            }
+          }
+
+          if (pathname === '/api/discovery/coverage' && req.method === 'GET') {
+            const summary = this.db.getSourceRegistrySummary();
+            const recentRuns = this.db.listDiscoveryRuns(5);
+            return this.sendJson(res, 200, {
+              summary,
+              recentRuns,
+              timestamp: new Date().toISOString(),
+            });
+          }
+
+          if (pathname === '/api/discovery/proposals' && req.method === 'GET') {
+            const status = url.searchParams.get('status') as any;
+            const proposals = this.db.listSourceProposals(status);
+            return this.sendJson(res, 200, { proposals, total: proposals.length });
+          }
+
+          if (pathname === '/api/discovery/proposals' && req.method === 'POST') {
+            const body = await this.parseBody(req);
+            if (!body.name || !body.officialDomain || !body.category || !body.evidenceDescription) {
+              return this.sendJson(res, 400, { error: 'Missing required proposal fields (name, officialDomain, category, evidenceDescription).' });
+            }
+            const proposal = {
+              id: body.id || `prop_${Date.now()}`,
+              name: String(body.name).trim(),
+              officialDomain: String(body.officialDomain).trim(),
+              category: body.category,
+              countriesCovered: Array.isArray(body.countriesCovered) ? body.countriesCovered : ['Global'],
+              evidenceDescription: String(body.evidenceDescription).trim(),
+              apiOrFeedDocsUrl: body.apiOrFeedDocsUrl || undefined,
+              accessRestrictions: body.accessRestrictions || undefined,
+              authRequirements: body.authRequirements || 'NONE',
+              estimatedIntegrationEffort: body.estimatedIntegrationEffort || 'MEDIUM',
+              recommendedAdapterType: body.recommendedAdapterType || 'OFFICIAL_PUBLIC_API',
+              validationStatus: 'PENDING_REVIEW' as const,
+              proposedAt: new Date().toISOString(),
+            };
+            this.db.saveSourceProposal(proposal);
+            return this.sendJson(res, 201, { success: true, proposal });
+          }
+
+          if (pathname.endsWith('/review') && pathname.startsWith('/api/discovery/proposals/') && req.method === 'POST') {
+            const parts = pathname.split('/');
+            const proposalId = parts[4];
+            const body = await this.parseBody(req);
+            const status = body.validationStatus || 'VALIDATED';
+            const notes = body.reviewNotes;
+            this.db.updateSourceProposal(proposalId, status, notes);
+            return this.sendJson(res, 200, { success: true, proposalId, status });
+          }
+
           if (pathname === '/api/profile/resume' && req.method === 'DELETE') {
             const baseProfile = DEFAULT_USER_PROFILE;
             this.db.saveUserProfile(baseProfile);
@@ -448,6 +587,126 @@ export class ApplicationServer {
               const body = await this.parseBody(req);
               this.db.savePreferences(body);
               return this.sendJson(res, 200, { success: true });
+            }
+          }
+
+          // Connector Filter Capabilities
+          if (pathname === '/api/discovery/capabilities' && req.method === 'GET') {
+            const capabilities = listAllConnectorCapabilities();
+            return this.sendJson(res, 200, {
+              totalConnectors: capabilities.length,
+              capabilities
+            }, requestId);
+          }
+
+          // Advanced Job Filtering & Search Endpoints
+          if (pathname === '/api/jobs/filters/options' && req.method === 'GET') {
+            const vacancies = this.db.listVacancies({ limit: 1000 });
+            const options = getAvailableFilterOptions(vacancies);
+            return this.sendJson(res, 200, options, requestId);
+          }
+
+          if (pathname === '/api/jobs/search' && req.method === 'POST') {
+            const filters: JobFilterCriteria = await this.parseBody(req);
+            const vacancies = this.db.listVacancies({ limit: 1000 });
+            
+            for (const v of vacancies) {
+              const evalRecord = this.db.getMatchEvaluationByVacancyId(v.id);
+              if (evalRecord) {
+                v.matchScore = evalRecord;
+                v.matchEvaluation = evalRecord;
+              }
+            }
+
+            const profile = this.db.getUserProfile() || DEFAULT_USER_PROFILE;
+            const { matching, stats } = filterVacancies(vacancies, filters, profile);
+            return this.sendJson(res, 200, {
+              filters,
+              stats,
+              totalMatching: matching.length,
+              results: matching
+            }, requestId);
+          }
+
+          // Saved Searches & Preferences Management
+          if (pathname === '/api/saved-searches') {
+            const userId = (req.headers['x-user-id'] as string) || 'default_user';
+            if (req.method === 'GET') {
+              const searches = this.db.listSavedSearches(userId);
+              return this.sendJson(res, 200, searches, requestId);
+            }
+            if (req.method === 'POST') {
+              const body = await this.parseBody(req);
+              if (!body.name || typeof body.name !== 'string' || body.name.trim() === '') {
+                return this.sendJson(res, 400, { error: 'Search profile name is required.' }, requestId);
+              }
+              const search: SavedSearch = {
+                id: randomUUID(),
+                userId,
+                name: body.name.trim(),
+                filters: body.filters || {},
+                isDefault: Boolean(body.isDefault),
+                alertsEnabled: Boolean(body.alertsEnabled),
+                scheduledSearchEnabled: Boolean(body.scheduledSearchEnabled),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              this.db.saveSavedSearch(search);
+              return this.sendJson(res, 201, search, requestId);
+            }
+          }
+
+          if (pathname.startsWith('/api/saved-searches/')) {
+            const userId = (req.headers['x-user-id'] as string) || 'default_user';
+            const subPath = pathname.replace('/api/saved-searches/', '');
+            const parts = subPath.split('/');
+            const searchId = parts[0];
+            const action = parts[1];
+
+            if (!action) {
+              if (req.method === 'GET') {
+                const search = this.db.getSavedSearch(searchId, userId);
+                if (!search) return this.sendJson(res, 404, { error: 'Saved search not found or unauthorized' }, requestId);
+                return this.sendJson(res, 200, search, requestId);
+              }
+              if (req.method === 'PUT') {
+                const existing = this.db.getSavedSearch(searchId, userId);
+                if (!existing) return this.sendJson(res, 404, { error: 'Saved search not found or unauthorized' }, requestId);
+                const body = await this.parseBody(req);
+                const updated: SavedSearch = {
+                  ...existing,
+                  name: body.name !== undefined ? String(body.name).trim() : existing.name,
+                  filters: body.filters !== undefined ? body.filters : existing.filters,
+                  isDefault: body.isDefault !== undefined ? Boolean(body.isDefault) : existing.isDefault,
+                  alertsEnabled: body.alertsEnabled !== undefined ? Boolean(body.alertsEnabled) : existing.alertsEnabled,
+                  scheduledSearchEnabled: body.scheduledSearchEnabled !== undefined ? Boolean(body.scheduledSearchEnabled) : existing.scheduledSearchEnabled,
+                  updatedAt: new Date().toISOString()
+                };
+                this.db.saveSavedSearch(updated);
+                return this.sendJson(res, 200, updated, requestId);
+              }
+              if (req.method === 'DELETE') {
+                const deleted = this.db.deleteSavedSearch(searchId, userId);
+                if (!deleted) return this.sendJson(res, 404, { error: 'Saved search not found or unauthorized' }, requestId);
+                return this.sendJson(res, 200, { success: true }, requestId);
+              }
+            } else if (action === 'duplicate' && req.method === 'POST') {
+              const body = await this.parseBody(req);
+              const duplicated = this.db.duplicateSavedSearch(searchId, body.name, userId);
+              if (!duplicated) return this.sendJson(res, 404, { error: 'Saved search not found or unauthorized' }, requestId);
+              return this.sendJson(res, 201, duplicated, requestId);
+            } else if (action === 'default' && req.method === 'POST') {
+              const existing = this.db.getSavedSearch(searchId, userId);
+              if (!existing) return this.sendJson(res, 404, { error: 'Saved search not found or unauthorized' }, requestId);
+              this.db.setDefaultSavedSearch(searchId, userId);
+              return this.sendJson(res, 200, { success: true, isDefault: true }, requestId);
+            } else if (action === 'run' && req.method === 'POST') {
+              const search = this.db.getSavedSearch(searchId, userId);
+              if (!search) return this.sendJson(res, 404, { error: 'Saved search not found or unauthorized' }, requestId);
+              const vacancies = this.db.listVacancies({ limit: 500 });
+              const { matching, stats } = filterVacancies(vacancies, search.filters);
+              this.db.recordSavedSearchRun(searchId, matching.length, userId);
+              return this.sendJson(res, 200, { search, matching, stats, total: matching.length }, requestId);
             }
           }
 

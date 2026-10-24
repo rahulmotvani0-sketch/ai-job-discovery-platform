@@ -36,3 +36,6 @@ npm-debug.log*
 .vscode/
 *.swp
 *.swo
+
+# Excluded documentation
+docs/NEXTRAISE_PRODUCT_RESEARCH.md

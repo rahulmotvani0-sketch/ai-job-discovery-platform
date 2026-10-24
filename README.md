@@ -122,7 +122,6 @@ We welcome contributions from the developer community! Whether you want to add n
 ## 📄 Operational Documentation
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): Guide for open-source contributors and adding new ATS connectors.
-- [docs/NEXTRAISE_PRODUCT_RESEARCH.md](docs/NEXTRAISE_PRODUCT_RESEARCH.md): NextRaise product analysis and feature reproduction plan.
 - [docs/PLATFORM_IMPROVEMENT_PLAN.md](docs/PLATFORM_IMPROVEMENT_PLAN.md): Strategic architecture and phase roadmap.
 - [docs/OPENMAUSBOT_AUDIT.md](docs/OPENMAUSBOT_AUDIT.md): Technical audit of OpenMausBot patterns.
 - [docs/GOOGLE_OAUTH_SETUP_GUIDE.md](docs/GOOGLE_OAUTH_SETUP_GUIDE.md): 3-minute Google Cloud OAuth setup guide.

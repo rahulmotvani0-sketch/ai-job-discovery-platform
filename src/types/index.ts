@@ -19,7 +19,9 @@ export type VacancyStatus =
   | 'SUBMITTED'
   | 'REJECTED'
   | 'INTERVIEWING'
-  | 'OFFER';
+  | 'OFFER'
+  | 'ARCHIVED'
+  | 'IGNORED';
 
 export interface WorkExperience {
   company: string;
@@ -80,7 +82,23 @@ export interface JobPreferences {
 
 export interface RawJobPayload {
   sourceId: string;
-  sourceType: 'remoteok' | 'jobicy' | 'himalayas' | 'greenhouse' | 'lever' | 'ashby' | 'workable' | 'ycombinator' | 'direct_portal' | 'other';
+  sourceType: 
+    | 'remoteok' 
+    | 'remotive'
+    | 'jobicy' 
+    | 'himalayas' 
+    | 'greenhouse' 
+    | 'lever' 
+    | 'ashby' 
+    | 'workable' 
+    | 'smartrecruiters'
+    | 'ycombinator' 
+    | 'direct_careers'
+    | 'direct_portal' 
+    | 'adzuna'
+    | 'usajobs'
+    | 'other'
+    | string;
   sourceUrl: string;
   companyName: string;
   title: string;
@@ -121,6 +139,14 @@ export interface Vacancy {
   isSaved?: boolean;
   category?: string;
   country?: string;
+  workArrangement?: WorkArrangement;
+  experienceLevel?: ExperienceLevel;
+  minExperienceYears?: number;
+  maxExperienceYears?: number;
+  visaSponsorship?: boolean;
+  relocationAssistance?: boolean;
+  matchScore?: number | MatchScoreEvaluation;
+  matchEvaluation?: MatchScoreEvaluation;
 }
 
 export interface ParsedJobRequirements {
@@ -267,3 +293,117 @@ export interface RecruiterInteraction {
   actionDetails?: string;
   receivedAt: string;
 }
+
+// ==========================================
+// Advanced Job Search Filters & Saved Searches
+// ==========================================
+
+export type WorkArrangement = 'all' | 'remote' | 'hybrid' | 'onsite' | 'flexible' | 'unknown';
+
+export type ExperienceLevel = 
+  | 'internship' 
+  | 'entry-level' 
+  | 'junior' 
+  | 'mid-level' 
+  | 'senior' 
+  | 'lead' 
+  | 'principal' 
+  | 'staff' 
+  | 'manager' 
+  | 'director' 
+  | 'not-specified';
+
+export interface JobFilterCriteria {
+  workArrangements?: WorkArrangement[];
+  locations?: string[];
+  country?: string;
+  city?: string;
+  remoteAllowedIn?: string[];
+  visaOrRelocation?: {
+    visaSponsorship?: boolean;
+    relocationAssistance?: boolean;
+    internationalRelocation?: boolean;
+    workAuthorizationRequired?: string;
+  };
+  roles?: string[];
+  keywords?: string;
+  experienceLevels?: ExperienceLevel[];
+  minExperienceYears?: number;
+  maxExperienceYears?: number;
+  salary?: {
+    min?: number;
+    max?: number;
+    currency?: string;
+    period?: 'annual' | 'monthly' | 'daily' | 'hourly' | 'contract';
+    requireDisclosed?: boolean; // If false (default), undisclosed salaries are NOT discarded
+    hasBonusOrEquity?: boolean;
+  };
+  matchScore?: {
+    min?: number; // 0 - 100, default 75
+    max?: number; // default 100
+  };
+  skills?: {
+    mustHave?: string[];
+    preferred?: string[];
+    excluded?: string[];
+    mode?: 'all' | 'any';
+  };
+  employmentTypes?: Array<EmploymentType | 'not-specified'>;
+  company?: {
+    names?: string[];
+    excludedCompanies?: string[];
+    companyTypes?: Array<'startup' | 'sme' | 'enterprise'>;
+    isDirectEmployer?: boolean;
+    excludeApplied?: boolean;
+    excludeDismissed?: boolean;
+  };
+  postingDate?: {
+    preset?: '24h' | '3d' | '7d' | '14d' | '30d' | 'all';
+    startDate?: string;
+    endDate?: string;
+    recentlyUpdated?: boolean;
+  };
+  sources?: string[];
+  sourceCategories?: string[];
+  additional?: {
+    easyApply?: boolean;
+    verifiedOnly?: boolean;
+    earlyApplicantOnly?: boolean;
+    savedOnly?: boolean;
+    notPreviouslyViewed?: boolean;
+  };
+}
+
+export interface FilterExclusionStats {
+  totalRetrieved: number;
+  totalDeduplicated: number;
+  totalMatching: number;
+  qualifyingScoreCount: number;
+  excludedByWorkArrangement: number;
+  excludedByLocation: number;
+  excludedByRole: number;
+  excludedByExperience: number;
+  excludedBySalary: number;
+  excludedBySkills: number;
+  excludedByEmploymentType: number;
+  excludedByCompany: number;
+  excludedByDate: number;
+  excludedByScore: number;
+  excludedByEligibility: number;
+  failedSources: Array<{ sourceId: string; error: string }>;
+}
+
+export interface SavedSearch {
+  id: string;
+  userId: string;
+  name: string;
+  filters: JobFilterCriteria;
+  isDefault: boolean;
+  alertsEnabled: boolean;
+  scheduledSearchEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastRunAt?: string;
+  lastResultsCount?: number;
+}
+

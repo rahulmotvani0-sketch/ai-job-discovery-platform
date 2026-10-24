@@ -14,8 +14,18 @@ import type {
   ConnectedAccount,
   LLMConfiguration,
   DiscoveryRun,
-  DiscoveryStep
+  DiscoveryStep,
+  SavedSearch
 } from '../types/index.js';
+import type { 
+  JobSourceDefinition, 
+  JobSourceCategory, 
+  SourceImplementationStatus, 
+  SourceHealthStatus, 
+  SourceRegistrySummary, 
+  SourceProposal 
+} from '../discovery/registry/types.js';
+import { INITIAL_SOURCE_CATALOG } from '../discovery/registry/catalog.js';
 
 export class DatabaseManager {
   private db: DatabaseSync;
@@ -229,6 +239,72 @@ export class DatabaseManager {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS source_registry (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        url TEXT NOT NULL,
+        category TEXT NOT NULL,
+        countries TEXT NOT NULL,
+        regions TEXT NOT NULL,
+        job_categories TEXT NOT NULL,
+        integration_type TEXT NOT NULL,
+        api_docs_url TEXT,
+        auth_requirements TEXT NOT NULL,
+        config_vars TEXT NOT NULL,
+        usage_restrictions TEXT,
+        attribution_required INTEGER NOT NULL DEFAULT 0,
+        attribution_text TEXT,
+        pagination_method TEXT NOT NULL,
+        rate_limits TEXT NOT NULL,
+        sync_frequency_minutes INTEGER NOT NULL DEFAULT 60,
+        implementation_status TEXT NOT NULL,
+        health_status TEXT NOT NULL,
+        verification_status TEXT NOT NULL,
+        is_enabled INTEGER NOT NULL DEFAULT 1,
+        notes TEXT,
+        stats TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_source_registry_category ON source_registry(category);
+      CREATE INDEX IF NOT EXISTS idx_source_registry_status ON source_registry(implementation_status);
+      CREATE INDEX IF NOT EXISTS idx_source_registry_health ON source_registry(health_status);
+
+      CREATE TABLE IF NOT EXISTS source_proposals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        official_domain TEXT NOT NULL,
+        category TEXT NOT NULL,
+        countries_covered TEXT NOT NULL,
+        evidence_description TEXT NOT NULL,
+        api_or_feed_docs_url TEXT,
+        access_restrictions TEXT,
+        auth_requirements TEXT NOT NULL,
+        estimated_integration_effort TEXT NOT NULL,
+        recommended_adapter_type TEXT NOT NULL,
+        validation_status TEXT NOT NULL DEFAULT 'PENDING_REVIEW',
+        proposed_at TEXT NOT NULL,
+        reviewed_at TEXT,
+        review_notes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS saved_searches (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'default_user',
+        name TEXT NOT NULL,
+        filters_json TEXT NOT NULL,
+        is_default INTEGER NOT NULL DEFAULT 0,
+        alerts_enabled INTEGER NOT NULL DEFAULT 0,
+        scheduled_search_enabled INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_run_at TEXT,
+        last_results_count INTEGER DEFAULT 0
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id);
+      CREATE INDEX IF NOT EXISTS idx_saved_searches_default ON saved_searches(user_id, is_default);
     `);
 
     // Safe incremental migrations for existing DBs
@@ -249,6 +325,22 @@ export class DatabaseManager {
     try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN evaluated_count INTEGER DEFAULT 0;"); } catch {}
     try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN min_score_threshold REAL DEFAULT 75.0;"); } catch {}
     try { this.db.exec("ALTER TABLE discovery_runs ADD COLUMN error_message TEXT;"); } catch {}
+    try { this.db.exec("ALTER TABLE vacancies ADD COLUMN work_arrangement TEXT DEFAULT 'unknown';"); } catch {}
+    try { this.db.exec("ALTER TABLE vacancies ADD COLUMN experience_level TEXT DEFAULT 'not-specified';"); } catch {}
+    try { this.db.exec("ALTER TABLE vacancies ADD COLUMN min_experience_years INTEGER;"); } catch {}
+    try { this.db.exec("ALTER TABLE vacancies ADD COLUMN max_experience_years INTEGER;"); } catch {}
+    try { this.db.exec("ALTER TABLE vacancies ADD COLUMN visa_sponsorship INTEGER DEFAULT 0;"); } catch {}
+    try { this.db.exec("ALTER TABLE vacancies ADD COLUMN relocation_assistance INTEGER DEFAULT 0;"); } catch {}
+
+    // Seed source registry if empty
+    try {
+      const countRow = this.db.prepare('SELECT count(*) as count FROM source_registry').get() as { count: number };
+      if (!countRow || countRow.count === 0) {
+        this.seedSourceCatalog();
+      }
+    } catch (err) {
+      logger.error('Failed to check/seed source registry', { error: (err as Error).message });
+    }
   }
 
   // User Profile
@@ -1163,6 +1255,555 @@ export class DatabaseManager {
   deleteLLMConfiguration(provider: string): boolean {
     const res = this.db.prepare('DELETE FROM llm_configurations WHERE provider = ?').run(provider);
     return res.changes > 0;
+  }
+
+  // ==========================================
+  // Source Registry & Global Discovery Methods
+  // ==========================================
+
+  private seedSourceCatalog(): void {
+    const insert = this.db.prepare(`
+      INSERT INTO source_registry (
+        id, name, url, category, countries, regions, job_categories,
+        integration_type, api_docs_url, auth_requirements, config_vars,
+        usage_restrictions, attribution_required, attribution_text,
+        pagination_method, rate_limits, sync_frequency_minutes,
+        implementation_status, health_status, verification_status,
+        is_enabled, notes, stats, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO NOTHING
+    `);
+
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      const now = new Date().toISOString();
+      for (const s of INITIAL_SOURCE_CATALOG) {
+        insert.run(
+          s.id,
+          s.name,
+          s.url,
+          s.category,
+          JSON.stringify(s.countries || []),
+          JSON.stringify(s.regions || []),
+          JSON.stringify(s.jobCategories || []),
+          s.integrationType,
+          s.apiDocsUrl ?? null,
+          s.authRequirements,
+          JSON.stringify(s.configVars || []),
+          s.usageRestrictions ?? null,
+          s.attributionRequired ? 1 : 0,
+          s.attributionText ?? null,
+          s.paginationMethod,
+          JSON.stringify(s.rateLimits || {}),
+          s.syncFrequencyMinutes,
+          s.implementationStatus,
+          s.healthStatus,
+          s.verificationStatus,
+          s.isEnabled ? 1 : 0,
+          s.notes ?? null,
+          JSON.stringify(s.stats || {}),
+          now
+        );
+      }
+      this.db.exec('COMMIT;');
+    } catch (err) {
+      this.db.exec('ROLLBACK;');
+      logger.error('Failed to seed source catalog', { error: (err as Error).message });
+    }
+  }
+
+  private mapSourceRow(r: any): JobSourceDefinition {
+    return {
+      id: r.id,
+      name: r.name,
+      url: r.url,
+      category: r.category as JobSourceCategory,
+      countries: JSON.parse(r.countries || '[]'),
+      regions: JSON.parse(r.regions || '[]'),
+      jobCategories: JSON.parse(r.job_categories || '[]'),
+      integrationType: r.integration_type as any,
+      apiDocsUrl: r.api_docs_url ?? undefined,
+      authRequirements: r.auth_requirements as any,
+      configVars: JSON.parse(r.config_vars || '[]'),
+      usageRestrictions: r.usage_restrictions ?? undefined,
+      attributionRequired: r.attribution_required === 1,
+      attributionText: r.attribution_text ?? undefined,
+      paginationMethod: r.pagination_method as any,
+      rateLimits: JSON.parse(r.rate_limits || '{}'),
+      syncFrequencyMinutes: r.sync_frequency_minutes,
+      implementationStatus: r.implementation_status as any,
+      healthStatus: r.health_status as any,
+      verificationStatus: r.verification_status as any,
+      isEnabled: r.is_enabled === 1,
+      notes: r.notes ?? undefined,
+      stats: JSON.parse(r.stats || '{}'),
+    };
+  }
+
+  listSources(filter?: {
+    category?: JobSourceCategory;
+    status?: SourceImplementationStatus;
+    country?: string;
+    isEnabled?: boolean;
+    search?: string;
+  }): JobSourceDefinition[] {
+    let sql = 'SELECT * FROM source_registry WHERE 1=1';
+    const params: any[] = [];
+
+    if (filter?.category) {
+      sql += ' AND category = ?';
+      params.push(filter.category);
+    }
+    if (filter?.status) {
+      sql += ' AND implementation_status = ?';
+      params.push(filter.status);
+    }
+    if (filter?.isEnabled !== undefined) {
+      sql += ' AND is_enabled = ?';
+      params.push(filter.isEnabled ? 1 : 0);
+    }
+    if (filter?.search) {
+      sql += ' AND (name LIKE ? OR id LIKE ? OR url LIKE ?)';
+      const s = `%${filter.search}%`;
+      params.push(s, s, s);
+    }
+
+    sql += ' ORDER BY category ASC, name ASC';
+
+    const stmt = this.db.prepare(sql);
+    const rows = stmt.all(...params) as any[];
+    let sources = rows.map(r => this.mapSourceRow(r));
+
+    if (filter?.country) {
+      const c = filter.country.toUpperCase();
+      sources = sources.filter(s => 
+        s.countries.includes(c) || s.countries.includes('Global') || s.countries.includes('Worldwide')
+      );
+    }
+
+    return sources;
+  }
+
+  getSource(id: string): JobSourceDefinition | null {
+    const stmt = this.db.prepare('SELECT * FROM source_registry WHERE id = ?');
+    const r = stmt.get(id) as any;
+    if (!r) return null;
+    return this.mapSourceRow(r);
+  }
+
+  saveSource(source: JobSourceDefinition): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO source_registry (
+        id, name, url, category, countries, regions, job_categories,
+        integration_type, api_docs_url, auth_requirements, config_vars,
+        usage_restrictions, attribution_required, attribution_text,
+        pagination_method, rate_limits, sync_frequency_minutes,
+        implementation_status, health_status, verification_status,
+        is_enabled, notes, stats, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        url = excluded.url,
+        category = excluded.category,
+        countries = excluded.countries,
+        regions = excluded.regions,
+        job_categories = excluded.job_categories,
+        integration_type = excluded.integration_type,
+        api_docs_url = excluded.api_docs_url,
+        auth_requirements = excluded.auth_requirements,
+        config_vars = excluded.config_vars,
+        usage_restrictions = excluded.usage_restrictions,
+        attribution_required = excluded.attribution_required,
+        attribution_text = excluded.attribution_text,
+        pagination_method = excluded.pagination_method,
+        rate_limits = excluded.rate_limits,
+        sync_frequency_minutes = excluded.sync_frequency_minutes,
+        implementation_status = excluded.implementation_status,
+        health_status = excluded.health_status,
+        verification_status = excluded.verification_status,
+        is_enabled = excluded.is_enabled,
+        notes = excluded.notes,
+        stats = excluded.stats,
+        updated_at = excluded.updated_at
+    `);
+
+    stmt.run(
+      source.id,
+      source.name,
+      source.url,
+      source.category,
+      JSON.stringify(source.countries || []),
+      JSON.stringify(source.regions || []),
+      JSON.stringify(source.jobCategories || []),
+      source.integrationType,
+      source.apiDocsUrl ?? null,
+      source.authRequirements,
+      JSON.stringify(source.configVars || []),
+      source.usageRestrictions ?? null,
+      source.attributionRequired ? 1 : 0,
+      source.attributionText ?? null,
+      source.paginationMethod,
+      JSON.stringify(source.rateLimits || {}),
+      source.syncFrequencyMinutes,
+      source.implementationStatus,
+      source.healthStatus,
+      source.verificationStatus,
+      source.isEnabled ? 1 : 0,
+      source.notes ?? null,
+      JSON.stringify(source.stats || {}),
+      new Date().toISOString()
+    );
+  }
+
+  updateSourceStatus(
+    id: string,
+    status: SourceImplementationStatus,
+    health: SourceHealthStatus,
+    lastError?: string
+  ): void {
+    const existing = this.getSource(id);
+    if (!existing) return;
+    const stats = { ...existing.stats };
+    if (lastError) {
+      stats.lastError = lastError;
+      stats.consecutiveFailures = (stats.consecutiveFailures || 0) + 1;
+    } else {
+      stats.consecutiveFailures = 0;
+    }
+    const stmt = this.db.prepare(`
+      UPDATE source_registry
+      SET implementation_status = ?, health_status = ?, stats = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    stmt.run(status, health, JSON.stringify(stats), new Date().toISOString(), id);
+  }
+
+  toggleSourceEnabled(id: string, isEnabled: boolean): boolean {
+    const stmt = this.db.prepare(`
+      UPDATE source_registry
+      SET is_enabled = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    const res = stmt.run(isEnabled ? 1 : 0, new Date().toISOString(), id);
+    return res.changes > 0;
+  }
+
+  recordSourceSync(
+    id: string,
+    retrieved: number,
+    valid: number,
+    duplicates: number,
+    success: boolean,
+    error?: string
+  ): void {
+    const existing = this.getSource(id);
+    if (!existing) return;
+    const now = new Date().toISOString();
+    const stats = {
+      ...existing.stats,
+      lastSyncAt: now,
+      jobsRetrieved: (existing.stats.jobsRetrieved || 0) + retrieved,
+      validJobsRetrieved: (existing.stats.validJobsRetrieved || 0) + valid,
+      duplicatesRemoved: (existing.stats.duplicatesRemoved || 0) + duplicates,
+    };
+    let health: SourceHealthStatus = existing.healthStatus;
+    if (success) {
+      stats.lastSuccessAt = now;
+      stats.consecutiveFailures = 0;
+      stats.lastError = undefined;
+      health = 'HEALTHY';
+    } else {
+      stats.consecutiveFailures = (stats.consecutiveFailures || 0) + 1;
+      stats.lastError = error;
+      health = stats.consecutiveFailures >= 3 ? 'UNHEALTHY' : 'DEGRADED';
+    }
+    const stmt = this.db.prepare(`
+      UPDATE source_registry
+      SET stats = ?, health_status = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    stmt.run(JSON.stringify(stats), health, now, id);
+  }
+
+  getSourceRegistrySummary(): SourceRegistrySummary {
+    const all = this.listSources();
+    const byCategory: Record<JobSourceCategory, number> = {
+      INDIAN_PORTALS: 0,
+      INTERNATIONAL_BOARDS: 0,
+      REMOTE_EMPLOYMENT: 0,
+      STARTUP_GROWTH: 0,
+      SPECIALIST_TECH: 0,
+      FREELANCE_CONTRACT: 0,
+      GOVERNMENT_PUBLIC: 0,
+      ATS_PLATFORMS: 0,
+      COMPANY_CAREERS: 0,
+      ADDITIONAL_CHANNELS: 0,
+    };
+
+    const byImplementationStatus: Record<SourceImplementationStatus, number> = {
+      IMPLEMENTED_AND_TESTED: 0,
+      IMPLEMENTED_BUT_NOT_LIVE_VERIFIED: 0,
+      REQUIRES_API_CREDENTIALS: 0,
+      REQUIRES_PARTNER_ACCESS: 0,
+      MANUAL_OR_LINK_ONLY: 0,
+      TEMPORARILY_UNAVAILABLE: 0,
+      DISABLED_BY_USER: 0,
+      UNSUPPORTED: 0,
+      RESTRICTED_BY_TERMS: 0,
+    };
+
+    const byHealthStatus: Record<SourceHealthStatus, number> = {
+      HEALTHY: 0,
+      DEGRADED: 0,
+      UNHEALTHY: 0,
+      UNTESTED: 0,
+      REQUIRES_CONFIG: 0,
+    };
+
+    let totalJobsRetrieved = 0;
+    let totalValidRetained = 0;
+    let totalDuplicatesFiltered = 0;
+    const countriesSet = new Set<string>();
+    const regionsSet = new Set<string>();
+    let lastGlobalSyncAt: string | undefined;
+
+    for (const s of all) {
+      if (byCategory[s.category] !== undefined) byCategory[s.category]++;
+      if (byImplementationStatus[s.implementationStatus] !== undefined) byImplementationStatus[s.implementationStatus]++;
+      if (byHealthStatus[s.healthStatus] !== undefined) byHealthStatus[s.healthStatus]++;
+
+      totalJobsRetrieved += s.stats?.jobsRetrieved || 0;
+      totalValidRetained += s.stats?.validJobsRetrieved || 0;
+      totalDuplicatesFiltered += s.stats?.duplicatesRemoved || 0;
+
+      s.countries.forEach(c => countriesSet.add(c));
+      s.regions.forEach(r => regionsSet.add(r));
+
+      if (s.stats?.lastSyncAt) {
+        if (!lastGlobalSyncAt || s.stats.lastSyncAt > lastGlobalSyncAt) {
+          lastGlobalSyncAt = s.stats.lastSyncAt;
+        }
+      }
+    }
+
+    return {
+      totalSources: all.length,
+      byCategory,
+      byImplementationStatus,
+      byHealthStatus,
+      totalJobsRetrieved,
+      totalValidRetained,
+      totalDuplicatesFiltered,
+      countriesCovered: Array.from(countriesSet).sort(),
+      regionsCovered: Array.from(regionsSet).sort(),
+      lastGlobalSyncAt,
+    };
+  }
+
+  // Source Proposals
+  listSourceProposals(status?: SourceProposal['validationStatus']): SourceProposal[] {
+    let sql = 'SELECT * FROM source_proposals';
+    const params: any[] = [];
+    if (status) {
+      sql += ' WHERE validation_status = ?';
+      params.push(status);
+    }
+    sql += ' ORDER BY proposed_at DESC';
+    const rows = this.db.prepare(sql).all(...params) as any[];
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      officialDomain: r.official_domain,
+      category: r.category as JobSourceCategory,
+      countriesCovered: JSON.parse(r.countries_covered || '[]'),
+      evidenceDescription: r.evidence_description,
+      apiOrFeedDocsUrl: r.api_or_feed_docs_url ?? undefined,
+      accessRestrictions: r.access_restrictions ?? undefined,
+      authRequirements: r.auth_requirements as any,
+      estimatedIntegrationEffort: r.estimated_integration_effort as any,
+      recommendedAdapterType: r.recommended_adapter_type as any,
+      validationStatus: r.validation_status as any,
+      proposedAt: r.proposed_at,
+      reviewedAt: r.reviewed_at ?? undefined,
+      reviewNotes: r.review_notes ?? undefined,
+    }));
+  }
+
+  saveSourceProposal(p: SourceProposal): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO source_proposals (
+        id, name, official_domain, category, countries_covered,
+        evidence_description, api_or_feed_docs_url, access_restrictions,
+        auth_requirements, estimated_integration_effort, recommended_adapter_type,
+        validation_status, proposed_at, reviewed_at, review_notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        official_domain = excluded.official_domain,
+        category = excluded.category,
+        countries_covered = excluded.countries_covered,
+        evidence_description = excluded.evidence_description,
+        api_or_feed_docs_url = excluded.api_or_feed_docs_url,
+        access_restrictions = excluded.access_restrictions,
+        auth_requirements = excluded.auth_requirements,
+        estimated_integration_effort = excluded.estimated_integration_effort,
+        recommended_adapter_type = excluded.recommended_adapter_type,
+        validation_status = excluded.validation_status,
+        reviewed_at = excluded.reviewed_at,
+        review_notes = excluded.review_notes
+    `);
+
+    stmt.run(
+      p.id,
+      p.name,
+      p.officialDomain,
+      p.category,
+      JSON.stringify(p.countriesCovered || []),
+      p.evidenceDescription,
+      p.apiOrFeedDocsUrl ?? null,
+      p.accessRestrictions ?? null,
+      p.authRequirements,
+      p.estimatedIntegrationEffort,
+      p.recommendedAdapterType,
+      p.validationStatus,
+      p.proposedAt,
+      p.reviewedAt ?? null,
+      p.reviewNotes ?? null
+    );
+  }
+
+  updateSourceProposal(id: string, status: SourceProposal['validationStatus'], notes?: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE source_proposals
+      SET validation_status = ?, review_notes = ?, reviewed_at = ?
+      WHERE id = ?
+    `);
+    stmt.run(status, notes ?? null, new Date().toISOString(), id);
+  }
+
+  // Saved Searches and Preferences
+  listSavedSearches(userId: string = 'default_user'): SavedSearch[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM saved_searches 
+      WHERE user_id = ? 
+      ORDER BY is_default DESC, updated_at DESC
+    `);
+    const rows = stmt.all(userId) as any[];
+    return rows.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      name: r.name,
+      filters: JSON.parse(r.filters_json || '{}'),
+      isDefault: Boolean(r.is_default),
+      alertsEnabled: Boolean(r.alerts_enabled),
+      scheduledSearchEnabled: Boolean(r.scheduled_search_enabled),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      lastRunAt: r.last_run_at ?? undefined,
+      lastResultsCount: r.last_results_count ?? 0
+    }));
+  }
+
+  getSavedSearch(id: string, userId: string = 'default_user'): SavedSearch | null {
+    const stmt = this.db.prepare(`
+      SELECT * FROM saved_searches 
+      WHERE id = ? AND user_id = ?
+    `);
+    const r = stmt.get(id, userId) as any;
+    if (!r) return null;
+    return {
+      id: r.id,
+      userId: r.user_id,
+      name: r.name,
+      filters: JSON.parse(r.filters_json || '{}'),
+      isDefault: Boolean(r.is_default),
+      alertsEnabled: Boolean(r.alerts_enabled),
+      scheduledSearchEnabled: Boolean(r.scheduled_search_enabled),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      lastRunAt: r.last_run_at ?? undefined,
+      lastResultsCount: r.last_results_count ?? 0
+    };
+  }
+
+  saveSavedSearch(search: SavedSearch): void {
+    if (search.isDefault) {
+      // Unset previous default for this user
+      this.db.prepare('UPDATE saved_searches SET is_default = 0 WHERE user_id = ?').run(search.userId || 'default_user');
+    }
+
+    const stmt = this.db.prepare(`
+      INSERT INTO saved_searches (
+        id, user_id, name, filters_json, is_default, alerts_enabled, 
+        scheduled_search_enabled, created_at, updated_at, last_run_at, last_results_count
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        filters_json = excluded.filters_json,
+        is_default = excluded.is_default,
+        alerts_enabled = excluded.alerts_enabled,
+        scheduled_search_enabled = excluded.scheduled_search_enabled,
+        updated_at = excluded.updated_at,
+        last_run_at = COALESCE(excluded.last_run_at, saved_searches.last_run_at),
+        last_results_count = COALESCE(excluded.last_results_count, saved_searches.last_results_count)
+    `);
+
+    stmt.run(
+      search.id,
+      search.userId || 'default_user',
+      search.name,
+      JSON.stringify(search.filters || {}),
+      search.isDefault ? 1 : 0,
+      search.alertsEnabled ? 1 : 0,
+      search.scheduledSearchEnabled ? 1 : 0,
+      search.createdAt,
+      search.updatedAt,
+      search.lastRunAt ?? null,
+      search.lastResultsCount ?? 0
+    );
+  }
+
+  deleteSavedSearch(id: string, userId: string = 'default_user'): boolean {
+    const stmt = this.db.prepare(`
+      DELETE FROM saved_searches 
+      WHERE id = ? AND user_id = ?
+    `);
+    const res = stmt.run(id, userId);
+    return (res.changes ?? 0) > 0;
+  }
+
+  setDefaultSavedSearch(id: string, userId: string = 'default_user'): void {
+    this.db.prepare('UPDATE saved_searches SET is_default = 0 WHERE user_id = ?').run(userId);
+    this.db.prepare('UPDATE saved_searches SET is_default = 1, updated_at = ? WHERE id = ? AND user_id = ?')
+      .run(new Date().toISOString(), id, userId);
+  }
+
+  duplicateSavedSearch(id: string, newName?: string, userId: string = 'default_user'): SavedSearch | null {
+    const original = this.getSavedSearch(id, userId);
+    if (!original) return null;
+
+    const copy: SavedSearch = {
+      ...original,
+      id: randomUUID(),
+      name: newName || `${original.name} (Copy)`,
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastRunAt: undefined,
+      lastResultsCount: 0
+    };
+
+    this.saveSavedSearch(copy);
+    return copy;
+  }
+
+  recordSavedSearchRun(id: string, resultsCount: number, userId: string = 'default_user'): void {
+    this.db.prepare(`
+      UPDATE saved_searches
+      SET last_run_at = ?, last_results_count = ?, updated_at = ?
+      WHERE id = ? AND user_id = ?
+    `).run(new Date().toISOString(), resultsCount, new Date().toISOString(), id, userId);
   }
 
   close(): void {

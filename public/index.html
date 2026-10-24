@@ -841,6 +841,202 @@
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
+
+    /* Advanced Filters & Saved Searches System */
+    .filter-drawer {
+      background: rgba(14, 20, 34, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-focus);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .filter-drawer.open {
+      display: block;
+    }
+
+    .accordion-section {
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.2s ease;
+    }
+
+    .accordion-section.expanded {
+      border-color: rgba(99, 102, 241, 0.35);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .accordion-header {
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    .accordion-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .accordion-body {
+      padding: 1.15rem;
+      border-top: 1px solid var(--border-subtle);
+      display: none;
+    }
+
+    .accordion-section.expanded .accordion-body {
+      display: block;
+    }
+
+    .filter-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .filter-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .filter-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.65rem;
+    }
+
+    .pill-checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .pill-checkbox {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .pill-checkbox:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      color: var(--text-main);
+    }
+
+    .pill-checkbox.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      color: #c7d2fe;
+      font-weight: 600;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    }
+
+    .active-chips-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .filter-chip {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #e0e7ff;
+      font-size: 0.78rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .filter-chip-remove {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+
+    .filter-chip-remove:hover {
+      opacity: 1;
+      color: var(--accent-rose);
+    }
+
+    .exclusion-transparency-card {
+      background: rgba(16, 24, 40, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+    }
+
+    .exclusion-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .exclusion-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .exclusion-pill.non-zero {
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .saved-search-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .saved-search-item:hover {
+      border-color: var(--border-focus);
+      background: rgba(255, 255, 255, 0.05);
+    }
   </style>
 </head>
 <body>
@@ -864,6 +1060,7 @@
       <button class="nav-tab" onclick="switchTab('accounts')">Connected Accounts</button>
       <button class="nav-tab" onclick="switchTab('ai-settings')">AI Models & Routing</button>
       <button class="nav-tab" onclick="switchTab('history')">Submission History</button>
+      <button class="nav-tab" id="nav-tab-global-discovery" onclick="switchTab('global-discovery')">🌐 Source Registry & Coverage</button>
     </div>
 
     <div class="user-pill" id="global-status-pill">
@@ -920,42 +1117,405 @@
         <div class="category-chip" onclick="selectCategory('QA & Automation', this)">QA & Automation</div>
       </div>
 
-      <!-- Controls & Filter Bar -->
-      <div class="action-bar">
-        <div class="search-filter-group">
-          <input type="text" id="search-input" class="input-field" placeholder="Search keywords (e.g. Kubernetes, Terraform, ArgoCD)..." style="min-width: 240px;" oninput="applyFilters()">
-          
-          <select id="country-filter" class="select-field" onchange="applyFilters()">
-            <option value="All">All Locations</option>
-            <option value="India">🇮🇳 India Eligible</option>
-            <option value="United States">🇺🇸 United States</option>
-            <option value="United Kingdom">🇬🇧 United Kingdom</option>
-            <option value="Germany">🇩🇪 Germany</option>
-            <option value="Canada">🇨🇦 Canada</option>
-            <option value="Singapore">🇸🇬 Singapore</option>
-            <option value="Australia">🇦🇺 Australia</option>
-            <option value="Worldwide">🌐 Worldwide Remote</option>
-          </select>
-
-          <select id="score-filter" class="select-field" onchange="applyFilters()">
-            <option value="0">All Match Scores</option>
-            <option value="85">Excellent (85%+)</option>
-            <option value="70">Strong (70%+)</option>
-            <option value="55">Possible (55%+)</option>
-          </select>
-
-          <div class="toggle-chip" id="early-toggle" onclick="toggleEarlyFilter()">
-            <span>✦ Early Applicant</span>
+      <!-- Search & Filters Command Center -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;">
+        <!-- Top Search Bar -->
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.85rem; align-items: center;">
+          <div style="flex: 1.5; min-width: 260px; position: relative;">
+            <input type="text" id="search-input" class="input-field" placeholder="Search title, role, or keywords (e.g. SRE, Kubernetes, DevSecOps)..." style="width: 100%; padding-left: 2.2rem;" onkeydown="if(event.key==='Enter') executeAdvancedSearch()">
+            <span style="position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); opacity: 0.5;">🔍</span>
           </div>
 
-          <div class="toggle-chip" id="saved-toggle" onclick="toggleSavedFilter()">
-            <span>★ Saved</span>
+          <div style="flex: 1; min-width: 200px; position: relative;">
+            <input type="text" id="location-input" class="input-field" placeholder="Location, City, or Country..." style="width: 100%; padding-left: 2.2rem;" onkeydown="if(event.key==='Enter') executeAdvancedSearch()">
+            <span style="position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); opacity: 0.5;">📍</span>
+          </div>
+
+          <button class="btn btn-primary" onclick="executeAdvancedSearch()">Search</button>
+          <button class="btn btn-secondary" id="toggle-advanced-btn" onclick="toggleAdvancedFilterDrawer()">
+            <span>⚙ Filters</span>
+            <span id="active-filter-badge" style="background: var(--primary); color: #fff; font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 9999px; display: none;">0</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openSavedSearchesModal()">🔖 Saved Searches</button>
+          <button class="btn btn-secondary" onclick="loadDashboard()">↻ Refresh</button>
+          <button class="btn" id="scan-btn" onclick="triggerDiscoveryScan()">⚡ Run Live Scan</button>
+        </div>
+
+        <!-- Quick Filters Bar -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+          <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.25rem;">Quick Filters:</span>
+          <div class="pill-checkbox" id="qf-remote" onclick="toggleQuickFilter('remote')">🌐 Remote</div>
+          <div class="pill-checkbox" id="qf-hybrid" onclick="toggleQuickFilter('hybrid')">🏢 Hybrid</div>
+          <div class="pill-checkbox" id="qf-onsite" onclick="toggleQuickFilter('onsite')">📍 Onsite</div>
+          <div class="pill-checkbox" id="qf-score75" onclick="toggleQuickFilter('score75')">🎯 Match 75%+</div>
+          <div class="pill-checkbox" id="qf-last7d" onclick="toggleQuickFilter('last7d')">⏱ Last 7 Days</div>
+          <div class="pill-checkbox" id="qf-early" onclick="toggleQuickFilter('early')">✦ Early Applicant</div>
+          <div class="pill-checkbox" id="qf-saved" onclick="toggleQuickFilter('saved')">★ Saved Jobs</div>
+        </div>
+      </div>
+
+      <!-- Active Filters Chips Bar -->
+      <div id="active-chips-bar" class="active-chips-bar" style="display: none;">
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">ACTIVE FILTERS:</span>
+        <div id="active-chips-list" style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;"></div>
+        <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.6rem; margin-left: auto;" onclick="clearAllFilters()">Clear All</button>
+        <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="promptSaveCurrentSearch()">💾 Save This Search</button>
+      </div>
+
+      <!-- Transparent Exclusion Statistics Banner -->
+      <div id="exclusion-stats-banner" class="exclusion-transparency-card" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="font-weight: 600; color: var(--text-main);">
+            📊 Results Breakdown: <span id="stat-matching" style="color: var(--accent-emerald);">0</span> matching (<span id="stat-qualifying" style="color: var(--accent-cyan);">0</span> qualifying &ge; 75%) of <span id="stat-retrieved">0</span> retrieved (<span id="stat-deduped">0</span> deduplicated)
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-dim);">Non-overlapping exclusion accounting</span>
+        </div>
+        <div class="exclusion-pills" id="exclusion-pills-list">
+          <span class="exclusion-pill" id="pill-ex-location">Location: 0</span>
+          <span class="exclusion-pill" id="pill-ex-experience">Experience: 0</span>
+          <span class="exclusion-pill" id="pill-ex-salary">Salary: 0</span>
+          <span class="exclusion-pill" id="pill-ex-skills">Skills: 0</span>
+          <span class="exclusion-pill" id="pill-ex-arrangement">Arrangement: 0</span>
+          <span class="exclusion-pill" id="pill-ex-role">Role: 0</span>
+          <span class="exclusion-pill" id="pill-ex-company">Company: 0</span>
+          <span class="exclusion-pill" id="pill-ex-date">Posting Date: 0</span>
+          <span class="exclusion-pill" id="pill-ex-score">Score &lt; Threshold: 0</span>
+          <span class="exclusion-pill" id="pill-ex-eligibility">Eligibility / Visa: 0</span>
+        </div>
+      </div>
+
+      <!-- Advanced Filters Collapsible Drawer (8 Sections) -->
+      <div id="advanced-filters-drawer" class="filter-drawer">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700;">Advanced Job Search Preferences</h3>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">Configure granular filters applied across discovery, matching, and saved searches.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="toggleAdvancedFilterDrawer()">✕ Close</button>
+        </div>
+
+        <!-- Section 1: Location and Work Arrangement -->
+        <div class="accordion-section expanded" id="sec-location">
+          <div class="accordion-header" onclick="toggleAccordion('sec-location')">
+            <span>1. Location &amp; Work Arrangement</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.4rem; color: var(--text-muted);">WORK ARRANGEMENT (MULTI-SELECT)</label>
+              <div class="pill-checkbox-group">
+                <div class="pill-checkbox active" id="wa-all" onclick="toggleWorkArrangement('all')">All Work Arrangements</div>
+                <div class="pill-checkbox" id="wa-remote" onclick="toggleWorkArrangement('remote')">Remote</div>
+                <div class="pill-checkbox" id="wa-hybrid" onclick="toggleWorkArrangement('hybrid')">Hybrid</div>
+                <div class="pill-checkbox" id="wa-onsite" onclick="toggleWorkArrangement('onsite')">Onsite</div>
+                <div class="pill-checkbox" id="wa-flexible" onclick="toggleWorkArrangement('flexible')">Flexible</div>
+                <div class="pill-checkbox" id="wa-unknown" onclick="toggleWorkArrangement('unknown')">Unknown / Not Specified</div>
+              </div>
+            </div>
+            <div class="filter-grid-3">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Country</label>
+                <input type="text" id="adv-country" class="input-field" placeholder="e.g. India, United States, United Kingdom, Germany" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">City or Region</label>
+                <input type="text" id="adv-city" class="input-field" placeholder="e.g. Ahmedabad, London, Toronto, Berlin" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Remote Allowed For Applicants In</label>
+                <input type="text" id="adv-remote-allowed" class="input-field" placeholder="e.g. India, Worldwide, US" style="width: 100%;">
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 0.6rem;">
-          <button class="btn btn-secondary" onclick="loadDashboard()">↻ Refresh</button>
-          <button class="btn" id="scan-btn" onclick="triggerDiscoveryScan()">⚡ Run Live Discovery Scan</button>
+        <!-- Section 2: Role and Experience -->
+        <div class="accordion-section" id="sec-role">
+          <div class="accordion-header" onclick="toggleAccordion('sec-role')">
+            <span>2. Role, Job Title &amp; Experience Level</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.4rem; color: var(--text-muted);">TARGET ROLES (MULTI-SELECT OR CUSTOM)</label>
+              <div class="pill-checkbox-group" id="roles-pill-group">
+                <div class="pill-checkbox" onclick="toggleRoleSelect('DevOps Engineer', this)">DevOps Engineer</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Senior DevOps Engineer', this)">Senior DevOps</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Platform Engineer', this)">Platform Engineer</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Cloud Engineer', this)">Cloud Engineer</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Cloud Infrastructure Engineer', this)">Cloud Infrastructure</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('DevSecOps Engineer', this)">DevSecOps</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Site Reliability Engineer (SRE)', this)">SRE</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Kubernetes Engineer', this)">Kubernetes Engineer</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Build and Release Engineer', this)">Build &amp; Release</div>
+                <div class="pill-checkbox" onclick="toggleRoleSelect('Cloud Security Engineer', this)">Cloud Security</div>
+              </div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.4rem; color: var(--text-muted);">EXPERIENCE LEVEL</label>
+              <div class="pill-checkbox-group" id="experience-pill-group">
+                <div class="pill-checkbox" onclick="toggleExpSelect('internship', this)">Internship</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('entry-level', this)">Entry-level</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('junior', this)">Junior</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('mid-level', this)">Mid-level</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('senior', this)">Senior</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('lead', this)">Lead</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('principal', this)">Principal</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('staff', this)">Staff</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('manager', this)">Manager</div>
+                <div class="pill-checkbox" onclick="toggleExpSelect('director', this)">Director</div>
+              </div>
+            </div>
+            <div class="filter-grid-2">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Min Experience (Years)</label>
+                <input type="number" id="adv-min-exp" class="input-field" placeholder="e.g. 3" min="0" max="30" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Max Experience (Years)</label>
+                <input type="number" id="adv-max-exp" class="input-field" placeholder="e.g. 10" min="0" max="30" style="width: 100%;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Salary and Employment Type -->
+        <div class="accordion-section" id="sec-salary">
+          <div class="accordion-header" onclick="toggleAccordion('sec-salary')">
+            <span>3. Salary, Compensation &amp; Employment Type</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div class="filter-grid-4" style="margin-bottom: 1rem;">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Min Compensation</label>
+                <input type="number" id="adv-salary-min" class="input-field" placeholder="e.g. 100000" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Max Compensation</label>
+                <input type="number" id="adv-salary-max" class="input-field" placeholder="e.g. 250000" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Currency</label>
+                <select id="adv-salary-curr" class="select-field" style="width: 100%;">
+                  <option value="">Any Currency</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="INR">INR (₹)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="CAD">CAD ($)</option>
+                  <option value="AUD">AUD ($)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Pay Period</label>
+                <select id="adv-salary-period" class="select-field" style="width: 100%;">
+                  <option value="annual">Annual</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="daily">Daily</option>
+                  <option value="hourly">Hourly</option>
+                  <option value="contract">Contract</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                <input type="checkbox" id="adv-require-disclosed">
+                <span>Only show jobs with disclosed compensation (do not discard by default)</span>
+              </label>
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                <input type="checkbox" id="adv-bonus-equity">
+                <span>Requires Equity or Bonus mentioned</span>
+              </label>
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.4rem; color: var(--text-muted);">EMPLOYMENT TYPE (MULTI-SELECT)</label>
+              <div class="pill-checkbox-group" id="employment-type-group">
+                <div class="pill-checkbox" onclick="toggleEmpType('full-time', this)">Full-time</div>
+                <div class="pill-checkbox" onclick="toggleEmpType('contract', this)">Contract</div>
+                <div class="pill-checkbox" onclick="toggleEmpType('freelance', this)">Freelance</div>
+                <div class="pill-checkbox" onclick="toggleEmpType('part-time', this)">Part-time</div>
+                <div class="pill-checkbox" onclick="toggleEmpType('internship', this)">Internship</div>
+                <div class="pill-checkbox" onclick="toggleEmpType('temporary', this)">Temporary</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Resume Match and Skills -->
+        <div class="accordion-section" id="sec-skills">
+          <div class="accordion-header" onclick="toggleAccordion('sec-skills')">
+            <span>4. Resume Match Score &amp; Technical Skills</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div style="margin-bottom: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">MINIMUM RESUME MATCH THRESHOLD</label>
+                <span id="score-threshold-val" style="font-weight: 700; color: var(--accent-cyan); font-family: var(--font-mono);">75 / 100 (Default)</span>
+              </div>
+              <input type="range" id="adv-score-slider" min="0" max="100" value="75" step="1" style="width: 100%; accent-color: var(--primary);" oninput="updateScoreSlider(this.value)">
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="setScorePreset(50)">50%+</button>
+                <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="setScorePreset(60)">60%+</button>
+                <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="setScorePreset(70)">70%+</button>
+                <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="setScorePreset(75)">75%+ (Default)</button>
+                <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="setScorePreset(80)">80%+</button>
+                <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="setScorePreset(90)">90%+</button>
+              </div>
+            </div>
+            <div class="filter-grid-3">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Must-Have Skills (All Required)</label>
+                <input type="text" id="adv-must-skills" class="input-field" placeholder="e.g. Kubernetes, Terraform" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Preferred Skills (Any)</label>
+                <input type="text" id="adv-pref-skills" class="input-field" placeholder="e.g. AWS, Argo CD, Prometheus" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Excluded Skills / Keywords</label>
+                <input type="text" id="adv-ex-skills" class="input-field" placeholder="e.g. PHP, COBOL, Ruby" style="width: 100%;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 5: Company and Industry -->
+        <div class="accordion-section" id="sec-company">
+          <div class="accordion-header" onclick="toggleAccordion('sec-company')">
+            <span>5. Company &amp; Industry Filters</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div class="filter-grid-2" style="margin-bottom: 1rem;">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Target Companies</label>
+                <input type="text" id="adv-company-names" class="input-field" placeholder="Comma-separated company names..." style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Excluded Companies</label>
+                <input type="text" id="adv-ex-companies" class="input-field" placeholder="Companies to exclude from search..." style="width: 100%;">
+              </div>
+            </div>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                <input type="checkbox" id="adv-exclude-applied">
+                <span>Exclude previously applied companies</span>
+              </label>
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                <input type="checkbox" id="adv-exclude-dismissed" checked>
+                <span>Exclude dismissed / rejected vacancies</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 6: Posting Date and Freshness -->
+        <div class="accordion-section" id="sec-date">
+          <div class="accordion-header" onclick="toggleAccordion('sec-date')">
+            <span>6. Posting Date &amp; Freshness</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div style="margin-bottom: 1rem;">
+              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.4rem; color: var(--text-muted);">POSTING WINDOW PRESET</label>
+              <div class="pill-checkbox-group">
+                <div class="pill-checkbox" id="date-24h" onclick="setDatePreset('24h')">Last 24 Hours</div>
+                <div class="pill-checkbox" id="date-3d" onclick="setDatePreset('3d')">Last 3 Days</div>
+                <div class="pill-checkbox active" id="date-7d" onclick="setDatePreset('7d')">Last 7 Days</div>
+                <div class="pill-checkbox" id="date-14d" onclick="setDatePreset('14d')">Last 14 Days</div>
+                <div class="pill-checkbox" id="date-30d" onclick="setDatePreset('30d')">Last 30 Days</div>
+                <div class="pill-checkbox" id="date-all" onclick="setDatePreset('all')">All Time</div>
+              </div>
+            </div>
+            <div class="filter-grid-2">
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Custom Start Date</label>
+                <input type="date" id="adv-start-date" class="input-field" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">Custom End Date</label>
+                <input type="date" id="adv-end-date" class="input-field" style="width: 100%;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 7: Job Sources -->
+        <div class="accordion-section" id="sec-sources">
+          <div class="accordion-header" onclick="toggleAccordion('sec-sources')">
+            <span>7. Job Sources &amp; Connectors</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem;">Only verified operational connectors are queried. Incompatible filters are evaluated locally post-retrieval.</p>
+            <div class="pill-checkbox-group" id="sources-pill-group">
+              <div class="pill-checkbox active" onclick="toggleSourceFilter('all', this)">All Connected Sources</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('remotive', this)">Remotive</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('adzuna', this)">Adzuna</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('smartrecruiters', this)">SmartRecruiters</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('usajobs', this)">USAJobs</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('direct_careers', this)">Direct Careers</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('arbeitsagentur', this)">Arbeitsagentur</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('greenhouse', this)">Greenhouse ATS</div>
+              <div class="pill-checkbox" onclick="toggleSourceFilter('lever', this)">Lever ATS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 8: Eligibility and Additional Requirements -->
+        <div class="accordion-section" id="sec-eligibility">
+          <div class="accordion-header" onclick="toggleAccordion('sec-eligibility')">
+            <span>8. Eligibility &amp; Additional Requirements</span>
+            <span>▾</span>
+          </div>
+          <div class="accordion-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="adv-visa-sponsorship">
+                <span>Requires Visa Sponsorship</span>
+              </label>
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="adv-relocation">
+                <span>Requires Relocation Assistance</span>
+              </label>
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="adv-easy-apply">
+                <span>Verified Direct / Easy Apply Only</span>
+              </label>
+              <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="adv-verified-only">
+                <span>Verified Job Postings Only</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drawer Footer Controls -->
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle);">
+          <button class="btn btn-secondary" onclick="resetFilterDefaults()">Reset to Defaults</button>
+          <button class="btn btn-secondary" onclick="clearAllFilters()">Clear All</button>
+          <button class="btn btn-secondary" onclick="saveAsDefaultPreferences()">Save as Default Preferences</button>
+          <button class="btn btn-secondary" onclick="promptSaveCurrentSearch()">Save Search Profile...</button>
+          <button class="btn btn-primary" onclick="executeAdvancedSearch(); toggleAdvancedFilterDrawer();">Apply Filters</button>
+        </div>
+      </div>
+
+      <!-- Saved Searches Modal -->
+      <div id="saved-searches-modal" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 1.5rem;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border-focus); border-radius: 16px; max-width: 650px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+          <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff;">Saved Search Profiles</h3>
+            <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem;" onclick="closeSavedSearchesModal()">✕</button>
+          </div>
+          <div style="padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1;" id="saved-searches-list-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading saved searches...</div>
+          </div>
+          <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-subtle); background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary" onclick="promptSaveCurrentSearch()">+ Save Current Filters as Profile</button>
+            <button class="btn btn-secondary" onclick="closeSavedSearchesModal()">Close</button>
+          </div>
         </div>
       </div>
 
@@ -1463,7 +2023,187 @@
         </div>
       </div>
     </div>
+
+    <!-- Global Sources & Registry View -->
+    <div id="view-global-discovery" style="display: none;">
+      <!-- Hero / Section Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+            <span class="source-tag" style="background: rgba(14, 165, 233, 0.2); border-color: var(--accent-cyan);">GLOBAL REGISTRY</span>
+            <span class="meta-pill" style="color: var(--accent-emerald);">136 Seeded Sources Across 10 Categories</span>
+          </div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700;">Global Source Registry & Coverage Engine</h2>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Transparent discovery across India & South Asia, North America, Europe & UK, APAC, Middle East, Africa, and Latin America with honest operational verification.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="openProposalModal()" style="font-size: 0.85rem;">
+            💡 Propose Source
+          </button>
+          <button class="btn btn-primary" onclick="loadGlobalDiscoveryView(true)" style="font-size: 0.85rem;">
+            🔄 Refresh Registry
+          </button>
+        </div>
+      </div>
+
+      <!-- Coverage Metrics KPI Row -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="stat-card">
+          <div class="stat-title">Total Registered Sources</div>
+          <div class="stat-value" id="reg-total-sources">136</div>
+          <div class="stat-subtitle">Across 10 distinct categories</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Operational Connectors</div>
+          <div class="stat-value" style="color: var(--accent-emerald);" id="reg-operational-count">11</div>
+          <div class="stat-subtitle">Live verified ATS, feeds & APIs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Requires API Credentials</div>
+          <div class="stat-value" style="color: var(--accent-amber);" id="reg-credentials-count">2</div>
+          <div class="stat-subtitle">Adzuna & USAJOBS keys</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Partner Access / Catalog</div>
+          <div class="stat-value" style="color: var(--primary);" id="reg-partner-count">123</div>
+          <div class="stat-subtitle">Curated compliant access points</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Global Markets Searched</div>
+          <div class="stat-value" style="color: var(--accent-cyan);" id="reg-countries-count">35+</div>
+          <div class="stat-subtitle">Standardized ISO-3166 regions</div>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div style="margin-bottom: 1.25rem;">
+        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem;">Filter by Source Category</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;" id="reg-category-pills">
+          <button class="tag active" onclick="selectSourceCategory('ALL', this)">All Sources (136)</button>
+          <button class="tag" onclick="selectSourceCategory('INDIAN_PORTALS', this)">🇮🇳 Indian Portals (16)</button>
+          <button class="tag" onclick="selectSourceCategory('INTERNATIONAL_BOARDS', this)">🌍 International Boards (20)</button>
+          <button class="tag" onclick="selectSourceCategory('REMOTE_EMPLOYMENT', this)">💻 Remote Employment (19)</button>
+          <button class="tag" onclick="selectSourceCategory('STARTUP_GROWTH', this)">🚀 Startups (9)</button>
+          <button class="tag" onclick="selectSourceCategory('SPECIALIST_TECH', this)">⚡ Specialist Tech (14)</button>
+          <button class="tag" onclick="selectSourceCategory('FREELANCE_CONTRACT', this)">🤝 Freelance & Contract (10)</button>
+          <button class="tag" onclick="selectSourceCategory('GOVERNMENT_PUBLIC', this)">🏛️ Government & Public (10)</button>
+          <button class="tag" onclick="selectSourceCategory('ATS_PLATFORMS', this)">🏢 ATS Platforms (14)</button>
+          <button class="tag" onclick="selectSourceCategory('COMPANY_CAREERS', this)">🎯 Direct Company Careers (20)</button>
+          <button class="tag" onclick="selectSourceCategory('ADDITIONAL_CHANNELS', this)">📡 Discovery Channels (4)</button>
+        </div>
+      </div>
+
+      <!-- Search & Status Filter Controls -->
+      <div class="search-bar" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+        <input type="text" id="reg-search-input" class="search-input" placeholder="🔍 Search sources by name, domain, or ID..." oninput="handleSourceSearch()" style="min-width: 260px; flex: 1;">
+        
+        <select id="reg-status-filter" class="search-input" style="width: auto; cursor: pointer;" onchange="handleSourceSearch()">
+          <option value="">All Statuses</option>
+          <option value="IMPLEMENTED_AND_TESTED">Operational & Tested</option>
+          <option value="REQUIRES_API_CREDENTIALS">Requires API Credentials</option>
+          <option value="REQUIRES_PARTNER_ACCESS">Requires Partner Access</option>
+          <option value="MANUAL_OR_LINK_ONLY">Manual / Link Only</option>
+          <option value="DISABLED_BY_USER">Disabled</option>
+        </select>
+
+        <select id="reg-country-filter" class="search-input" style="width: auto; cursor: pointer;" onchange="handleSourceSearch()">
+          <option value="">All Countries</option>
+          <option value="IN">India (IN)</option>
+          <option value="US">United States (US)</option>
+          <option value="GB">United Kingdom (UK)</option>
+          <option value="CA">Canada (CA)</option>
+          <option value="DE">Germany (DE)</option>
+          <option value="FR">France (FR)</option>
+          <option value="SG">Singapore (SG)</option>
+          <option value="AU">Australia (AU)</option>
+          <option value="Global">Worldwide / Remote</option>
+        </select>
+
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; white-space: nowrap;">
+          <input type="checkbox" id="reg-enabled-only" checked onchange="handleSourceSearch()" style="accent-color: var(--primary);">
+          Enabled Only
+        </label>
+      </div>
+
+      <!-- Live Test Result Banner -->
+      <div id="reg-test-result-banner" style="display: none; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1.25rem; font-size: 0.85rem; border: 1px solid var(--border-subtle);"></div>
+
+      <!-- Source Registry Cards Grid -->
+      <div id="reg-sources-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem; margin-bottom: 2rem;"></div>
+
+      <!-- Community Proposals Section -->
+      <div style="background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-subtle); padding: 1.5rem; margin-top: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Community Source Discovery & Extension Proposals</h3>
+            <p style="color: var(--text-muted); font-size: 0.82rem;">Proposed new job feeds, APIs, and career portals submitted by community members.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="openProposalModal()" style="font-size: 0.78rem;">+ Submit New Proposal</button>
+        </div>
+        <div id="reg-proposals-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 1.5rem;">Loading proposals...</div>
+        </div>
+      </div>
+    </div>
   </main>
+
+  <!-- Source Proposal Modal -->
+  <div class="modal-backdrop" id="proposal-modal">
+    <div class="modal-window" style="max-width: 600px;">
+      <div class="modal-header">
+        <div>
+          <div class="source-tag">COMMUNITY EXTENSION</div>
+          <div class="modal-title">Propose a New Job Source</div>
+        </div>
+        <button class="modal-close" onclick="closeProposalModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+          Suggest legitimate public job boards, company career pages, or ATS feeds to expand the global discovery registry.
+        </p>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Source Display Name *</label>
+          <input type="text" id="prop-name" class="input-field" placeholder="e.g. EU Startups Career Portal" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Official Domain / Website *</label>
+          <input type="text" id="prop-domain" class="input-field" placeholder="e.g. https://jobs.eustartups.com" style="width: 100%;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Category *</label>
+            <select id="prop-category" class="input-field" style="width: 100%;">
+              <option value="SPECIALIST_TECH">Specialist Technology</option>
+              <option value="STARTUP_GROWTH">Startup & Growth</option>
+              <option value="REMOTE_EMPLOYMENT">Remote Employment</option>
+              <option value="INDIAN_PORTALS">Indian Portals</option>
+              <option value="INTERNATIONAL_BOARDS">International Boards</option>
+              <option value="ATS_PLATFORMS">ATS Platforms</option>
+              <option value="COMPANY_CAREERS">Company Careers</option>
+              <option value="GOVERNMENT_PUBLIC">Government & Public</option>
+              <option value="FREELANCE_CONTRACT">Freelance & Contract</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Countries Covered (comma separated)</label>
+            <input type="text" id="prop-countries" class="input-field" placeholder="e.g. DE, FR, NL, Global" style="width: 100%;">
+          </div>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">API or Feed Documentation URL</label>
+          <input type="text" id="prop-docs" class="input-field" placeholder="e.g. https://eustartups.com/rss/jobs.xml" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Evidence & Legitimacy Description *</label>
+          <textarea id="prop-evidence" class="input-field" rows="3" placeholder="Describe the type of opportunities, public API/RSS access, and why this source is valuable..." style="width: 100%;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeProposalModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitProposalForm()">Submit Proposal</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Match Explanation Modal -->
   <div class="modal-backdrop" id="match-explanation-modal">
@@ -1718,59 +2458,679 @@
       applyFilters();
     }
 
-    function toggleEarlyFilter() {
-      isEarlyFilter = !isEarlyFilter;
-      document.getElementById('early-toggle').classList.toggle('active', isEarlyFilter);
-      applyFilters();
+    let activeJobFilters = {
+      workArrangements: ['all'],
+      matchScore: { min: 75 },
+      salary: { requireDisclosed: false },
+      postingDate: { preset: '7d' },
+      company: { excludeDismissed: true },
+      skills: { mustHave: [], preferred: [], excluded: [], mode: 'all' },
+      roles: [],
+      experienceLevels: [],
+      employmentTypes: [],
+      sources: []
+    };
+    let currentFilterExclusionStats = null;
+    let savedSearchesList = [];
+
+    function toggleAdvancedFilterDrawer() {
+      const drawer = document.getElementById('advanced-filters-drawer');
+      drawer.classList.toggle('open');
     }
 
-    function toggleSavedFilter() {
-      isSavedFilter = !isSavedFilter;
-      document.getElementById('saved-toggle').classList.toggle('active', isSavedFilter);
-      applyFilters();
+    function toggleAccordion(id) {
+      const section = document.getElementById(id);
+      if (section) section.classList.toggle('expanded');
     }
 
-    function applyFilters() {
-      const q = document.getElementById('search-input').value.toLowerCase();
-      const country = document.getElementById('country-filter').value;
-      const minScore = Number(document.getElementById('score-filter').value);
+    function toggleWorkArrangement(val) {
+      if (val === 'all') {
+        activeJobFilters.workArrangements = ['all'];
+        document.querySelectorAll('#sec-location .pill-checkbox').forEach(p => p.classList.remove('active'));
+        document.getElementById('wa-all').classList.add('active');
+      } else {
+        document.getElementById('wa-all').classList.remove('active');
+        let arr = activeJobFilters.workArrangements.filter(a => a !== 'all');
+        const el = document.getElementById(`wa-${val}`);
+        if (arr.includes(val)) {
+          arr = arr.filter(a => a !== val);
+          el.classList.remove('active');
+        } else {
+          arr.push(val);
+          el.classList.add('active');
+        }
+        if (arr.length === 0) {
+          arr = ['all'];
+          document.getElementById('wa-all').classList.add('active');
+        }
+        activeJobFilters.workArrangements = arr;
+      }
+      updateQuickFilterStates();
+    }
+
+    function toggleRoleSelect(role, el) {
+      if (!activeJobFilters.roles) activeJobFilters.roles = [];
+      if (activeJobFilters.roles.includes(role)) {
+        activeJobFilters.roles = activeJobFilters.roles.filter(r => r !== role);
+        el.classList.remove('active');
+      } else {
+        activeJobFilters.roles.push(role);
+        el.classList.add('active');
+      }
+    }
+
+    function toggleExpSelect(level, el) {
+      if (!activeJobFilters.experienceLevels) activeJobFilters.experienceLevels = [];
+      if (activeJobFilters.experienceLevels.includes(level)) {
+        activeJobFilters.experienceLevels = activeJobFilters.experienceLevels.filter(l => l !== level);
+        el.classList.remove('active');
+      } else {
+        activeJobFilters.experienceLevels.push(level);
+        el.classList.add('active');
+      }
+    }
+
+    function toggleEmpType(type, el) {
+      if (!activeJobFilters.employmentTypes) activeJobFilters.employmentTypes = [];
+      if (activeJobFilters.employmentTypes.includes(type)) {
+        activeJobFilters.employmentTypes = activeJobFilters.employmentTypes.filter(t => t !== type);
+        el.classList.remove('active');
+      } else {
+        activeJobFilters.employmentTypes.push(type);
+        el.classList.add('active');
+      }
+    }
+
+    function toggleSourceFilter(source, el) {
+      if (source === 'all') {
+        activeJobFilters.sources = [];
+        document.querySelectorAll('#sources-pill-group .pill-checkbox').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+      } else {
+        document.querySelector('#sources-pill-group .pill-checkbox').classList.remove('active');
+        if (!activeJobFilters.sources) activeJobFilters.sources = [];
+        if (activeJobFilters.sources.includes(source)) {
+          activeJobFilters.sources = activeJobFilters.sources.filter(s => s !== source);
+          el.classList.remove('active');
+        } else {
+          activeJobFilters.sources.push(source);
+          el.classList.add('active');
+        }
+        if (activeJobFilters.sources.length === 0) {
+          document.querySelector('#sources-pill-group .pill-checkbox').classList.add('active');
+        }
+      }
+    }
+
+    function setDatePreset(preset) {
+      if (!activeJobFilters.postingDate) activeJobFilters.postingDate = {};
+      activeJobFilters.postingDate.preset = preset;
+      document.querySelectorAll('#sec-date .pill-checkbox').forEach(p => p.classList.remove('active'));
+      const el = document.getElementById(`date-${preset}`);
+      if (el) el.classList.add('active');
+      updateQuickFilterStates();
+    }
+
+    function updateScoreSlider(val) {
+      const num = Number(val);
+      if (!activeJobFilters.matchScore) activeJobFilters.matchScore = {};
+      activeJobFilters.matchScore.min = num;
+      document.getElementById('score-threshold-val').textContent = `${num} / 100 ${num === 75 ? '(Default)' : ''}`;
+      updateQuickFilterStates();
+    }
+
+    function setScorePreset(val) {
+      document.getElementById('adv-score-slider').value = val;
+      updateScoreSlider(val);
+    }
+
+    function updateQuickFilterStates() {
+      const isRemote = (activeJobFilters.workArrangements || []).includes('remote') && !(activeJobFilters.workArrangements || []).includes('all');
+      const isHybrid = (activeJobFilters.workArrangements || []).includes('hybrid') && !(activeJobFilters.workArrangements || []).includes('all');
+      const isOnsite = (activeJobFilters.workArrangements || []).includes('onsite') && !(activeJobFilters.workArrangements || []).includes('all');
+      const isScore75 = (activeJobFilters.matchScore?.min ?? 75) >= 75;
+      const isLast7d = activeJobFilters.postingDate?.preset === '7d';
+
+      document.getElementById('qf-remote').classList.toggle('active', isRemote);
+      document.getElementById('qf-hybrid').classList.toggle('active', isHybrid);
+      document.getElementById('qf-onsite').classList.toggle('active', isOnsite);
+      document.getElementById('qf-score75').classList.toggle('active', isScore75);
+      document.getElementById('qf-last7d').classList.toggle('active', isLast7d);
+    }
+
+    function toggleQuickFilter(type) {
+      switch (type) {
+        case 'remote':
+          toggleWorkArrangement('remote');
+          break;
+        case 'hybrid':
+          toggleWorkArrangement('hybrid');
+          break;
+        case 'onsite':
+          toggleWorkArrangement('onsite');
+          break;
+        case 'score75':
+          const currentScore = activeJobFilters.matchScore?.min ?? 75;
+          setScorePreset(currentScore >= 75 ? 0 : 75);
+          break;
+        case 'last7d':
+          const currentPreset = activeJobFilters.postingDate?.preset;
+          setDatePreset(currentPreset === '7d' ? 'all' : '7d');
+          break;
+        case 'early':
+          if (!activeJobFilters.additional) activeJobFilters.additional = {};
+          activeJobFilters.additional.earlyApplicantOnly = !activeJobFilters.additional.earlyApplicantOnly;
+          document.getElementById('qf-early').classList.toggle('active', activeJobFilters.additional.earlyApplicantOnly);
+          break;
+        case 'saved':
+          if (!activeJobFilters.additional) activeJobFilters.additional = {};
+          activeJobFilters.additional.savedOnly = !activeJobFilters.additional.savedOnly;
+          document.getElementById('qf-saved').classList.toggle('active', activeJobFilters.additional.savedOnly);
+          break;
+      }
+      executeAdvancedSearch();
+    }
+
+    function syncFormToFilters() {
+      // Keywords & Location
+      const q = document.getElementById('search-input')?.value?.trim();
+      const loc = document.getElementById('location-input')?.value?.trim();
+      if (q) activeJobFilters.keywords = q;
+      else delete activeJobFilters.keywords;
+
+      if (loc) {
+        activeJobFilters.locations = [loc];
+      } else {
+        delete activeJobFilters.locations;
+      }
+
+      // Country & City
+      const country = document.getElementById('adv-country')?.value?.trim();
+      const city = document.getElementById('adv-city')?.value?.trim();
+      const remoteAllowed = document.getElementById('adv-remote-allowed')?.value?.trim();
+      if (country) activeJobFilters.country = country; else delete activeJobFilters.country;
+      if (city) activeJobFilters.city = city; else delete activeJobFilters.city;
+      if (remoteAllowed) {
+        activeJobFilters.remoteAllowedIn = remoteAllowed.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        delete activeJobFilters.remoteAllowedIn;
+      }
+
+      // Experience years
+      const minExp = document.getElementById('adv-min-exp')?.value;
+      const maxExp = document.getElementById('adv-max-exp')?.value;
+      if (minExp !== '' && minExp !== undefined) activeJobFilters.minExperienceYears = Number(minExp); else delete activeJobFilters.minExperienceYears;
+      if (maxExp !== '' && maxExp !== undefined) activeJobFilters.maxExperienceYears = Number(maxExp); else delete activeJobFilters.maxExperienceYears;
+
+      // Salary
+      const salMin = document.getElementById('adv-salary-min')?.value;
+      const salMax = document.getElementById('adv-salary-max')?.value;
+      const salCurr = document.getElementById('adv-salary-curr')?.value;
+      const salPeriod = document.getElementById('adv-salary-period')?.value;
+      const reqDisclosed = document.getElementById('adv-require-disclosed')?.checked;
+      const bonusEq = document.getElementById('adv-bonus-equity')?.checked;
+
+      activeJobFilters.salary = {
+        min: salMin ? Number(salMin) : undefined,
+        max: salMax ? Number(salMax) : undefined,
+        currency: salCurr || undefined,
+        period: salPeriod || 'annual',
+        requireDisclosed: Boolean(reqDisclosed),
+        hasBonusOrEquity: Boolean(bonusEq)
+      };
+
+      // Skills
+      const mustSkills = document.getElementById('adv-must-skills')?.value?.trim();
+      const prefSkills = document.getElementById('adv-pref-skills')?.value?.trim();
+      const exSkills = document.getElementById('adv-ex-skills')?.value?.trim();
+      activeJobFilters.skills = {
+        mustHave: mustSkills ? mustSkills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        preferred: prefSkills ? prefSkills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        excluded: exSkills ? exSkills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        mode: 'all'
+      };
+
+      // Company
+      const compNames = document.getElementById('adv-company-names')?.value?.trim();
+      const exComps = document.getElementById('adv-ex-companies')?.value?.trim();
+      const exApplied = document.getElementById('adv-exclude-applied')?.checked;
+      const exDismissed = document.getElementById('adv-exclude-dismissed')?.checked;
+      activeJobFilters.company = {
+        names: compNames ? compNames.split(',').map(s => s.trim()).filter(Boolean) : [],
+        excludedCompanies: exComps ? exComps.split(',').map(s => s.trim()).filter(Boolean) : [],
+        excludeApplied: Boolean(exApplied),
+        excludeDismissed: Boolean(exDismissed)
+      };
+
+      // Dates
+      const startDate = document.getElementById('adv-start-date')?.value;
+      const endDate = document.getElementById('adv-end-date')?.value;
+      if (!activeJobFilters.postingDate) activeJobFilters.postingDate = {};
+      if (startDate) activeJobFilters.postingDate.startDate = startDate;
+      if (endDate) activeJobFilters.postingDate.endDate = endDate;
+
+      // Additional
+      if (!activeJobFilters.additional) activeJobFilters.additional = {};
+      activeJobFilters.additional.easyApply = Boolean(document.getElementById('adv-easy-apply')?.checked);
+      activeJobFilters.additional.verifiedOnly = Boolean(document.getElementById('adv-verified-only')?.checked);
+
+      // Visa & Relocation
+      activeJobFilters.visaOrRelocation = {
+        visaSponsorship: Boolean(document.getElementById('adv-visa-sponsorship')?.checked),
+        relocationAssistance: Boolean(document.getElementById('adv-relocation')?.checked)
+      };
+    }
+
+    async function executeAdvancedSearch() {
+      syncFormToFilters();
+      renderActiveFilterChips();
+
+      const container = document.getElementById('vacancies-list');
+      container.innerHTML = `
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚡</div>
+          <div>Applying advanced filters across global job sources...</div>
+        </div>
+      `;
+
+      try {
+        const res = await fetch('/api/jobs/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(activeJobFilters)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          renderVacancies(data.results, 'vacancies-list');
+          updateExclusionStatsBanner(data.stats);
+        } else {
+          // Fallback to local filterVacancies if offline
+          applyLocalFallbackFilters();
+        }
+      } catch (err) {
+        console.error('Search request failed, falling back to local dataset:', err);
+        applyLocalFallbackFilters();
+      }
+    }
+
+    function applyLocalFallbackFilters() {
+      const q = (activeJobFilters.keywords || '').toLowerCase();
+      const loc = (activeJobFilters.locations?.[0] || activeJobFilters.city || activeJobFilters.country || '').toLowerCase();
+      const minScore = activeJobFilters.matchScore?.min ?? 75;
 
       const filtered = allVacancies.filter(v => {
-        // Text Search
-        const matchesQuery = !q || 
-          v.title.toLowerCase().includes(q) || 
-          v.companyName.toLowerCase().includes(q) || 
-          (v.rawDescription && v.rawDescription.toLowerCase().includes(q));
-
-        // Category Filter
-        const matchesCategory = selectedCategory === 'All' || 
-          (v.category && v.category.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-          v.title.toLowerCase().includes(selectedCategory.toLowerCase());
-
-        // Country Filter
-        let matchesCountry = true;
-        if (country !== 'All') {
-          if (country === 'India') {
-            matchesCountry = v.country === 'India' || v.locationText.toLowerCase().includes('india') || v.acceptsIndia;
-          } else {
-            matchesCountry = v.country === country || v.locationText.toLowerCase().includes(country.toLowerCase());
-          }
-        }
-
-        // Match Score
-        const score = v.matchScore ? v.matchScore.overallScore : 0;
-        const matchesScore = !minScore || score >= minScore;
-
-        // Early Applicant Toggle
-        const matchesEarly = !isEarlyFilter || v.isEarlyApplicant;
-
-        // Saved Jobs Toggle
-        const matchesSaved = !isSavedFilter || v.isSaved;
-
-        return matchesQuery && matchesCategory && matchesCountry && matchesScore && matchesEarly && matchesSaved;
+        const titleMatch = !q || v.title.toLowerCase().includes(q) || (v.rawDescription || '').toLowerCase().includes(q);
+        const locMatch = !loc || (v.locationText || '').toLowerCase().includes(loc) || (v.country || '').toLowerCase().includes(loc);
+        const score = v.matchScore ? (typeof v.matchScore === 'number' ? v.matchScore : v.matchScore.overallScore) : 75;
+        const scoreMatch = score >= minScore;
+        return titleMatch && locMatch && scoreMatch;
       });
 
       renderVacancies(filtered, 'vacancies-list');
+    }
+
+    function updateExclusionStatsBanner(stats) {
+      if (!stats) return;
+      currentFilterExclusionStats = stats;
+      const banner = document.getElementById('exclusion-stats-banner');
+      banner.style.display = 'flex';
+
+      document.getElementById('stat-matching').textContent = stats.totalMatching;
+      document.getElementById('stat-qualifying').textContent = stats.qualifyingScoreCount;
+      document.getElementById('stat-retrieved').textContent = stats.totalRetrieved;
+      document.getElementById('stat-deduped').textContent = stats.totalDeduplicated;
+
+      const pills = [
+        { id: 'pill-ex-location', label: 'Location', count: stats.excludedByLocation },
+        { id: 'pill-ex-experience', label: 'Experience', count: stats.excludedByExperience },
+        { id: 'pill-ex-salary', label: 'Salary', count: stats.excludedBySalary },
+        { id: 'pill-ex-skills', label: 'Skills', count: stats.excludedBySkills },
+        { id: 'pill-ex-arrangement', label: 'Arrangement', count: stats.excludedByWorkArrangement },
+        { id: 'pill-ex-role', label: 'Role', count: stats.excludedByRole },
+        { id: 'pill-ex-company', label: 'Company', count: stats.excludedByCompany },
+        { id: 'pill-ex-date', label: 'Posting Date', count: stats.excludedByDate },
+        { id: 'pill-ex-score', label: 'Score < 75', count: stats.excludedByScore },
+        { id: 'pill-ex-eligibility', label: 'Eligibility / Visa', count: stats.excludedByEligibility }
+      ];
+
+      for (const p of pills) {
+        const el = document.getElementById(p.id);
+        if (el) {
+          el.textContent = `${p.label}: ${p.count}`;
+          el.classList.toggle('non-zero', p.count > 0);
+        }
+      }
+    }
+
+    function renderActiveFilterChips() {
+      const chips = [];
+      if (activeJobFilters.keywords) {
+        chips.push({ key: 'keywords', label: `Keywords: "${activeJobFilters.keywords}"` });
+      }
+      if (activeJobFilters.locations && activeJobFilters.locations.length > 0) {
+        chips.push({ key: 'locations', label: `Location: ${activeJobFilters.locations.join(', ')}` });
+      }
+      if (activeJobFilters.country) {
+        chips.push({ key: 'country', label: `Country: ${activeJobFilters.country}` });
+      }
+      if (activeJobFilters.city) {
+        chips.push({ key: 'city', label: `City: ${activeJobFilters.city}` });
+      }
+      if (activeJobFilters.workArrangements && !activeJobFilters.workArrangements.includes('all')) {
+        chips.push({ key: 'workArrangements', label: `Arrangement: ${activeJobFilters.workArrangements.join(', ')}` });
+      }
+      if (activeJobFilters.roles && activeJobFilters.roles.length > 0) {
+        chips.push({ key: 'roles', label: `Roles: ${activeJobFilters.roles.join(', ')}` });
+      }
+      if (activeJobFilters.matchScore?.min && activeJobFilters.matchScore.min > 0) {
+        chips.push({ key: 'matchScore', label: `Score &ge; ${activeJobFilters.matchScore.min}%` });
+      }
+      if (activeJobFilters.salary?.min) {
+        chips.push({ key: 'salaryMin', label: `Min Salary: ${activeJobFilters.salary.currency || ''} ${activeJobFilters.salary.min.toLocaleString()}` });
+      }
+      if (activeJobFilters.postingDate?.preset && activeJobFilters.postingDate.preset !== 'all') {
+        chips.push({ key: 'postingDate', label: `Posted: ${activeJobFilters.postingDate.preset}` });
+      }
+      if (activeJobFilters.skills?.mustHave && activeJobFilters.skills.mustHave.length > 0) {
+        chips.push({ key: 'mustSkills', label: `Must-Have: ${activeJobFilters.skills.mustHave.join(', ')}` });
+      }
+      if (activeJobFilters.visaOrRelocation?.visaSponsorship) {
+        chips.push({ key: 'visa', label: 'Visa Sponsorship Required' });
+      }
+
+      const bar = document.getElementById('active-chips-bar');
+      const list = document.getElementById('active-chips-list');
+      const badge = document.getElementById('active-filter-badge');
+
+      if (chips.length > 0) {
+        bar.style.display = 'flex';
+        badge.style.display = 'inline-block';
+        badge.textContent = chips.length;
+        list.innerHTML = chips.map(c => `
+          <span class="filter-chip">
+            <span>${c.label}</span>
+            <span class="filter-chip-remove" onclick="removeFilterChip('${c.key}')">&times;</span>
+          </span>
+        `).join('');
+      } else {
+        bar.style.display = 'none';
+        badge.style.display = 'none';
+      }
+    }
+
+    function removeFilterChip(key) {
+      switch (key) {
+        case 'keywords':
+          delete activeJobFilters.keywords;
+          document.getElementById('search-input').value = '';
+          break;
+        case 'locations':
+          delete activeJobFilters.locations;
+          document.getElementById('location-input').value = '';
+          break;
+        case 'country':
+          delete activeJobFilters.country;
+          document.getElementById('adv-country').value = '';
+          break;
+        case 'city':
+          delete activeJobFilters.city;
+          document.getElementById('adv-city').value = '';
+          break;
+        case 'workArrangements':
+          toggleWorkArrangement('all');
+          break;
+        case 'roles':
+          activeJobFilters.roles = [];
+          document.querySelectorAll('#roles-pill-group .pill-checkbox').forEach(p => p.classList.remove('active'));
+          break;
+        case 'matchScore':
+          setScorePreset(75);
+          break;
+        case 'salaryMin':
+          if (activeJobFilters.salary) delete activeJobFilters.salary.min;
+          document.getElementById('adv-salary-min').value = '';
+          break;
+        case 'postingDate':
+          setDatePreset('all');
+          break;
+        case 'mustSkills':
+          if (activeJobFilters.skills) activeJobFilters.skills.mustHave = [];
+          document.getElementById('adv-must-skills').value = '';
+          break;
+        case 'visa':
+          if (activeJobFilters.visaOrRelocation) activeJobFilters.visaOrRelocation.visaSponsorship = false;
+          document.getElementById('adv-visa-sponsorship').checked = false;
+          break;
+      }
+      executeAdvancedSearch();
+    }
+
+    function clearAllFilters() {
+      activeJobFilters = {
+        workArrangements: ['all'],
+        matchScore: { min: 75 },
+        salary: { requireDisclosed: false },
+        postingDate: { preset: 'all' },
+        company: { excludeDismissed: true },
+        skills: { mustHave: [], preferred: [], excluded: [], mode: 'all' },
+        roles: [],
+        experienceLevels: [],
+        employmentTypes: [],
+        sources: []
+      };
+
+      // Reset form controls
+      if (document.getElementById('search-input')) document.getElementById('search-input').value = '';
+      if (document.getElementById('location-input')) document.getElementById('location-input').value = '';
+      if (document.getElementById('adv-country')) document.getElementById('adv-country').value = '';
+      if (document.getElementById('adv-city')) document.getElementById('adv-city').value = '';
+      if (document.getElementById('adv-remote-allowed')) document.getElementById('adv-remote-allowed').value = '';
+      if (document.getElementById('adv-min-exp')) document.getElementById('adv-min-exp').value = '';
+      if (document.getElementById('adv-max-exp')) document.getElementById('adv-max-exp').value = '';
+      if (document.getElementById('adv-salary-min')) document.getElementById('adv-salary-min').value = '';
+      if (document.getElementById('adv-salary-max')) document.getElementById('adv-salary-max').value = '';
+      if (document.getElementById('adv-must-skills')) document.getElementById('adv-must-skills').value = '';
+      if (document.getElementById('adv-pref-skills')) document.getElementById('adv-pref-skills').value = '';
+      if (document.getElementById('adv-ex-skills')) document.getElementById('adv-ex-skills').value = '';
+      if (document.getElementById('adv-company-names')) document.getElementById('adv-company-names').value = '';
+      if (document.getElementById('adv-ex-companies')) document.getElementById('adv-ex-companies').value = '';
+
+      document.querySelectorAll('.pill-checkbox').forEach(p => p.classList.remove('active'));
+      document.getElementById('wa-all')?.classList.add('active');
+      document.getElementById('date-all')?.classList.add('active');
+      document.querySelector('#sources-pill-group .pill-checkbox')?.classList.add('active');
+
+      setScorePreset(75);
+      executeAdvancedSearch();
+    }
+
+    function resetFilterDefaults() {
+      clearAllFilters();
+      setDatePreset('7d');
+      setScorePreset(75);
+      executeAdvancedSearch();
+    }
+
+    // Backward-compatible wrapper for existing category chips and simple triggers
+    function applyFilters() {
+      executeAdvancedSearch();
+    }
+
+    // Saved Searches Controller
+    async function openSavedSearchesModal() {
+      document.getElementById('saved-searches-modal').style.display = 'flex';
+      await loadSavedSearches();
+    }
+
+    function closeSavedSearchesModal() {
+      document.getElementById('saved-searches-modal').style.display = 'none';
+    }
+
+    async function loadSavedSearches() {
+      const container = document.getElementById('saved-searches-list-container');
+      try {
+        const res = await fetch('/api/saved-searches');
+        if (res.ok) {
+          savedSearchesList = await res.json();
+          if (savedSearchesList.length === 0) {
+            container.innerHTML = `
+              <div style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔖</div>
+                <div style="font-weight: 600;">No saved searches yet</div>
+                <div style="font-size: 0.85rem; margin-top: 0.3rem;">Save your current filter configuration to quickly re-run searches or schedule alerts.</div>
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = savedSearchesList.map(s => {
+            const roleStr = (s.filters.roles || []).join(', ') || 'All Roles';
+            const locStr = (s.filters.locations || []).join(', ') || (s.filters.city ? `${s.filters.city}, ${s.filters.country || ''}` : 'Worldwide');
+            const arrStr = (s.filters.workArrangements || []).join(', ') || 'All arrangements';
+            return `
+              <div class="saved-search-item">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 700; color: #fff; font-size: 0.95rem;">${s.name}</span>
+                    ${s.isDefault ? '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600;">DEFAULT</span>' : ''}
+                    ${s.alertsEnabled ? '<span style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; font-size: 0.68rem; padding: 0.15rem 0.5rem; border-radius: 9999px;">ALERTS ON</span>' : ''}
+                  </div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">
+                    ${roleStr} &bull; ${locStr} &bull; ${arrStr}
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.3rem;">
+                    Last Run: ${s.lastRunAt ? new Date(s.lastRunAt).toLocaleDateString() : 'Never'} &bull; Matching: ${s.lastResultsCount ?? 0}
+                  </div>
+                </div>
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                  <button class="btn btn-primary" style="font-size: 0.72rem; padding: 0.3rem 0.7rem;" onclick="runSavedSearch('${s.id}')">Run Now</button>
+                  <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.3rem 0.5rem;" title="Duplicate Profile" onclick="duplicateSavedSearch('${s.id}')">📋</button>
+                  ${!s.isDefault ? `<button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.3rem 0.5rem;" title="Set as Default" onclick="setDefaultSavedSearch('${s.id}')">★</button>` : ''}
+                  <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.3rem 0.5rem; color: var(--accent-rose);" title="Delete" onclick="deleteSavedSearch('${s.id}')">🗑</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        container.innerHTML = `<div style="color: var(--accent-rose); text-align: center; padding: 2rem;">Failed to load saved searches: ${err.message}</div>`;
+      }
+    }
+
+    async function promptSaveCurrentSearch() {
+      syncFormToFilters();
+      const defaultName = activeJobFilters.roles?.[0] ? `${activeJobFilters.roles[0]} Opportunities` : (activeJobFilters.keywords ? `${activeJobFilters.keywords} Search` : 'My Custom Job Search');
+      const name = prompt('Enter a name for this saved search profile:', defaultName);
+      if (!name || !name.trim()) return;
+
+      const isDefault = confirm('Set as your default search profile?');
+      const alertsEnabled = confirm('Enable automatic mobile alerts for newly discovered 85%+ matching jobs in this profile?');
+
+      try {
+        const res = await fetch('/api/saved-searches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            filters: activeJobFilters,
+            isDefault,
+            alertsEnabled,
+            scheduledSearchEnabled: true
+          })
+        });
+
+        if (res.ok) {
+          alert('✓ Saved search profile created successfully!');
+          closeSavedSearchesModal();
+          executeAdvancedSearch();
+        } else {
+          const err = await res.json();
+          alert(`Error saving search: ${err.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert(`Failed to save search: ${err.message}`);
+      }
+    }
+
+    async function runSavedSearch(id) {
+      try {
+        const res = await fetch(`/api/saved-searches/${id}/run`, { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          activeJobFilters = data.search.filters || {};
+          renderVacancies(data.matching, 'vacancies-list');
+          updateExclusionStatsBanner(data.stats);
+          renderActiveFilterChips();
+          closeSavedSearchesModal();
+        }
+      } catch (err) {
+        alert(`Failed to run search: ${err.message}`);
+      }
+    }
+
+    async function duplicateSavedSearch(id) {
+      try {
+        const res = await fetch(`/api/saved-searches/${id}/duplicate`, { method: 'POST' });
+        if (res.ok) {
+          await loadSavedSearches();
+        }
+      } catch (err) {
+        alert(`Failed to duplicate search: ${err.message}`);
+      }
+    }
+
+    async function setDefaultSavedSearch(id) {
+      try {
+        const res = await fetch(`/api/saved-searches/${id}/default`, { method: 'POST' });
+        if (res.ok) {
+          await loadSavedSearches();
+        }
+      } catch (err) {
+        alert(`Failed to set default search: ${err.message}`);
+      }
+    }
+
+    async function deleteSavedSearch(id) {
+      if (!confirm('Are you sure you want to delete this saved search profile?')) return;
+      try {
+        const res = await fetch(`/api/saved-searches/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          await loadSavedSearches();
+        }
+      } catch (err) {
+        alert(`Failed to delete search: ${err.message}`);
+      }
+    }
+
+    async function saveAsDefaultPreferences() {
+      syncFormToFilters();
+      try {
+        const res = await fetch('/api/preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetRoles: activeJobFilters.roles || [],
+            preferredLocations: activeJobFilters.locations || [],
+            allowRemote: (activeJobFilters.workArrangements || []).includes('remote') || (activeJobFilters.workArrangements || []).includes('all'),
+            allowHybrid: (activeJobFilters.workArrangements || []).includes('hybrid') || (activeJobFilters.workArrangements || []).includes('all'),
+            minMatchScore: activeJobFilters.matchScore?.min ?? 75.0,
+            baseCountry: activeJobFilters.country || 'Worldwide',
+            eligibleCountries: activeJobFilters.remoteAllowedIn || ['Worldwide'],
+            searchInternational: true,
+            dailyQualifiedTarget: 10,
+            hourlyDiscoveryEnabled: true
+          })
+        });
+
+        if (res.ok) {
+          alert('✓ Successfully saved active filters as your application default preferences!');
+        } else {
+          alert('Failed to save preferences.');
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
     }
 
     function renderVacancies(list, containerId) {
@@ -3189,8 +4549,12 @@
       document.getElementById('view-history').style.display = tab === 'history' ? 'block' : 'none';
       const aiMatchesView = document.getElementById('view-ai-matches');
       if (aiMatchesView) aiMatchesView.style.display = tab === 'ai-matches' ? 'block' : 'none';
+      const globalDiscView = document.getElementById('view-global-discovery');
+      if (globalDiscView) globalDiscView.style.display = tab === 'global-discovery' ? 'block' : 'none';
 
-      if (tab === 'ai-matches') {
+      if (tab === 'global-discovery') {
+        loadGlobalDiscoveryView();
+      } else if (tab === 'ai-matches') {
         loadAiMatchesView();
       } else if (tab === 'pipeline') {
         const awaiting = allVacancies.filter(v => v.status === 'QUALIFIED' || v.status === 'DRAFTED' || v.status === 'AWAITING_APPROVAL');
@@ -3207,6 +4571,290 @@
         loadSubmissions();
       } else {
         applyFilters();
+      }
+    }
+
+    // Global Discovery & Source Registry Controller
+    let allRegisteredSources = [];
+    let selectedSourceCategory = 'ALL';
+
+    async function loadGlobalDiscoveryView(forceRefresh = false) {
+      try {
+        const [covRes, srcRes] = await Promise.all([
+          fetch('/api/discovery/coverage'),
+          fetch('/api/discovery/sources')
+        ]);
+        if (covRes.ok) {
+          const covData = await covRes.json();
+          const s = covData.summary;
+          if (s) {
+            const totEl = document.getElementById('reg-total-sources');
+            if (totEl) totEl.innerText = s.totalSources || 136;
+            const opEl = document.getElementById('reg-operational-count');
+            if (opEl) opEl.innerText = s.byImplementationStatus?.IMPLEMENTED_AND_TESTED || 11;
+            const crEl = document.getElementById('reg-credentials-count');
+            if (crEl) crEl.innerText = s.byImplementationStatus?.REQUIRES_API_CREDENTIALS || 2;
+            const partnerCount = (s.byImplementationStatus?.REQUIRES_PARTNER_ACCESS || 0) + (s.byImplementationStatus?.MANUAL_OR_LINK_ONLY || 0);
+            const prtEl = document.getElementById('reg-partner-count');
+            if (prtEl) prtEl.innerText = partnerCount;
+            const cntEl = document.getElementById('reg-countries-count');
+            if (cntEl) cntEl.innerText = `${s.countriesCovered?.length || 35}+`;
+          }
+        }
+        if (srcRes.ok) {
+          const srcData = await srcRes.json();
+          allRegisteredSources = srcData.sources || [];
+          handleSourceSearch();
+        }
+        loadProposals();
+      } catch (err) {
+        console.error('Error loading global discovery view:', err);
+      }
+    }
+
+    function selectSourceCategory(cat, el) {
+      selectedSourceCategory = cat;
+      document.querySelectorAll('#reg-category-pills .tag').forEach(t => t.classList.remove('active'));
+      if (el) el.classList.add('active');
+      handleSourceSearch();
+    }
+
+    function handleSourceSearch() {
+      const query = (document.getElementById('reg-search-input')?.value || '').toLowerCase().trim();
+      const statusFilter = document.getElementById('reg-status-filter')?.value || '';
+      const countryFilter = document.getElementById('reg-country-filter')?.value || '';
+      const enabledOnly = document.getElementById('reg-enabled-only')?.checked;
+
+      let filtered = allRegisteredSources;
+
+      if (selectedSourceCategory !== 'ALL') {
+        filtered = filtered.filter(s => s.category === selectedSourceCategory);
+      }
+
+      if (statusFilter) {
+        filtered = filtered.filter(s => s.implementationStatus === statusFilter);
+      }
+
+      if (countryFilter) {
+        filtered = filtered.filter(s => s.countries?.includes(countryFilter) || s.countries?.includes('Global') || s.countries?.includes('Worldwide'));
+      }
+
+      if (enabledOnly) {
+        filtered = filtered.filter(s => s.isEnabled !== false);
+      }
+
+      if (query) {
+        filtered = filtered.filter(s => 
+          (s.name || '').toLowerCase().includes(query) ||
+          (s.id || '').toLowerCase().includes(query) ||
+          (s.url || '').toLowerCase().includes(query) ||
+          (s.notes || '').toLowerCase().includes(query)
+        );
+      }
+
+      renderSourcesList(filtered);
+    }
+
+    function renderSourcesList(sources) {
+      const container = document.getElementById('reg-sources-grid');
+      if (!container) return;
+
+      if (sources.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-subtle); color: var(--text-muted);">
+            No discovery sources match the current filter criteria.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = sources.map(s => {
+        let statusBadge = '<span class="meta-pill" style="color: var(--text-dim); border-color: rgba(255,255,255,0.1);">Catalog</span>';
+        if (s.implementationStatus === 'IMPLEMENTED_AND_TESTED') {
+          statusBadge = '<span class="meta-pill" style="color: var(--accent-emerald); border-color: var(--accent-emerald); background: rgba(16,185,129,0.1);">✓ Operational</span>';
+        } else if (s.implementationStatus === 'REQUIRES_API_CREDENTIALS') {
+          statusBadge = '<span class="meta-pill" style="color: var(--accent-amber); border-color: var(--accent-amber); background: rgba(245,158,11,0.1);">API Key Required</span>';
+        } else if (s.implementationStatus === 'REQUIRES_PARTNER_ACCESS') {
+          statusBadge = '<span class="meta-pill" style="color: var(--primary); border-color: var(--primary); background: rgba(99,102,241,0.1);">Partner Access</span>';
+        } else if (s.implementationStatus === 'MANUAL_OR_LINK_ONLY') {
+          statusBadge = '<span class="meta-pill" style="color: var(--text-dim);">Manual / Lead</span>';
+        } else if (s.implementationStatus === 'DISABLED_BY_USER') {
+          statusBadge = '<span class="meta-pill" style="color: var(--accent-rose); border-color: var(--accent-rose);">Disabled</span>';
+        }
+
+        const healthDotColor = s.healthStatus === 'HEALTHY' ? 'var(--accent-emerald)' : s.healthStatus === 'REQUIRES_CONFIG' ? 'var(--accent-amber)' : 'var(--text-dim)';
+        const countriesDisplay = (s.countries || []).slice(0, 4).join(', ') + ((s.countries || []).length > 4 ? ` +${s.countries.length - 4}` : '');
+        const jobsRetrieved = s.stats?.jobsRetrieved || 0;
+        const lastSync = s.stats?.lastSyncAt ? new Date(s.stats.lastSyncAt).toLocaleTimeString() : 'Never';
+
+        return `
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; gap: 0.5rem;">
+                <div>
+                  <div style="font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${healthDotColor};" title="Health: ${s.healthStatus}"></span>
+                    ${s.name}
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.15rem;">
+                    <a href="${s.url}" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">${s.url} ↗</a>
+                  </div>
+                </div>
+                <div>${statusBadge}</div>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.6rem 0;">
+                <span class="source-tag" style="font-size: 0.68rem;">${s.category.replace('_', ' ')}</span>
+                <span class="source-tag" style="font-size: 0.68rem; background: rgba(255,255,255,0.05);">${countriesDisplay || 'Worldwide'}</span>
+              </div>
+
+              ${s.usageRestrictions ? `<div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.6rem; background: rgba(0,0,0,0.2); padding: 0.4rem 0.6rem; border-radius: 6px;">${s.usageRestrictions}</div>` : ''}
+            </div>
+
+            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem;">
+              <div style="color: var(--text-dim);">
+                Synced: <strong style="color: #fff;">${jobsRetrieved}</strong> jobs | ${lastSync}
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button class="btn btn-secondary" onclick="testSourceConnector('${s.id}')" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;">⚡ Test</button>
+                <label style="cursor: pointer; display: flex; align-items: center;" title="Enable or disable source">
+                  <input type="checkbox" ${s.isEnabled ? 'checked' : ''} onchange="toggleSource('${s.id}', this.checked)" style="accent-color: var(--primary); cursor: pointer;">
+                </label>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function testSourceConnector(sourceId) {
+      const banner = document.getElementById('reg-test-result-banner');
+      if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = 'rgba(99,102,241,0.15)';
+        banner.style.color = '#fff';
+        banner.innerText = `Testing source connector '${sourceId}'...`;
+      }
+      try {
+        const res = await fetch(`/api/discovery/sources/${sourceId}/test`, { method: 'POST' });
+        const data = await res.json();
+        const hc = data.healthCheck;
+        if (banner) {
+          banner.style.display = 'block';
+          if (hc && hc.healthy) {
+            banner.style.background = 'rgba(16,185,129,0.15)';
+            banner.style.borderColor = 'var(--accent-emerald)';
+            banner.style.color = 'var(--accent-emerald)';
+            banner.innerText = `✓ Operational: ${sourceId} checked successfully in ${hc.latencyMs || 0}ms. ${hc.message || ''}`;
+          } else {
+            banner.style.background = 'rgba(239,68,68,0.15)';
+            banner.style.borderColor = 'var(--accent-rose)';
+            banner.style.color = '#fca5a5';
+            banner.innerText = `⚠️ Notice for ${sourceId}: ${hc?.message || data.error || 'Health check returned non-healthy status'}`;
+          }
+        }
+        loadGlobalDiscoveryView();
+      } catch (err) {
+        if (banner) {
+          banner.style.display = 'block';
+          banner.style.background = 'rgba(239,68,68,0.15)';
+          banner.innerText = `Test error: ${err.message}`;
+        }
+      }
+    }
+
+    async function toggleSource(sourceId, isEnabled) {
+      try {
+        await fetch(`/api/discovery/sources/${sourceId}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isEnabled }),
+        });
+        const src = allRegisteredSources.find(s => s.id === sourceId);
+        if (src) src.isEnabled = isEnabled;
+      } catch (err) {
+        console.error('Error toggling source:', err);
+      }
+    }
+
+    async function loadProposals() {
+      const container = document.getElementById('reg-proposals-list');
+      if (!container) return;
+      try {
+        const res = await fetch('/api/discovery/proposals');
+        if (res.ok) {
+          const data = await res.json();
+          const proposals = data.proposals || [];
+          if (proposals.length === 0) {
+            container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 1rem;">No pending proposals. Use "+ Submit New Proposal" to propose sources.</div>';
+            return;
+          }
+          container.innerHTML = proposals.map(p => `
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <strong style="color: #fff;">${p.name}</strong> <span style="font-size: 0.75rem; color: var(--accent-cyan);">(${p.officialDomain})</span>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">${p.evidenceDescription}</div>
+              </div>
+              <div>
+                <span class="meta-pill" style="font-size: 0.72rem; color: ${p.validationStatus === 'VALIDATED' ? 'var(--accent-emerald)' : 'var(--accent-amber)'};">${p.validationStatus}</span>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Error loading proposals:', err);
+      }
+    }
+
+    function openProposalModal() {
+      const modal = document.getElementById('proposal-modal');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeProposalModal() {
+      const modal = document.getElementById('proposal-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    async function submitProposalForm() {
+      const name = document.getElementById('prop-name')?.value?.trim();
+      const officialDomain = document.getElementById('prop-domain')?.value?.trim();
+      const category = document.getElementById('prop-category')?.value;
+      const countriesRaw = document.getElementById('prop-countries')?.value || '';
+      const apiOrFeedDocsUrl = document.getElementById('prop-docs')?.value?.trim();
+      const evidenceDescription = document.getElementById('prop-evidence')?.value?.trim();
+
+      if (!name || !officialDomain || !evidenceDescription) {
+        alert('Please fill out the name, official domain, and evidence description.');
+        return;
+      }
+
+      const countriesCovered = countriesRaw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+      try {
+        const res = await fetch('/api/discovery/proposals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            officialDomain,
+            category,
+            countriesCovered: countriesCovered.length ? countriesCovered : ['Global'],
+            apiOrFeedDocsUrl,
+            evidenceDescription,
+          }),
+        });
+
+        if (res.ok) {
+          alert('✓ Community proposal submitted successfully! Under review for integration.');
+          closeProposalModal();
+          loadProposals();
+        } else {
+          const err = await res.json();
+          alert(`Submission failed: ${err.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
       }
     }
 

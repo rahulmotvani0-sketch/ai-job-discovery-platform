@@ -4,15 +4,23 @@ import type { DatabaseManager } from '../../core/database.js';
 import type { Vacancy, RawJobPayload } from '../../types/index.js';
 import { normalizeJobUrl, normalizeJobTitle, computeCanonicalHash } from '../deduplication.js';
 import { VacancyVerificationAgent } from '../verification.js';
+import { normalizeCountryAndRegion, classifyRemoteEligibility } from '../regions.js';
 import type { IJobSourceConnector } from './types.js';
+
+// Connectors
 import { RemoteOkConnector } from './remoteok.js';
+import { RemotiveConnector } from './remotive.js';
 import { JobicyConnector } from './jobicy.js';
 import { GreenhouseAtsConnector } from './greenhouse.js';
 import { HimalayasConnector } from './himalayas.js';
 import { LeverAtsConnector } from './lever.js';
 import { AshbyAtsConnector } from './ashby.js';
 import { WorkableAtsConnector } from './workable.js';
+import { SmartRecruitersConnector } from './smartrecruiters.js';
 import { YCombinatorStartupsConnector } from './ycombinator.js';
+import { DirectCareersConnector } from './direct-careers.js';
+import { AdzunaConnector } from './adzuna.js';
+import { USAJobsConnector } from './usajobs.js';
 
 export interface DiscoveryScanReport {
   totalDiscovered: number;
@@ -20,6 +28,10 @@ export interface DiscoveryScanReport {
   duplicateVacancies: number;
   verifiedActive: number;
   indiaEligible: number;
+  sourcesQueried: string[];
+  sourcesSucceeded: string[];
+  sourcesFailed: { sourceId: string; error: string }[];
+  countriesSearched: string[];
   durationMs: number;
   timestamp: string;
 }
@@ -32,13 +44,18 @@ export class DiscoveryManager {
     this.db = db;
     this.connectors = customConnectors || [
       new RemoteOkConnector(),
+      new RemotiveConnector(),
       new JobicyConnector(),
       new GreenhouseAtsConnector(),
       new HimalayasConnector(),
       new LeverAtsConnector(),
       new AshbyAtsConnector(),
       new WorkableAtsConnector(),
+      new SmartRecruitersConnector(),
       new YCombinatorStartupsConnector(),
+      new DirectCareersConnector(),
+      new AdzunaConnector(),
+      new USAJobsConnector(),
     ];
   }
 
@@ -66,24 +83,13 @@ export class DiscoveryManager {
     const hoursSincePublished = Math.max(0, (Date.now() - publishedTime) / (1000 * 60 * 60));
     const isEarlyApplicant = hoursSincePublished <= 48;
 
-    // Normalize Country
-    let country = 'Worldwide';
-    const loc = (payload.locationText || '').toLowerCase();
-    if (/india|bengaluru|bangalore|hyderabad|pune|delhi|mumbai|gurgaon|noida|ahmedabad/i.test(loc)) {
-      country = 'India';
-    } else if (/united states|usa|\bus\b|california|new york|texas|seattle/i.test(loc)) {
-      country = 'United States';
-    } else if (/united kingdom|\buk\b|london/i.test(loc)) {
-      country = 'United Kingdom';
-    } else if (/germany|berlin|munich/i.test(loc)) {
-      country = 'Germany';
-    } else if (/canada|toronto|vancouver/i.test(loc)) {
-      country = 'Canada';
-    } else if (/singapore/i.test(loc)) {
-      country = 'Singapore';
-    } else if (/australia|sydney|melbourne/i.test(loc)) {
-      country = 'Australia';
-    }
+    // Standardize Country and Region
+    const countryInfo = normalizeCountryAndRegion(payload.locationText);
+    const country = countryInfo.countryName;
+
+    // Classify Remote Eligibility
+    const remoteType = classifyRemoteEligibility(payload.locationText, payload.rawDescription, payload.isRemote);
+    const isRemote = remoteType !== 'ONSITE';
 
     // Categorize Role Taxonomy across all IT Tech roles
     let category = 'Software Engineering';
@@ -130,7 +136,7 @@ export class DiscoveryManager {
       title: payload.title,
       normalizedTitle: normTitle,
       locationText: payload.locationText,
-      isRemote: payload.isRemote ?? true,
+      isRemote,
       acceptsIndia: verification.acceptsIndia,
       employmentType: payload.employmentType || (isContract ? 'contract' : 'full-time'),
       salaryMin: payload.salaryMin,
@@ -153,38 +159,87 @@ export class DiscoveryManager {
   }
 
   /**
-   * Executes a multi-source discovery scan across all configured connectors.
+   * Executes a multi-source discovery scan across configured connectors.
    */
-  async runDiscoveryScan(options?: { limitPerSource?: number }): Promise<DiscoveryScanReport> {
+  async runDiscoveryScan(options?: {
+    limitPerSource?: number;
+    country?: string;
+    tags?: string[];
+    sourceIds?: string[];
+  }): Promise<DiscoveryScanReport> {
     const startTime = Date.now();
     const limit = options?.limitPerSource ?? 20;
+    const country = options?.country;
+    const tags = options?.tags;
+
+    let activeConnectors = this.connectors;
+    if (options?.sourceIds && options.sourceIds.length > 0) {
+      activeConnectors = this.connectors.filter(c => 
+        options.sourceIds!.includes(c.sourceType) || options.sourceIds!.includes(c.name.toLowerCase())
+      );
+    }
+
+    // Check enabled status in database
+    activeConnectors = activeConnectors.filter(c => {
+      const dbSource = this.db.getSource(c.sourceType);
+      return !dbSource || dbSource.isEnabled !== false;
+    });
+
+    const sourcesQueried: string[] = [];
+    const sourcesSucceeded: string[] = [];
+    const sourcesFailed: { sourceId: string; error: string }[] = [];
+    const countriesSearchedSet = new Set<string>();
+
+    if (country) countriesSearchedSet.add(country.toUpperCase());
+    else countriesSearchedSet.add('GLOBAL');
+
     let totalDiscovered = 0;
     let newVacancies = 0;
     let duplicateVacancies = 0;
     let verifiedActive = 0;
     let indiaEligible = 0;
 
-    logger.info(`Starting multi-source job discovery scan across ${this.connectors.length} connectors...`);
+    logger.info(`Starting multi-source job discovery scan across ${activeConnectors.length} connectors...`);
 
-    for (const connector of this.connectors) {
+    // Run connectors with bounded parallelism
+    const scanPromises = activeConnectors.map(async (connector) => {
+      const sId = connector.sourceType;
+      sourcesQueried.push(sId);
+      let retrievedCount = 0;
+      let validCount = 0;
+      let dupCount = 0;
+
       try {
-        const rawJobs = await connector.fetchVacancies({ limit });
-        totalDiscovered += rawJobs.length;
+        const rawJobs = await connector.fetchVacancies({ limit, country, tags });
+        retrievedCount = rawJobs.length;
 
         for (const raw of rawJobs) {
           const { vacancy, inserted } = this.processRawPayload(raw);
           if (inserted) {
-            newVacancies++;
+            validCount++;
             if (vacancy.status === 'VERIFIED') verifiedActive++;
             if (vacancy.acceptsIndia) indiaEligible++;
           } else {
-            duplicateVacancies++;
+            dupCount++;
           }
         }
-      } catch (err) {
-        logger.error(`Error executing discovery for ${connector.name}: ${err}`);
+
+        totalDiscovered += retrievedCount;
+        newVacancies += validCount;
+        duplicateVacancies += dupCount;
+        sourcesSucceeded.push(sId);
+
+        // Update database source sync telemetry
+        this.db.recordSourceSync(sId, retrievedCount, validCount, dupCount, true);
+      } catch (err: any) {
+        const errMsg = err?.message || String(err);
+        logger.error(`Error executing discovery for ${connector.name}: ${errMsg}`);
+        sourcesFailed.push({ sourceId: sId, error: errMsg });
+        this.db.recordSourceSync(sId, 0, 0, 0, false, errMsg);
       }
-    }
+    });
+
+    await Promise.allSettled(scanPromises);
 
     const durationMs = Date.now() - startTime;
     const report: DiscoveryScanReport = {
@@ -193,6 +248,10 @@ export class DiscoveryManager {
       duplicateVacancies,
       verifiedActive,
       indiaEligible,
+      sourcesQueried,
+      sourcesSucceeded,
+      sourcesFailed,
+      countriesSearched: Array.from(countriesSearchedSet),
       durationMs,
       timestamp: new Date().toISOString(),
     };
