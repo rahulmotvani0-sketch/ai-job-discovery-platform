@@ -17,6 +17,7 @@ import { LeverAtsConnector } from './lever.js';
 import { AshbyAtsConnector } from './ashby.js';
 import { WorkableAtsConnector } from './workable.js';
 import { SmartRecruitersConnector } from './smartrecruiters.js';
+import { RecruiteeAtsConnector } from './recruitee.js';
 import { YCombinatorStartupsConnector } from './ycombinator.js';
 import { DirectCareersConnector } from './direct-careers.js';
 import { AdzunaConnector } from './adzuna.js';
@@ -52,11 +53,16 @@ export class DiscoveryManager {
       new AshbyAtsConnector(),
       new WorkableAtsConnector(),
       new SmartRecruitersConnector(),
+      new RecruiteeAtsConnector(),
       new YCombinatorStartupsConnector(),
       new DirectCareersConnector(),
       new AdzunaConnector(),
       new USAJobsConnector(),
     ];
+  }
+
+  getConnectors(): IJobSourceConnector[] {
+    return [...this.connectors];
   }
 
   /**
@@ -188,13 +194,16 @@ export class DiscoveryManager {
     let activeConnectors = this.connectors;
     if (options?.sourceIds && options.sourceIds.length > 0) {
       activeConnectors = this.connectors.filter(c => 
-        options.sourceIds!.includes(c.sourceType) || options.sourceIds!.includes(c.name.toLowerCase())
+        options.sourceIds!.includes(c.sourceType) || 
+        (c.sourceId && options.sourceIds!.includes(c.sourceId)) ||
+        options.sourceIds!.includes(c.name.toLowerCase())
       );
     }
 
     // Check enabled status in database
     activeConnectors = activeConnectors.filter(c => {
-      const dbSource = this.db.getSource(c.sourceType);
+      const sId = c.sourceId || c.sourceType;
+      const dbSource = this.db.getSource(sId);
       return !dbSource || dbSource.isEnabled !== false;
     });
 
@@ -216,7 +225,7 @@ export class DiscoveryManager {
 
     // Run connectors with bounded parallelism
     const scanPromises = activeConnectors.map(async (connector) => {
-      const sId = connector.sourceType;
+      const sId = connector.sourceId || connector.sourceType;
       sourcesQueried.push(sId);
       let retrievedCount = 0;
       let validCount = 0;

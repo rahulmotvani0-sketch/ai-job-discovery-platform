@@ -128,6 +128,26 @@ export function extractAtsPostingIdentifier(normalizedUrl: string): { ats: strin
         jobId: pathParts[1].toLowerCase(),
       };
     }
+
+    // Recruitee: {company}.recruitee.com/o/{jobId} or jobs.recruitee.com/{company}/{jobId}
+    if (host.includes('recruitee.com')) {
+      const sub = host.split('.')[0].toLowerCase();
+      const oIndex = pathParts.findIndex(p => p === 'o');
+      if (oIndex >= 0 && pathParts[oIndex + 1]) {
+        return {
+          ats: 'recruitee',
+          company: sub === 'jobs' ? pathParts[0].toLowerCase() : sub,
+          jobId: pathParts[oIndex + 1].toLowerCase(),
+        };
+      }
+      if (pathParts.length >= 2) {
+        return {
+          ats: 'recruitee',
+          company: sub === 'jobs' ? pathParts[0].toLowerCase() : sub,
+          jobId: pathParts[pathParts.length - 1].toLowerCase(),
+        };
+      }
+    }
   } catch {}
   return null;
 }
@@ -223,7 +243,7 @@ export function computeCanonicalHash(
   }
 
   // Level 2: Authoritative Source Namespace + Source ID
-  const isDirectAtsSource = sourceType && ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters'].includes(sourceType.toLowerCase());
+  const isDirectAtsSource = sourceType && ['greenhouse', 'lever', 'ashby', 'workable', 'smartrecruiters', 'recruitee'].includes(sourceType.toLowerCase());
   if (isDirectAtsSource && sourceId && normCompany) {
     const sourceIdentity = `source:${sourceType.toLowerCase()}:${normCompany}:${sourceId.toLowerCase().trim()}`;
     return createHash('sha256').update(sourceIdentity).digest('hex');

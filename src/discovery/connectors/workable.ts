@@ -1,21 +1,79 @@
 import { logger } from '../../core/logger.js';
-import type { IJobSourceConnector } from './types.js';
 import type { RawJobPayload } from '../../types/index.js';
+import type { ConnectorHealthCheckResult, JobSourceCategory } from '../registry/types.js';
+import { BaseSourceConnector } from './base.js';
 
-export class WorkableAtsConnector implements IJobSourceConnector {
+export class WorkableAtsConnector extends BaseSourceConnector {
+  readonly sourceId = 'workable';
   readonly name = 'Workable ATS';
   readonly sourceType = 'workable';
+  readonly category: JobSourceCategory = 'ATS_PLATFORMS';
+  readonly officialUrl = 'https://apply.workable.com';
 
-  private targetCompanies = [
+  protected rateLimitRpm = 40;
+  protected timeoutMs = 8000;
+
+  private targetCompanies: string[] = [
     'taxfix',
     'typeform',
     'omio',
     'invision',
     'clever',
     'supercell',
+    'gousto',
+    'transfergo',
   ];
 
-  async fetchVacancies(options?: { tags?: string[]; limit?: number }): Promise<RawJobPayload[]> {
+  constructor(customCompanies?: string[]) {
+    super();
+    if (customCompanies && customCompanies.length > 0) {
+      this.targetCompanies = [...customCompanies];
+    }
+  }
+
+  addCompany(company: string): void {
+    const clean = company.toLowerCase().trim();
+    if (clean && !this.targetCompanies.includes(clean)) {
+      this.targetCompanies.push(clean);
+    }
+  }
+
+  getCompanies(): string[] {
+    return [...this.targetCompanies];
+  }
+
+  validateConfig(): { valid: boolean; missingVars: string[] } {
+    return { valid: true, missingVars: [] };
+  }
+
+  async healthCheck(): Promise<ConnectorHealthCheckResult> {
+    const start = Date.now();
+    try {
+      const resp = await this.safeFetch('https://apply.workable.com/api/v3/accounts/taxfix/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query: '', location: [], department: [], worktype: [] }),
+      }, 6000);
+      return {
+        sourceId: this.sourceId,
+        healthy: resp.ok,
+        statusCode: resp.status,
+        latencyMs: Date.now() - start,
+        message: resp.ok ? 'Workable public jobs endpoint operational' : `HTTP ${resp.status}`,
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        sourceId: this.sourceId,
+        healthy: false,
+        latencyMs: Date.now() - start,
+        message: `Workable health check failed: ${err.message}`,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  async fetchVacancies(options?: { tags?: string[]; limit?: number; country?: string }): Promise<RawJobPayload[]> {
     const limit = options?.limit ?? 25;
     const collected: RawJobPayload[] = [];
     const targetKeywords = [
@@ -29,19 +87,14 @@ export class WorkableAtsConnector implements IJobSourceConnector {
       const url = `https://apply.workable.com/api/v3/accounts/${company}/jobs`;
 
       try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 6000);
-
-        const resp = await fetch(url, {
+        const resp = await this.safeFetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
           body: JSON.stringify({ query: '', location: [], department: [], worktype: [] }),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
+        }, 6000);
 
         if (!resp.ok) continue;
 
@@ -55,24 +108,27 @@ export class WorkableAtsConnector implements IJobSourceConnector {
 
           const locationParts = [job.city, job.state, job.country].filter(Boolean);
           const locationText = job.telecommuting ? 'Remote' : (locationParts.join(', ') || 'Remote');
+          const isRemote = Boolean(job.telecommuting || locationText.toLowerCase().includes('remote'));
 
           collected.push({
             sourceId: `workable_${company}_${job.shortcode || job.id}`,
             sourceType: 'workable',
+            requisitionId: String(job.shortcode || job.id),
             sourceUrl: `https://apply.workable.com/${company}/j/${job.shortcode}/`,
             companyName: company.charAt(0).toUpperCase() + company.slice(1),
             title: job.title,
             locationText,
-            rawDescription: `${job.title} at ${company}. ${locationText}. Category: ${job.department || 'Technology'}`,
+            rawDescription: `${job.title} at ${company}. Location: ${locationText}. Department: ${job.department || 'Technology'}`,
             publishedAt: job.published ? new Date(job.published).toISOString() : new Date().toISOString(),
             employmentType: 'full-time',
-            isRemote: job.telecommuting || locationText.toLowerCase().includes('remote') || true,
+            isRemote,
+            department: job.department || undefined,
           });
 
           if (collected.length >= limit) break;
         }
-      } catch (err) {
-        logger.debug(`Workable query failed for ${company}: ${err}`);
+      } catch (err: any) {
+        logger.debug(`Workable query failed for ${company}: ${err.message || err}`);
       }
     }
 

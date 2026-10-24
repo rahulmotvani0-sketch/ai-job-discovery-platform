@@ -10,16 +10,43 @@ export class SmartRecruitersConnector extends BaseSourceConnector {
   readonly category: JobSourceCategory = 'ATS_PLATFORMS';
   readonly officialUrl = 'https://www.smartrecruiters.com';
 
-  private targetCompanies = [
+  protected rateLimitRpm = 60;
+  protected timeoutMs = 8000;
+
+  private targetCompanies: string[] = [
     'Visa',
     'BoschGroup',
     'Ubisoft',
     'Skechers',
-    'IKEA'
+    'IKEA',
+    'Square',
+    'Eurofins',
+    'AveryDennison',
+    'PublicisGroupe',
+    'Colliers',
+    'Wolt',
   ];
 
+  constructor(customCompanies?: string[]) {
+    super();
+    if (customCompanies && customCompanies.length > 0) {
+      this.targetCompanies = [...customCompanies];
+    }
+  }
+
+  addCompany(company: string): void {
+    const trimmed = company.trim();
+    if (trimmed && !this.targetCompanies.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      this.targetCompanies.push(trimmed);
+    }
+  }
+
+  getCompanies(): string[] {
+    return [...this.targetCompanies];
+  }
+
   validateConfig(): { valid: boolean; missingVars: string[] } {
-    return { valid: true, missingVars: [] }; // Public career posting endpoints
+    return { valid: true, missingVars: [] };
   }
 
   async healthCheck(): Promise<ConnectorHealthCheckResult> {
@@ -39,7 +66,7 @@ export class SmartRecruitersConnector extends BaseSourceConnector {
         sourceId: this.sourceId,
         healthy: false,
         latencyMs: Date.now() - start,
-        message: `Health check failed: ${err.message}`,
+        message: `SmartRecruiters health check failed: ${err.message}`,
         checkedAt: new Date().toISOString(),
       };
     }
@@ -50,7 +77,8 @@ export class SmartRecruitersConnector extends BaseSourceConnector {
     const collected: RawJobPayload[] = [];
     const targetKeywords = [
       'engineer', 'developer', 'software', 'devops', 'sre', 'cloud', 'infrastructure',
-      'platform', 'kubernetes', 'reliability', 'security', 'data', 'architect', 'systems'
+      'platform', 'kubernetes', 'reliability', 'security', 'data', 'architect', 'systems',
+      'fullstack', 'full-stack', 'frontend', 'backend', 'mobile', 'ai', 'machine learning'
     ];
 
     for (const company of this.targetCompanies) {
@@ -58,7 +86,7 @@ export class SmartRecruitersConnector extends BaseSourceConnector {
       const url = `https://api.smartrecruiters.com/v1/companies/${company}/postings?limit=15`;
 
       try {
-        const resp = await this.safeFetch(url);
+        const resp = await this.safeFetch(url, undefined, 6000);
         if (!resp.ok) continue;
 
         const data = await resp.json() as any;
@@ -80,6 +108,7 @@ export class SmartRecruitersConnector extends BaseSourceConnector {
           collected.push({
             sourceId: `smartrecruiters_${company}_${post.id}`,
             sourceType: 'smartrecruiters',
+            requisitionId: String(post.id),
             sourceUrl: `https://jobs.smartrecruiters.com/${company}/${post.id}`,
             companyName: post.company?.name || company,
             title,
@@ -88,10 +117,11 @@ export class SmartRecruitersConnector extends BaseSourceConnector {
             employmentType: post.typeOfEmployment?.label?.toLowerCase().includes('contract') ? 'contract' : 'full-time',
             rawDescription: `${title} at ${company}. Department: ${post.department?.label || 'Engineering'}. Location: ${locationText}. Experience Level: ${post.experienceLevel?.label || 'Mid-Senior'}.`,
             publishedAt: post.releasedDate || new Date().toISOString(),
+            department: post.department?.label || undefined,
           });
         }
       } catch (err: any) {
-        logger.debug(`SmartRecruiters fetch for ${company} skipped: ${err.message}`);
+        logger.debug(`SmartRecruiters fetch for ${company} skipped: ${err.message || err}`);
       }
     }
 

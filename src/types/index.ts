@@ -92,6 +92,7 @@ export interface RawJobPayload {
     | 'ashby' 
     | 'workable' 
     | 'smartrecruiters'
+    | 'recruitee'
     | 'ycombinator' 
     | 'direct_careers'
     | 'direct_portal' 
@@ -110,6 +111,8 @@ export interface RawJobPayload {
   currency?: string;
   employmentType?: EmploymentType;
   isRemote?: boolean;
+  requisitionId?: string;
+  department?: string;
 }
 
 export interface Vacancy {
