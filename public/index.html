@@ -2025,9 +2025,17 @@
     }
 
     // View Switching
-    function switchTab(tab) {
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
+    function switchTab(tab, evt) {
+      evt = evt || (typeof window !== 'undefined' ? window.event : null);
+      document.querySelectorAll('.nav-tab').forEach(t => {
+        t.classList.remove('active');
+        if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(`'${tab}'`)) {
+          t.classList.add('active');
+        }
+      });
+      if (evt && evt.target && evt.target.classList) {
+        evt.target.classList.add('active');
+      }
 
       document.getElementById('view-explorer').style.display = tab === 'explorer' ? 'block' : 'none';
       document.getElementById('view-pipeline').style.display = tab === 'pipeline' ? 'block' : 'none';
