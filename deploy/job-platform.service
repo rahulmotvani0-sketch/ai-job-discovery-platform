@@ -1,0 +1,22 @@
+[Unit]
+Description=AI-Powered Job Discovery and Application Automation Platform
+After=network.target
+
+[Service]
+Type=simple
+User=rahul
+WorkingDirectory=/home/rahul/PROJECT'S/JOB
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=3300
+Environment=HOST=127.0.0.1
+
+# Security Hardening
+ProtectSystem=full
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

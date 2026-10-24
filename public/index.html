@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous AI Job Discovery & Application Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080b12;
+      --bg-card: rgba(16, 22, 36, 0.75);
+      --bg-card-hover: rgba(24, 33, 54, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --primary-hover: #4f46e5;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: rgba(8, 11, 18, 0.9);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: #fff;
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 40%, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.3rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .nav-tab {
+      padding: 0.45rem 1rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.75rem 2rem;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.15rem 1.25rem;
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .metric-card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-2px);
+    }
+
+    .metric-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .metric-value {
+      font-family: var(--font-heading);
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .metric-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    /* NextRaise-Style Role & Category Pills Bar */
+    .category-chips-bar {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.2rem;
+      scrollbar-width: thin;
+    }
+
+    .category-chip {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .category-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .category-chip.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--primary);
+      color: #c7d2fe;
+      font-weight: 600;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* Search & Filter Controls */
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .search-filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+      flex: 1;
+    }
+
+    .input-field {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 8px var(--primary-glow);
+    }
+
+    .select-field {
+      background: #0f1422;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-field:focus {
+      border-color: var(--primary);
+    }
+
+    .toggle-chip {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-chip:hover {
+      border-color: var(--text-muted);
+    }
+
+    .toggle-chip.active {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--accent-cyan);
+      color: #a5f3fc;
+      font-weight: 600;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: #fff;
+      border: none;
+      padding: 0.55rem 1.15rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .btn:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-focus);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #f43f5e, #e11d48);
+      box-shadow: 0 2px 10px rgba(244, 63, 94, 0.3);
+    }
+
+    /* Vacancy Cards List */
+    .vacancies-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .job-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.35rem 1.5rem;
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .job-card:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-card-hover);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Score Badge with NextRaise style */
+    .score-badge {
+      min-width: 82px;
+      height: 82px;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      flex-shrink: 0;
+    }
+
+    .score-number {
+      font-family: var(--font-heading);
+      font-size: 1.85rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .score-sub {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-top: 0.2rem;
+      text-transform: uppercase;
+    }
+
+    .tier-excellent {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .tier-strong {
+      background: rgba(6, 182, 212, 0.12);
+      border-color: rgba(6, 182, 212, 0.35);
+      color: #22d3ee;
+    }
+
+    .tier-possible {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .tier-deprioritized {
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
+
+    .job-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .job-header-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.25rem;
+    }
+
+    .job-details h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .early-badge {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.25));
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fde047;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+
+    .meta-pill {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.04);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .job-company {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 0.6rem;
+    }
+
+    .job-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.85rem;
+    }
+
+    .job-meta-row span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .skill-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .skill-tag {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: #cbd5e1;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+    }
+
+    .job-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .star-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--text-dim);
+      transition: color 0.2s ease, transform 0.2s ease;
+      padding: 0.2rem;
+    }
+
+    .star-btn:hover {
+      transform: scale(1.15);
+      color: var(--accent-amber);
+    }
+
+    .star-btn.starred {
+      color: var(--accent-amber);
+    }
+
+    /* Modal Backdrop & Window */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-window {
+      background: #0f1422;
+      border: 1px solid var(--border-focus);
+      border-radius: 18px;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 1.75rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.75rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .code-preview {
+      background: #080b11;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      margin-top: 1.2rem;
+    }
+
+    .section-title:first-child {
+      margin-top: 0;
+    }
+
+    /* Accounts & LLM Configuration Cards */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+
+    .account-badge-primary {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="logo-badge">RM</div>
+      <div>
+        <div class="brand-title">JOB DISCOVERY AI</div>
+        <div class="brand-subtitle">Autonomous Platform for Rahul Motvani</div>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('explorer')">Discovered Vacancies</button>
+      <button class="nav-tab" onclick="switchTab('pipeline')">Review & Approvals</button>
+      <button class="nav-tab" onclick="switchTab('accounts')">Connected Accounts</button>
+      <button class="nav-tab" onclick="switchTab('ai-settings')">AI Models & Routing</button>
+      <button class="nav-tab" onclick="switchTab('history')">Submission History</button>
+    </div>
+
+    <div class="user-pill" id="global-status-pill">
+      <div class="status-dot"></div>
+      <span id="global-status-text">Hybrid AI Ready</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Overview Metrics Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Discovered</div>
+        <div class="metric-value" id="metric-discovered">-</div>
+        <div class="metric-sub">Multi-source automated feed</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Qualified Matches</div>
+        <div class="metric-value" id="metric-qualified" style="color: var(--accent-cyan);">-</div>
+        <div class="metric-sub">Score &ge; 70% threshold</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Awaiting Approval</div>
+        <div class="metric-value" id="metric-awaiting" style="color: var(--accent-amber);">-</div>
+        <div class="metric-sub">Security gate locked</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Submitted Applications</div>
+        <div class="metric-value" id="metric-submitted" style="color: var(--accent-emerald);">-</div>
+        <div class="metric-sub">Approved & logged</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Interview Invitations</div>
+        <div class="metric-value" id="metric-interviews" style="color: #c084fc;">-</div>
+        <div class="metric-sub">Recruiter replies tracked</div>
+      </div>
+    </div>
+
+    <!-- Explorer View -->
+    <div id="view-explorer">
+      <!-- NextRaise Category Chips -->
+      <div class="category-chips-bar" id="category-chips">
+        <div class="category-chip active" onclick="selectCategory('All', this)">All Roles</div>
+        <div class="category-chip" onclick="selectCategory('DevOps', this)">DevOps Engineer</div>
+        <div class="category-chip" onclick="selectCategory('Platform Engineer', this)">Platform Engineer</div>
+        <div class="category-chip" onclick="selectCategory('SRE', this)">Site Reliability Engineer</div>
+        <div class="category-chip" onclick="selectCategory('DevSecOps', this)">DevSecOps / Cloud Security</div>
+        <div class="category-chip" onclick="selectCategory('Cloud Infrastructure', this)">Cloud Infrastructure</div>
+        <div class="category-chip" onclick="selectCategory('Kubernetes', this)">Kubernetes Engineer</div>
+      </div>
+
+      <!-- Controls & Filter Bar -->
+      <div class="action-bar">
+        <div class="search-filter-group">
+          <input type="text" id="search-input" class="input-field" placeholder="Search keywords (e.g. Kubernetes, Terraform, ArgoCD)..." style="min-width: 240px;" oninput="applyFilters()">
+          
+          <select id="country-filter" class="select-field" onchange="applyFilters()">
+            <option value="All">All Locations</option>
+            <option value="India">🇮🇳 India Eligible</option>
+            <option value="United States">🇺🇸 United States</option>
+            <option value="United Kingdom">🇬🇧 United Kingdom</option>
+            <option value="Germany">🇩🇪 Germany</option>
+            <option value="Canada">🇨🇦 Canada</option>
+            <option value="Singapore">🇸🇬 Singapore</option>
+            <option value="Australia">🇦🇺 Australia</option>
+            <option value="Worldwide">🌐 Worldwide Remote</option>
+          </select>
+
+          <select id="score-filter" class="select-field" onchange="applyFilters()">
+            <option value="0">All Match Scores</option>
+            <option value="85">Excellent (85%+)</option>
+            <option value="70">Strong (70%+)</option>
+            <option value="55">Possible (55%+)</option>
+          </select>
+
+          <div class="toggle-chip" id="early-toggle" onclick="toggleEarlyFilter()">
+            <span>✦ Early Applicant</span>
+          </div>
+
+          <div class="toggle-chip" id="saved-toggle" onclick="toggleSavedFilter()">
+            <span>★ Saved</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-secondary" onclick="loadDashboard()">↻ Refresh</button>
+          <button class="btn" id="scan-btn" onclick="triggerDiscoveryScan()">⚡ Run Live Discovery Scan</button>
+        </div>
+      </div>
+
+      <!-- Vacancies List -->
+      <div id="vacancies-list" class="vacancies-container">
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+          Loading live opportunities...
+        </div>
+      </div>
+    </div>
+
+    <!-- Review & Approvals View -->
+    <div id="view-pipeline" style="display: none;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">Application Approvals Gatekeeper</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Strict human-in-the-loop gate: No email or submission can occur without explicit sign-off.</p>
+        </div>
+      </div>
+      <div id="pipeline-list" class="vacancies-container"></div>
+    </div>
+
+    <!-- Connected Accounts View -->
+    <div id="view-accounts" style="display: none;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">Connected Google & Gmail Accounts</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Manage primary application email and secondary recruiter communication inboxes.</p>
+        </div>
+        <button class="btn" onclick="openConnectAccountModal()">+ Connect Gmail Account</button>
+      </div>
+
+      <div id="accounts-grid" class="settings-grid"></div>
+    </div>
+
+    <!-- AI Models & Routing View -->
+    <div id="view-ai-settings" style="display: none;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">AI Inference & Model Routing Configuration</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Configure local CPU Ollama inference and cloud LLM API providers with masked credentials.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.8rem; background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.82rem; font-weight: 600;">Active Mode:</span>
+          <select id="inference-mode-select" class="select-field" onchange="changeInferenceMode(this.value)">
+            <option value="hybrid">Hybrid (Smart CPU/Cloud)</option>
+            <option value="local-only">Local-Only (Ollama CPU)</option>
+            <option value="cloud-only">Cloud-Only (API Keys)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="llm-configs-grid" class="settings-grid"></div>
+    </div>
+
+    <!-- Submission History View -->
+    <div id="view-history" style="display: none;">
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-family: var(--font-heading); font-size: 1.4rem;">Submission History & Cryptographic Audit</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Verified SHA-256 transmission logs, Google Sheets synchronization, and recruiter responses.</p>
+      </div>
+      <div id="submissions-list" class="vacancies-container"></div>
+    </div>
+  </main>
+
+  <!-- Application Review Modal -->
+  <div class="modal-backdrop" id="review-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-title" style="font-size: 1.25rem;">Review & Authorize Application</h2>
+          <div id="modal-subtitle" style="font-size: 0.82rem; color: var(--accent-cyan);">ScaleGrid Technologies</div>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-title">Sending Account Selection (Mandatory)</div>
+        <div style="margin-bottom: 1rem;">
+          <select id="modal-sending-account" class="select-field" style="width: 100%; font-size: 0.9rem; padding: 0.6rem 0.9rem;">
+            <!-- Populated dynamically -->
+          </select>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem;">Applications are sent strictly from the selected authorized account. Never sent from the wrong email.</div>
+        </div>
+
+        <div class="section-title">Recipient & Subject Line</div>
+        <div id="modal-meta" style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-main);"></div>
+
+        <div class="section-title">Personalized Application Email (Editable)</div>
+        <textarea id="modal-email-body" class="input-field" style="width: 100%; height: 160px; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5;"></textarea>
+
+        <div class="section-title">Tailored Resume Attachment</div>
+        <div id="modal-resume-path" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;"></div>
+        <div class="code-preview" id="modal-resume-preview">Loading tailored resume...</div>
+
+        <div class="section-title">Verified Screening Answers</div>
+        <div class="code-preview" id="modal-screening-preview" style="max-height: 120px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="rejectCurrentDraft()">Reject Draft</button>
+        <button class="btn btn-success" id="modal-approve-btn" onclick="approveAndSendCurrentDraft()">✓ Authorize & Send Application</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connect Account Modal -->
+  <div class="modal-backdrop" id="account-modal">
+    <div class="modal-window" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2 style="font-size: 1.15rem;">Connect Gmail Account</h2>
+        <button class="btn btn-secondary" onclick="closeAccountModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Connect an authorized Google account for job applications and recruiter correspondence. Tokens are encrypted locally.
+        </p>
+        <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-weight: 600; font-size: 0.88rem; color: var(--accent-blue);">Google Cloud OAuth 2.0</span>
+            <span id="oauth-status-badge" class="badge" style="background: var(--bg-card); color: var(--text-muted); font-size: 0.72rem;">Checking...</span>
+          </div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.8rem;">
+            Authenticate with Google to grant live Gmail send/draft, Google Drive resume upload, and Google Sheets tracking without third-party intermediaries.
+          </p>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="oauth-signin-btn" class="btn btn-primary" onclick="initiateGoogleOAuth()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>
+              Sign in with Google
+            </button>
+            <button class="btn btn-secondary" onclick="toggleOAuthCredentialsForm()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+              Set Client ID/Secret
+            </button>
+          </div>
+          <div id="oauth-creds-form" style="display: none; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08);">
+            <div style="margin-bottom: 0.5rem;">
+              <input type="text" id="oauth-client-id" class="input-field" placeholder="Client ID (.apps.googleusercontent.com)" style="width: 100%; font-size: 0.78rem;">
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+              <input type="password" id="oauth-client-secret" class="input-field" placeholder="Client Secret" style="width: 100%; font-size: 0.78rem;">
+            </div>
+            <button class="btn btn-secondary" onclick="saveOAuthCredentials()" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;">Save Credentials</button>
+          </div>
+        </div>
+
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-bottom: 1rem;">— OR ADD ACCOUNT MANUALLY —</div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Account Email Address</label>
+          <input type="email" id="new-account-email" class="input-field" placeholder="e.g. motvanirahul98@gmail.com" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Display Label</label>
+          <input type="text" id="new-account-name" class="input-field" placeholder="e.g. Primary Job Search" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="new-account-primary" style="cursor: pointer;">
+          <label for="new-account-primary" style="font-size: 0.85rem; cursor: pointer;">Set as default sending account</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAccountModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveNewAccount()">Connect Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configure LLM Modal -->
+  <div class="modal-backdrop" id="llm-modal">
+    <div class="modal-window" style="max-width: 580px;">
+      <div class="modal-header">
+        <h2 id="llm-modal-title" style="font-size: 1.15rem;">Configure Provider</h2>
+        <button class="btn btn-secondary" onclick="closeLLMModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="llm-provider-id">
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">API Key (Stored locally and masked)</label>
+          <input type="password" id="llm-api-key" class="input-field" placeholder="sk-..." style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Default Model</label>
+          <input type="text" id="llm-default-model" class="input-field" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Base URL / Endpoint</label>
+          <input type="text" id="llm-endpoint" class="input-field" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="llm-enabled" style="cursor: pointer;">
+          <label for="llm-enabled" style="font-size: 0.85rem; cursor: pointer;">Enable this provider for job analysis</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeLLMModal()">Cancel</button>
+        <button class="btn btn-success" onclick="saveLLMConfigForm()">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allVacancies = [];
+    let currentDraft = null;
+    let selectedCategory = 'All';
+    let isEarlyFilter = false;
+    let isSavedFilter = false;
+    let connectedAccounts = [];
+
+    async function loadDashboard() {
+      try {
+        const [metricsRes, vacRes, accRes, healthRes] = await Promise.all([
+          fetch('/api/dashboard/metrics'),
+          fetch('/api/vacancies'),
+          fetch('/api/accounts'),
+          fetch('/api/health')
+        ]);
+
+        const metrics = await metricsRes.json();
+        document.getElementById('metric-discovered').textContent = metrics.totalDiscovered ?? 0;
+        document.getElementById('metric-qualified').textContent = metrics.totalQualified ?? 0;
+        document.getElementById('metric-awaiting').textContent = metrics.draftsAwaitingApproval ?? 0;
+        document.getElementById('metric-submitted').textContent = metrics.totalSubmitted ?? 0;
+        document.getElementById('metric-interviews').textContent = metrics.interviewInvites ?? 0;
+
+        connectedAccounts = await accRes.json();
+        const health = await healthRes.json();
+        document.getElementById('global-status-text').textContent = `${health.inferenceMode.toUpperCase()} AI READY`;
+        document.getElementById('inference-mode-select').value = health.inferenceMode;
+
+        allVacancies = await vacRes.json();
+        applyFilters();
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      }
+    }
+
+    function selectCategory(category, el) {
+      selectedCategory = category;
+      document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      applyFilters();
+    }
+
+    function toggleEarlyFilter() {
+      isEarlyFilter = !isEarlyFilter;
+      document.getElementById('early-toggle').classList.toggle('active', isEarlyFilter);
+      applyFilters();
+    }
+
+    function toggleSavedFilter() {
+      isSavedFilter = !isSavedFilter;
+      document.getElementById('saved-toggle').classList.toggle('active', isSavedFilter);
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const country = document.getElementById('country-filter').value;
+      const minScore = Number(document.getElementById('score-filter').value);
+
+      const filtered = allVacancies.filter(v => {
+        // Text Search
+        const matchesQuery = !q || 
+          v.title.toLowerCase().includes(q) || 
+          v.companyName.toLowerCase().includes(q) || 
+          (v.rawDescription && v.rawDescription.toLowerCase().includes(q));
+
+        // Category Filter
+        const matchesCategory = selectedCategory === 'All' || 
+          (v.category && v.category.toLowerCase().includes(selectedCategory.toLowerCase())) ||
+          v.title.toLowerCase().includes(selectedCategory.toLowerCase());
+
+        // Country Filter
+        let matchesCountry = true;
+        if (country !== 'All') {
+          if (country === 'India') {
+            matchesCountry = v.country === 'India' || v.locationText.toLowerCase().includes('india') || v.acceptsIndia;
+          } else {
+            matchesCountry = v.country === country || v.locationText.toLowerCase().includes(country.toLowerCase());
+          }
+        }
+
+        // Match Score
+        const score = v.matchScore ? v.matchScore.overallScore : 0;
+        const matchesScore = !minScore || score >= minScore;
+
+        // Early Applicant Toggle
+        const matchesEarly = !isEarlyFilter || v.isEarlyApplicant;
+
+        // Saved Jobs Toggle
+        const matchesSaved = !isSavedFilter || v.isSaved;
+
+        return matchesQuery && matchesCategory && matchesCountry && matchesScore && matchesEarly && matchesSaved;
+      });
+
+      renderVacancies(filtered, 'vacancies-list');
+    }
+
+    function renderVacancies(list, containerId) {
+      const container = document.getElementById(containerId);
+      if (!list || list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 4rem; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">No opportunities matching selected filters</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Try adjusting the country, role category, or run a live scan across remote feeds.</div>
+            <button class="btn" style="margin: 0 auto;" onclick="triggerDiscoveryScan()">⚡ Run Live Discovery Scan</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(v => {
+        const score = v.matchScore ? Math.round(v.matchScore.overallScore) : null;
+        let tierClass = 'tier-deprioritized';
+        let tierLabel = 'UNSCORED';
+        if (score !== null) {
+          if (score >= 85) { tierClass = 'tier-excellent'; tierLabel = 'EXCELLENT'; }
+          else if (score >= 70) { tierClass = 'tier-strong'; tierLabel = 'STRONG'; }
+          else if (score >= 55) { tierClass = 'tier-possible'; tierLabel = 'POSSIBLE'; }
+          else { tierClass = 'tier-deprioritized'; tierLabel = 'LOW'; }
+        }
+
+        const skills = v.parsedRequirements?.essentialSkills || [];
+        const skillsBadges = skills.slice(0, 6).map(s => `<span class="skill-tag">${s}</span>`).join('');
+        const salaryText = v.salaryMin ? `${v.currency || '$'}${v.salaryMin.toLocaleString()}` : (v.parsedRequirements?.salaryEvidence || 'Undisclosed');
+
+        return `
+          <div class="job-card">
+            <div class="score-badge ${tierClass}">
+              <div class="score-number">${score !== null ? score : '--'}</div>
+              <div class="score-sub">${tierLabel}</div>
+            </div>
+
+            <div class="job-details">
+              <div class="job-header-row">
+                <h3>${v.title}</h3>
+                ${v.isEarlyApplicant ? '<span class="early-badge">✦ Early Applicant</span>' : ''}
+                ${v.isContractOrFreelance ? '<span class="meta-pill" style="color: var(--accent-amber); border-color: rgba(245,158,11,0.3);">CONTRACT</span>' : ''}
+                ${v.acceptsIndia ? '<span class="meta-pill" style="color: var(--accent-emerald); border-color: rgba(16,185,129,0.3);">🇮🇳 INDIA ELIGIBLE</span>' : ''}
+              </div>
+              <div class="job-company">${v.companyName} · <a href="${v.sourceUrl}" target="_blank" style="color: var(--text-dim); text-decoration: underline;">Original Listing</a></div>
+              
+              <div class="job-meta-row">
+                <span>📍 ${v.locationText} (${v.country || 'Worldwide'})</span>
+                <span>💰 ${salaryText}</span>
+                <span>🏷️ ${v.category || 'DevOps'}</span>
+                <span>📅 Discovered: ${v.discoveredAt.split('T')[0]}</span>
+                <span>Status: <strong style="color: var(--accent-cyan);">${v.status}</strong></span>
+              </div>
+
+              <div class="skill-tags">
+                ${skillsBadges}
+              </div>
+            </div>
+
+            <div class="job-actions">
+              <button class="star-btn ${v.isSaved ? 'starred' : ''}" title="${v.isSaved ? 'Saved' : 'Save job'}" onclick="toggleBookmark('${v.id}', ${!v.isSaved})">
+                ${v.isSaved ? '★' : '☆'}
+              </button>
+              <button class="btn btn-secondary" onclick="inspectVacancy('${v.id}')">Inspect Match</button>
+              ${v.status === 'QUALIFIED' || v.status === 'DRAFTED' || v.status === 'AWAITING_APPROVAL'
+                ? `<button class="btn btn-success" onclick="openReviewModal('${v.id}')">Review & Approve</button>`
+                : (v.status === 'SUBMITTED' 
+                  ? `<span class="meta-pill" style="color: var(--accent-emerald);">✓ Applied</span>`
+                  : `<button class="btn btn-secondary" disabled>Deprioritized</button>`)
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleBookmark(id, isSaved) {
+      try {
+        await fetch(`/api/vacancies/${id}/bookmark`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isSaved })
+        });
+        const target = allVacancies.find(v => v.id === id);
+        if (target) target.isSaved = isSaved;
+        applyFilters();
+      } catch (err) {
+        console.error('Error toggling bookmark:', err);
+      }
+    }
+
+    async function triggerDiscoveryScan() {
+      const btn = document.getElementById('scan-btn');
+      btn.disabled = true;
+      btn.textContent = 'Scanning sources...';
+
+      try {
+        const res = await fetch('/api/discovery/scan', { method: 'POST' });
+        const data = await res.json();
+        alert(`Discovery Scan Complete!\nDiscovered: ${data.report.totalDiscovered}\nNew: ${data.report.newVacancies}\nVerified: ${data.report.verifiedActive}`);
+        await loadDashboard();
+      } catch (err) {
+        alert('Discovery scan failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ Run Live Discovery Scan';
+      }
+    }
+
+    async function inspectVacancy(id) {
+      const res = await fetch(`/api/vacancies/${id}`);
+      const v = await res.json();
+      const explanation = v.evaluation ? v.evaluation.evidenceExplanation : 'No detailed evaluation available.';
+      alert(`Match Evaluation for ${v.companyName} - ${v.title}:\n\n${explanation}`);
+    }
+
+    async function openReviewModal(vacancyId) {
+      try {
+        const [vacRes, draftsRes] = await Promise.all([
+          fetch(`/api/vacancies/${vacancyId}`),
+          fetch('/api/drafts')
+        ]);
+        const vacancy = await vacRes.json();
+        const drafts = await draftsRes.json();
+        const draft = drafts.find(d => d.vacancyId === vacancyId);
+
+        if (!draft) {
+          alert('No prepared application draft found for this vacancy.');
+          return;
+        }
+
+        currentDraft = draft;
+        document.getElementById('modal-title').textContent = `Review Application: ${vacancy.title}`;
+        document.getElementById('modal-subtitle').textContent = vacancy.companyName;
+        document.getElementById('modal-meta').innerHTML = `<strong>To:</strong> ${draft.recipientEmail} | <strong>Subject:</strong> ${draft.subjectLine}`;
+        document.getElementById('modal-email-body').value = draft.emailBody;
+        document.getElementById('modal-resume-path').textContent = `File: ${draft.tailoredResumePath}`;
+        document.getElementById('modal-resume-preview').textContent = `Tailored ATS Resume specifically tuned for ${vacancy.companyName}\nEmphasizing Kubernetes orchestration, Terraform automation, ArgoCD GitOps, and SRE production quality.`;
+        document.getElementById('modal-screening-preview').textContent = JSON.stringify(draft.screeningAnswers || {}, null, 2);
+
+        // Populate Sending Account Dropdown
+        const accSelect = document.getElementById('modal-sending-account');
+        accSelect.innerHTML = connectedAccounts.map(a => `
+          <option value="${a.id}" ${a.isPrimary ? 'selected' : ''}>
+            ${a.email} (${a.displayName || 'Google'}) ${a.isPrimary ? '★ [Primary]' : ''}
+          </option>
+        `).join('') || '<option value="">No connected account (Simulation/Fallback mode)</option>';
+
+        document.getElementById('review-modal').classList.add('active');
+      } catch (err) {
+        alert('Could not open review modal: ' + err.message);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('review-modal').classList.remove('active');
+      currentDraft = null;
+    }
+
+    async function approveAndSendCurrentDraft() {
+      if (!currentDraft) return;
+      const btn = document.getElementById('modal-approve-btn');
+      const sendingAccountId = document.getElementById('modal-sending-account').value;
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch(`/api/drafts/${currentDraft.id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sendingAccountId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Application Successfully Authorized & Submitted!\nSubmission ID: ${data.submission.id}\nAudit Hash: ${data.submission.auditHash}`);
+          closeModal();
+          await loadDashboard();
+        } else {
+          alert('Submission failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Approval failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Authorize & Send Application';
+      }
+    }
+
+    async function rejectCurrentDraft() {
+      if (!currentDraft) return;
+      const reason = prompt('Reason for deprioritizing draft (e.g. Salary below target, location misaligned):');
+      if (reason === null) return;
+
+      try {
+        await fetch(`/api/drafts/${currentDraft.id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: reason })
+        });
+        alert('Draft deprioritized.');
+        closeModal();
+        await loadDashboard();
+      } catch (err) {
+        alert('Action failed: ' + err.message);
+      }
+    }
+
+    // Accounts Management
+    async function loadAccounts() {
+      try {
+        const res = await fetch('/api/accounts');
+        connectedAccounts = await res.json();
+        const grid = document.getElementById('accounts-grid');
+        if (connectedAccounts.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-card); border-radius: 14px;">
+              <p style="color: var(--text-muted); margin-bottom: 1rem;">No Google accounts currently connected.</p>
+              <button class="btn" onclick="openConnectAccountModal()">+ Connect First Account</button>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = connectedAccounts.map(a => `
+          <div class="settings-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+              <div style="font-weight: 700; font-size: 1.05rem; display: flex; align-items: center;">
+                ${a.email}
+                ${a.isPrimary ? '<span class="account-badge-primary">PRIMARY</span>' : ''}
+              </div>
+              <span class="meta-pill" style="color: var(--accent-emerald);">${a.status}</span>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+              <strong>Label:</strong> ${a.displayName || 'Default'} · <strong>Provider:</strong> ${a.provider}
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1.2rem;">
+              <strong>Scopes:</strong> ${a.grantedScopes.join(', ')}
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              ${!a.isPrimary ? `<button class="btn btn-secondary" onclick="setPrimaryAccount('${a.id}')">Make Primary</button>` : ''}
+              <button class="btn btn-secondary" onclick="syncAccount('${a.id}')">Sync Emails</button>
+              <button class="btn btn-danger" onclick="disconnectAccount('${a.id}')">Disconnect</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Error loading accounts:', err);
+      }
+    }
+
+    function openConnectAccountModal() {
+      document.getElementById('account-modal').classList.add('active');
+      checkOAuthStatus();
+    }
+
+    async function checkOAuthStatus() {
+      const badge = document.getElementById('oauth-status-badge');
+      try {
+        const res = await fetch('/api/auth/google/status');
+        const data = await res.json();
+        if (data.isConfigured) {
+          badge.textContent = data.hasSavedTokens ? '✓ Connected & Active' : '● Credentials Configured';
+          badge.style.color = 'var(--accent-green)';
+        } else {
+          badge.textContent = '○ Needs Client ID & Secret';
+          badge.style.color = 'var(--accent-gold)';
+        }
+      } catch (err) {
+        badge.textContent = 'Status Unavailable';
+      }
+    }
+
+    function toggleOAuthCredentialsForm() {
+      const form = document.getElementById('oauth-creds-form');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function saveOAuthCredentials() {
+      const clientId = document.getElementById('oauth-client-id').value.trim();
+      const clientSecret = document.getElementById('oauth-client-secret').value.trim();
+      if (!clientId || !clientSecret) {
+        alert('Please enter both Client ID and Client Secret.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/google/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId, clientSecret })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Google OAuth Client Credentials saved!');
+          document.getElementById('oauth-creds-form').style.display = 'none';
+          await checkOAuthStatus();
+        } else {
+          alert('Failed to save credentials: ' + data.error);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function initiateGoogleOAuth() {
+      try {
+        const res = await fetch('/api/auth/google/url');
+        const data = await res.json();
+        if (data.success && data.url) {
+          window.location.href = data.url;
+        } else {
+          alert('Google OAuth is not configured yet. Please enter your Client ID and Client Secret, or see docs/GOOGLE_OAUTH_SETUP_GUIDE.md');
+          toggleOAuthCredentialsForm();
+        }
+      } catch (err) {
+        alert('Could not start Google OAuth: ' + err.message);
+      }
+    }
+
+    function closeAccountModal() {
+      document.getElementById('account-modal').classList.remove('active');
+    }
+
+    async function saveNewAccount() {
+      const email = document.getElementById('new-account-email').value.trim();
+      const displayName = document.getElementById('new-account-name').value.trim();
+      const isPrimary = document.getElementById('new-account-primary').checked;
+
+      if (!email) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/accounts/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, displayName, isPrimary })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Google Account connected: ${data.account.email}`);
+          closeAccountModal();
+          await loadAccounts();
+        }
+      } catch (err) {
+        alert('Failed to connect account: ' + err.message);
+      }
+    }
+
+    async function setPrimaryAccount(id) {
+      await fetch(`/api/accounts/${id}/primary`, { method: 'POST' });
+      await loadAccounts();
+    }
+
+    async function disconnectAccount(id) {
+      if (!confirm('Are you sure you want to disconnect this account?')) return;
+      await fetch(`/api/accounts/${id}/disconnect`, { method: 'POST' });
+      await loadAccounts();
+    }
+
+    async function syncAccount(id) {
+      const res = await fetch(`/api/accounts/${id}/sync`, { method: 'POST' });
+      const data = await res.json();
+      alert(`Account Synchronized!\nSuccess: ${data.success}`);
+      await loadAccounts();
+    }
+
+    // AI Configurations Management
+    async function loadLLMConfigs() {
+      try {
+        const res = await fetch('/api/llm/configs');
+        const configs = await res.json();
+        const grid = document.getElementById('llm-configs-grid');
+
+        grid.innerHTML = configs.map(c => `
+          <div class="settings-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+              <div style="font-weight: 700; font-size: 1.1rem; text-transform: capitalize;">
+                ${c.provider}
+                ${c.provider === 'ollama' ? '<span class="meta-pill" style="color: var(--accent-cyan); margin-left: 0.4rem;">LOCAL CPU</span>' : '<span class="meta-pill" style="color: var(--accent-purple); margin-left: 0.4rem;">CLOUD API</span>'}
+              </div>
+              <span class="meta-pill" style="color: ${c.isEnabled ? 'var(--accent-emerald)' : 'var(--text-dim)'};">
+                ${c.isEnabled ? 'ENABLED' : 'DISABLED'}
+              </span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.4rem;">
+              <strong>Default Model:</strong> <code>${c.defaultModel}</code>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem;">
+              <strong>Endpoint:</strong> <code>${c.endpoint || 'Default'}</code>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+              <strong>API Key:</strong> <code>${c.hasApiKey ? c.maskedApiKey : (c.provider === 'ollama' ? 'Not Required (Local)' : 'Missing')}</code>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1.25rem;">
+              Tokens Used: ${c.totalTokensUsed.toLocaleString()} · Last Test: ${c.lastTestStatus || 'Never tested'}
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <button class="btn btn-secondary" onclick="testLLMProvider('${c.provider}', this)">⚡ Test Connection</button>
+              <button class="btn btn-secondary" onclick="openLLMConfigModal('${c.provider}', '${c.defaultModel}', '${c.endpoint || ''}', ${c.isEnabled})">Configure</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Error loading LLM configs:', err);
+      }
+    }
+
+    async function testLLMProvider(provider, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Testing...';
+      try {
+        const res = await fetch('/api/llm/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider })
+        });
+        const result = await res.json();
+        alert(`Connection Test for ${result.provider}:\nStatus: ${result.status}\nLatency: ${result.latencyMs}ms\nMessage: ${result.message}`);
+        await loadLLMConfigs();
+      } catch (err) {
+        alert('Test failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ Test Connection';
+      }
+    }
+
+    function openLLMConfigModal(provider, model, endpoint, isEnabled) {
+      document.getElementById('llm-modal-title').textContent = `Configure ${provider.toUpperCase()}`;
+      document.getElementById('llm-provider-id').value = provider;
+      document.getElementById('llm-default-model').value = model;
+      document.getElementById('llm-endpoint').value = endpoint;
+      document.getElementById('llm-enabled').checked = isEnabled;
+      document.getElementById('llm-api-key').value = '';
+      document.getElementById('llm-modal').classList.add('active');
+    }
+
+    function closeLLMModal() {
+      document.getElementById('llm-modal').classList.remove('active');
+    }
+
+    async function saveLLMConfigForm() {
+      const provider = document.getElementById('llm-provider-id').value;
+      const defaultModel = document.getElementById('llm-default-model').value.trim();
+      const endpoint = document.getElementById('llm-endpoint').value.trim();
+      const apiKey = document.getElementById('llm-api-key').value.trim();
+      const isEnabled = document.getElementById('llm-enabled').checked;
+
+      try {
+        await fetch('/api/llm/configs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider, defaultModel, endpoint, apiKey: apiKey || undefined, isEnabled })
+        });
+        alert('Configuration saved.');
+        closeLLMModal();
+        await loadLLMConfigs();
+      } catch (err) {
+        alert('Error saving configuration: ' + err.message);
+      }
+    }
+
+    async function changeInferenceMode(mode) {
+      try {
+        const res = await fetch('/api/llm/mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode })
+        });
+        const data = await res.json();
+        alert(`Inference Mode updated to: ${data.mode.toUpperCase()}`);
+        document.getElementById('global-status-text').textContent = `${data.mode.toUpperCase()} AI READY`;
+      } catch (err) {
+        alert('Failed to update mode: ' + err.message);
+      }
+    }
+
+    // Submissions History
+    async function loadSubmissions() {
+      try {
+        const res = await fetch('/api/submissions');
+        const submissions = await res.json();
+        const container = document.getElementById('submissions-list');
+        if (submissions.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 4rem; background: var(--bg-card); border-radius: 14px;">
+              <p style="color: var(--text-muted);">No applications submitted yet. Approved applications will record immutable cryptographic audit logs here.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = submissions.map(s => `
+          <div class="job-card">
+            <div class="job-details">
+              <h3>Submission Ref: ${s.id.slice(0, 8)} <span class="meta-pill" style="color: var(--accent-emerald);">${s.status}</span></h3>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin: 0.4rem 0;">
+                <strong>Channel:</strong> ${s.channel} · <strong>Sent At:</strong> ${s.sentAt} · <strong>Approved By:</strong> ${s.approvedBy}
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-cyan);">
+                SHA-256 Audit Hash: ${s.auditHash}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Error loading submissions:', err);
+      }
+    }
+
+    // View Switching
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('view-explorer').style.display = tab === 'explorer' ? 'block' : 'none';
+      document.getElementById('view-pipeline').style.display = tab === 'pipeline' ? 'block' : 'none';
+      document.getElementById('view-accounts').style.display = tab === 'accounts' ? 'block' : 'none';
+      document.getElementById('view-ai-settings').style.display = tab === 'ai-settings' ? 'block' : 'none';
+      document.getElementById('view-history').style.display = tab === 'history' ? 'block' : 'none';
+
+      if (tab === 'pipeline') {
+        const awaiting = allVacancies.filter(v => v.status === 'QUALIFIED' || v.status === 'DRAFTED' || v.status === 'AWAITING_APPROVAL');
+        renderVacancies(awaiting, 'pipeline-list');
+      } else if (tab === 'accounts') {
+        loadAccounts();
+      } else if (tab === 'ai-settings') {
+        loadLLMConfigs();
+      } else if (tab === 'history') {
+        loadSubmissions();
+      } else {
+        applyFilters();
+      }
+    }
+
+    // Check for OAuth callback notification
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auth') === 'success') {
+      const email = urlParams.get('email') || 'Google Account';
+      alert(`✓ Success: ${email} connected successfully via Google Cloud OAuth 2.0!`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('auth') === 'error') {
+      alert(`OAuth Error: ${urlParams.get('message') || 'Authentication failed'}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Initialize
+    loadDashboard();
+  </script>
+</body>
+</html>

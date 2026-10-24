@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# SQLite databases & data files
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/*test*.db
+data/*test*.json
+data/google_tokens.json
+data/resumes/tailored/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# System & IDE files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
