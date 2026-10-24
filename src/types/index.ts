@@ -50,6 +50,7 @@ export interface UserProfile {
     devSecOpsAndSecurity: string[];
     observabilityAndMonitoring: string[];
     programmingAndScripting: string[];
+    languagesAndFrameworks?: string[];
     networkingAndAdmin: string[];
   };
   certifications: string[];

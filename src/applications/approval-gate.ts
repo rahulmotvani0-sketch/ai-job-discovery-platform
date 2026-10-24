@@ -17,7 +17,7 @@ export class ApprovalGatekeeper {
     this.db = db;
   }
 
-  approveDraft(draftId: string, actor: string = 'rahul_user', sendingAccountId?: string): ApplicationDraft {
+  approveDraft(draftId: string, actor: string = 'authorized_user', sendingAccountId?: string): ApplicationDraft {
     const draft = this.db.getApplicationDraftById(draftId);
     if (!draft) {
       throw new SecurityAuthorizationError(`Draft ${draftId} does not exist.`);

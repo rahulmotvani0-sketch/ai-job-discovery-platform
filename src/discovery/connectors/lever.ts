@@ -20,6 +20,13 @@ export class LeverAtsConnector implements IJobSourceConnector {
     const limit = options?.limit ?? 30;
     const collected: RawJobPayload[] = [];
     const targetKeywords = [
+      'engineer',
+      'developer',
+      'software',
+      'fullstack',
+      'full-stack',
+      'frontend',
+      'backend',
       'devops',
       'sre',
       'cloud',
@@ -29,6 +36,11 @@ export class LeverAtsConnector implements IJobSourceConnector {
       'reliability',
       'security',
       'systems',
+      'data',
+      'ai',
+      'machine learning',
+      'mobile',
+      'qa',
     ];
 
     for (const company of this.targetCompanies) {

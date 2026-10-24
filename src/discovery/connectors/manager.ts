@@ -81,21 +81,39 @@ export class DiscoveryManager {
       country = 'Australia';
     }
 
-    // Categorize Role Taxonomy
-    let category = 'DevOps';
+    // Categorize Role Taxonomy across all IT Tech roles
+    let category = 'Software Engineering';
     const titleLower = payload.title.toLowerCase();
     if (/sre|site reliability/i.test(titleLower)) {
       category = 'SRE';
+    } else if (/devsecops/i.test(titleLower)) {
+      category = 'DevSecOps';
+    } else if (/cybersecurity|infosec|security engineer/i.test(titleLower)) {
+      category = 'Cybersecurity';
     } else if (/platform/i.test(titleLower)) {
       category = 'Platform Engineer';
-    } else if (/devsecops|cloud security|security engineer/i.test(titleLower)) {
-      category = 'DevSecOps';
     } else if (/infrastructure|cloud infra/i.test(titleLower)) {
       category = 'Cloud Infrastructure';
     } else if (/kubernetes|k8s/i.test(titleLower)) {
       category = 'Kubernetes';
     } else if (/devops/i.test(titleLower)) {
       category = 'DevOps';
+    } else if (/full[\s-]?stack/i.test(titleLower)) {
+      category = 'Full-Stack';
+    } else if (/frontend|front[\s-]?end|ui[\s-]?developer|react|vue|angular/i.test(titleLower)) {
+      category = 'Frontend';
+    } else if (/backend|back[\s-]?end|api engineer|node|golang|python developer|java developer/i.test(titleLower)) {
+      category = 'Backend';
+    } else if (/machine learning|\bml\b|artificial intelligence|\bai\b|llm|deep learning|data scientist/i.test(titleLower)) {
+      category = 'AI & Machine Learning';
+    } else if (/data engineer|data platform|etl|bigquery|snowflake|databricks/i.test(titleLower)) {
+      category = 'Data Engineering';
+    } else if (/mobile|ios|android|flutter|react native|swift|kotlin/i.test(titleLower)) {
+      category = 'Mobile';
+    } else if (/qa|quality assurance|sdet|test automation/i.test(titleLower)) {
+      category = 'QA & Automation';
+    } else if (/software|engineer|developer/i.test(titleLower)) {
+      category = 'Software Engineering';
     }
 
     const vacancy: Vacancy = {

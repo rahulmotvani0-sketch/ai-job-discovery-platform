@@ -1,26 +1,26 @@
 # Implementation Plan & Execution Roadmap
 
-**Project**: AI-Powered Job Discovery & Application Automation Platform  
-**Target User**: Rahul Motvani (Senior DevOps & Cloud Infrastructure Engineer)  
-**Execution Environment**: Ubuntu 24.04 LTS (Node.js v22, Python 3.12, Local Ollama)  
-**Current Date**: October 24, 2026
+**Project**: JOB DISCOVERY AI - Autonomous Platform  
+**Target User**: IT Tech Professionals (Full-Stack, Backend, Frontend, DevOps, SRE, Cloud Infrastructure, AI/ML, Data Engineering, Cybersecurity, Mobile, QA)  
+**Execution Environment**: Ubuntu Linux (Node.js v22, Local Ollama)  
+**Current Date**: October 2026
 
 ---
 
 ## 1. Implementation Phases & Task Checklist
 
 ### Phase 1: Repository Audit & Architectural Foundation (Completed)
-- [x] Audit `/home/rahul/PROJECT'S/OpenMausBot-main` codebase in depth.
+- [x] Audit `OpenMausBot-main` codebase in depth.
 - [x] Analyze tech stack, browser automation (CDP), drivers, persistence, Composio issues.
 - [x] Deliver `docs/OPENMAUSBOT_AUDIT.md`.
 - [x] Deliver `docs/ARCHITECTURE.md`.
 - [x] Deliver `docs/IMPLEMENTATION_PLAN.md`.
 
 ### Phase 2: Working Foundation (Core Infrastructure)
-- [ ] Initialize clean, production TypeScript project structure in `/home/rahul/PROJECT'S/JOB`.
+- [ ] Initialize clean, production TypeScript project structure in repository.
 - [ ] Configure `package.json`, `tsconfig.json`, `vitest` test harness.
 - [ ] Implement robust `node:sqlite` database layer with schema migrations, indexes, and WAL mode.
-- [ ] Load and structure Rahul Motvani's authoritative professional profile from `/home/rahul/PROJECT'S/portfolio-new/resumes/MASTER_RESUME.md`.
+- [ ] Load and structure candidate authoritative professional profile and preferences.
 - [ ] Build configuration manager with `.env` secret protection, umask enforcement (`0o600`), and validation.
 - [ ] Implement structured logging, audit trails, and health-check endpoints.
 - [ ] Execute foundational tests and verify zero-defect baseline.
@@ -43,7 +43,7 @@
 - [ ] Implement Intelligent Model Router with automatic local/cloud selection and offline fallback.
 - [ ] Build Job Description Analysis Agent (structured JSON extraction with strict schema validation).
 - [ ] Implement 7-factor deterministic Job Matching Engine (30% skills, 20% exp, 15% responsibilities, 10% cloud, 10% location, 10% comp, 5% other).
-- [ ] Implement evidence-backed explanation generator tied directly to Rahul's verified career facts.
+- [ ] Implement evidence-backed explanation generator tied directly to candidate's verified career facts.
 - [ ] Run matching and semantic evaluation tests.
 
 ### Phase 5: Resume Tailoring & Application Generation
@@ -80,8 +80,8 @@
 ## 2. Immediate Next Step: Phase 2 Foundation Execution
 
 Proceed directly into Phase 2:
-1. Initialize the package structure in `/home/rahul/PROJECT'S/JOB`.
+1. Initialize the package structure in the project repository.
 2. Set up TypeScript, Vitest, Node.js scripts.
 3. Implement `src/core/database.ts` with `node:sqlite` WAL mode.
-4. Ingest and seed Rahul Motvani's profile into the database from `MASTER_RESUME.md`.
+4. Ingest and seed candidate profile into the database.
 5. Verify tests and report progress.

@@ -1,27 +1,27 @@
-# Autonomous AI Job Discovery & Application Platform
+# JOB DISCOVERY AI - Autonomous Platform
 
-An autonomous, full-stack personal job search workstation designed to discover, evaluate, tailor applications for, and track senior DevOps, Cloud Infrastructure, Kubernetes, Platform Engineering, DevSecOps, and SRE opportunities.
+An enterprise-grade, open-source, local-first autonomous job discovery and application workstation built for **all IT and tech job seekers** (Full-Stack, Backend, Frontend, DevOps, SRE, Cloud Infrastructure, AI & Machine Learning, Data Engineering, Cybersecurity, Mobile, and QA & Automation).
 
-Inspired by product patterns from modern job platforms like NextRaise, the platform combines multi-source direct ATS scraping, local CPU inference via Ollama, hybrid cloud LLM routing, Google Cloud OAuth 2.0 integration, and human-in-the-loop approval gates.
+Inspired by modern job platforms like NextRaise and built with a local-first philosophy, the platform combines multi-source direct ATS scraping, local CPU inference via Ollama, hybrid cloud LLM routing, Google Cloud OAuth 2.0 integration, and human-in-the-loop security approval gates.
 
 ---
 
-## Key Features
+## 🌟 Key Capabilities
 
-- **Multi-Source Job Discovery**:
-  - Direct ATS scraping from **Greenhouse** (Elastic, Cloudflare, Datadog, MongoDB, Stripe, Canonical)
-  - Direct ATS scraping from **Lever** (Palantir, OptionMetrics, BrightEdge, Nextech)
-  - Direct ATS scraping from **Ashby** (Linear, Supabase, Ramp, Perplexity, Resend, PostHog, Vanta, Replit)
+- **Universal Multi-Source Job Discovery**:
+  - Direct ATS scraping from **Greenhouse** (Elastic, Cloudflare, Datadog, MongoDB, Stripe, Canonical, etc.)
+  - Direct ATS scraping from **Lever** (Palantir, OptionMetrics, BrightEdge, Nextech, etc.)
+  - Direct ATS scraping from **Ashby** (Linear, Supabase, Ramp, Perplexity, Resend, PostHog, Vanta, Replit, etc.)
   - Remote tech job feeds from **Himalayas Remote API**, **RemoteOK API**, and **Jobicy API**
-- **NextRaise-Inspired UX**:
-  - Role Taxonomy Chips (`DevOps`, `Platform Engineer`, `SRE`, `DevSecOps`, `Cloud Infrastructure`, `Kubernetes`)
+- **Modern NextRaise-Inspired UX**:
+  - Multi-Domain Role Chips (`All Roles`, `Full-Stack`, `Backend`, `Frontend`, `DevOps & SRE`, `Cloud Infra`, `AI & ML`, `Data Engineering`, `Cybersecurity`, `Mobile`, `QA & Automation`)
   - **"✦ Early Applicant"** Badges prioritizing vacancies active &le; 48 hours for 3–4× higher recruiter response rates
-  - Country Filters with strict remote-eligibility matching (India-friendly, Worldwide, US, UK, Germany, etc.)
+  - Country & Residency Filters with strict remote-eligibility matching (India-eligible, Worldwide, US, UK, Germany, Canada, Singapore, Australia, etc.)
   - Job Bookmarking / Saved Jobs tracking
-- **AI Matching & Resume Tailoring**:
-  - Semantic compatibility evaluation based on verified professional background
-  - Automated ATS-optimized markdown resume tailoring tailored to target job requirements
-  - Zero-hallucination policy strictly adhering to master resume achievements
+- **AI Matching & Tailored Resumes**:
+  - Semantic compatibility evaluation based on candidate profile and skills
+  - Automated ATS-optimized markdown resume tailoring adhering strictly to target job requirements
+  - Zero-hallucination policy strictly grounded in verified achievements
 - **Flexible Model Routing (Local CPU + Cloud)**:
   - Local CPU inference via **Ollama** (`qwen2.5:7b`, `llama3.2:3b`, `mistral`)
   - Configurable Cloud LLMs (**Google Gemini**, **OpenAI**, **Anthropic**, **OpenRouter**) with live latency testing and masked keys
@@ -30,17 +30,17 @@ Inspired by product patterns from modern job platforms like NextRaise, the platf
   - Direct Google Cloud OAuth 2.0 (Gmail API, Google Drive API, Google Sheets API)
   - Management of primary sending account and secondary recruitment inboxes
   - Tokens stored encrypted locally; zero third-party intermediaries (e.g. no Composio)
-- **Human-in-the-Loop Security Gate**:
+- **Strict Human-in-the-Loop Security Gate**:
   - Strict approval gate prevents unauthorized automatic email dispatches
   - Per-application sending account selection
   - Cryptographic SHA-256 audit logging of all authorized submissions
 - **Automated Scheduler**:
   - Hourly discovery cron jobs with daily qualified vacancy targets
-  - Production systemd unit file for 24/7 background autopilot on Ubuntu
+  - Production systemd unit template for 24/7 background autopilot on Ubuntu
 
 ---
 
-## Architecture & Tech Stack
+## 🛠️ Architecture & Tech Stack
 
 - **Backend**: Node.js (v22+ ESM), TypeScript, Node.js Built-in SQLite (`node:sqlite`)
 - **Frontend**: Vanilla HTML5, Modern CSS (Glassmorphism, dark palette, CSS Grid/Flexbox), Vanilla JavaScript
@@ -50,13 +50,13 @@ Inspired by product patterns from modern job platforms like NextRaise, the platf
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### 1. Installation
 
 ```bash
-git clone https://github.com/rahulmotvani0-sketch/job-discovery-platform.git
-cd job-discovery-platform
+git clone https://github.com/rahulmotvani0-sketch/ai-job-discovery-platform.git
+cd ai-job-discovery-platform
 npm install
 ```
 
@@ -68,11 +68,22 @@ Copy the example environment configuration:
 cp .env.example .env
 ```
 
-Edit `.env` to configure your preferred port and optional LLM / Google OAuth credentials:
+Edit `.env` to configure your profile details, preferred port, and optional LLM / Google OAuth credentials:
 
 ```env
 PORT=3300
 HOST=127.0.0.1
+
+# Candidate Profile Customization
+USER_FULL_NAME=Your Full Name
+USER_EMAIL=your.email@example.com
+USER_PHONE=+1-555-0100
+USER_LOCATION=Remote / Global
+USER_PORTFOLIO_URL=https://yourportfolio.com
+USER_GITHUB_URL=https://github.com/yourusername
+USER_LINKEDIN_URL=https://linkedin.com/in/yourprofile
+
+# Local Ollama Inference (CPU/GPU)
 OLLAMA_ENDPOINT=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen2.5:7b
 ```
@@ -94,8 +105,23 @@ Open your browser to:
 
 ---
 
-## Operational Documentation
+## 🤝 Contributing
 
+We welcome contributions from the developer community! Whether you want to add new ATS connectors (e.g., Workable, SmartRecruiters, BambooHR), improve UX filters, enhance the matching engine, or add new AI model providers, check out our [CONTRIBUTING.md](CONTRIBUTING.md) guide.
+
+---
+
+## 🔒 Privacy & Security First
+
+- **Zero Data Leak Policy**: No private candidate profiles, credentials, or personal tokens are tracked in git.
+- **Local-First Storage**: All vacancies, evaluated matches, tailored resumes, and audit logs are kept in local SQLite files in `data/`.
+- **Token Privacy**: OAuth tokens and API keys are stored encrypted locally on your workstation.
+
+---
+
+## 📄 Operational Documentation
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): Guide for open-source contributors and adding new ATS connectors.
 - [docs/NEXTRAISE_PRODUCT_RESEARCH.md](docs/NEXTRAISE_PRODUCT_RESEARCH.md): NextRaise product analysis and feature reproduction plan.
 - [docs/PLATFORM_IMPROVEMENT_PLAN.md](docs/PLATFORM_IMPROVEMENT_PLAN.md): Strategic architecture and phase roadmap.
 - [docs/OPENMAUSBOT_AUDIT.md](docs/OPENMAUSBOT_AUDIT.md): Technical audit of OpenMausBot patterns.
@@ -104,18 +130,6 @@ Open your browser to:
 
 ---
 
-## 24/7 Background Systemd Service
+## 📜 License
 
-To deploy on Ubuntu as a persistent system service:
-
-```bash
-sudo cp deploy/job-platform.service /etc/systemd/system/job-platform.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now job-platform.service
-```
-
----
-
-## License
-
-MIT License. Designed and engineered for Rahul Motvani.
+MIT License. Open-source and free for all job seekers and developers.

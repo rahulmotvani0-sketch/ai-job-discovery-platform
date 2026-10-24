@@ -23,7 +23,12 @@ export class GreenhouseAtsConnector implements IJobSourceConnector {
   async fetchVacancies(options?: { tags?: string[]; limit?: number }): Promise<RawJobPayload[]> {
     const limit = options?.limit ?? 30;
     const collected: RawJobPayload[] = [];
-    const targetKeywords = ['devops', 'sre', 'cloud', 'infrastructure', 'platform', 'kubernetes', 'reliability'];
+    const targetKeywords = [
+      'engineer', 'developer', 'software', 'fullstack', 'full-stack', 'frontend',
+      'backend', 'devops', 'sre', 'cloud', 'infrastructure', 'platform',
+      'kubernetes', 'reliability', 'security', 'data', 'ai', 'machine learning',
+      'mobile', 'qa', 'architect', 'systems'
+    ];
 
     for (const company of this.targetCompanies) {
       if (collected.length >= limit) break;

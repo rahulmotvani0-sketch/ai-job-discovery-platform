@@ -1,19 +1,19 @@
 # Comprehensive Architectural Audit: OpenMausBot-main
 
-**Target Workspace / Audit Source**: `/home/rahul/PROJECT'S/OpenMausBot-main`  
+**Target Workspace / Audit Source**: `OpenMausBot-main` (Multi-Agent Desktop Framework)  
 **Auditor**: Principal Software Architect & Lead Security Engineer  
-**Date**: October 24, 2026  
+**Date**: October 2026  
 **Audited Version**: OpenMausBot v1.0.x (Repository snapshot)
 
 ---
 
 ## 1. Executive Summary
 
-An exhaustive inspection of the local codebase at `/home/rahul/PROJECT'S/OpenMausBot-main` was conducted. OpenMausBot is a desktop and server platform designed as a multi-agent chat interface (analogous to Grok Bot, Meta Muse, or Cue by Manus). It embeds AI agent execution via local and remote sub-processes (such as Claude CLI, Codex CLI, Grok CLI, Antigravity ACP, and OpenAI-compatible endpoints) wrapped in a TypeScript/Node.js backend with an Electron + React 19 frontend.
+An exhaustive inspection of the `OpenMausBot-main` codebase was conducted. OpenMausBot is a desktop and server platform designed as a multi-agent chat interface (analogous to Grok Bot, Meta Muse, or Cue by Manus). It embeds AI agent execution via local and remote sub-processes (such as Claude CLI, Codex CLI, Grok CLI, Antigravity ACP, and OpenAI-compatible endpoints) wrapped in a TypeScript/Node.js backend with an Electron + React 19 frontend.
 
 While OpenMausBot possesses sophisticated building blocks for **agent process orchestration**, **Chrome DevTools Protocol (CDP) browser automation**, and **SQLite-based persistence**, it contains **zero job discovery, resume tailoring, ATS parsing, or semantic job-matching domain logic**. Furthermore, its email and third-party SaaS integrations are tightly coupled to **Composio** (a proprietary cloud middleware) rather than native, least-privilege direct Google OAuth 2.0 (Gmail/Drive/Sheets APIs). 
 
-Consequently, blindly copying or bundling the entire OpenMausBot repository would introduce immense bloat (Electron desktop packaging, multi-tenant team relays, iOS companion bridges, and cloud-billing logic) and critical security vulnerabilities. Instead, the optimal engineering strategy is to extract and adapt its proven design patterns (CDP browser automation, modern `node:sqlite` WAL persistence, resilient process execution, and rate-limiting) into a clean, modular, high-performance job application platform tailored specifically to Rahul Motvani's background and autonomous job search workflows.
+Consequently, blindly copying or bundling the entire OpenMausBot repository would introduce immense bloat (Electron desktop packaging, multi-tenant team relays, iOS companion bridges, and cloud-billing logic) and critical security vulnerabilities. Instead, the optimal engineering strategy is to extract and adapt its proven design patterns (CDP browser automation, modern `node:sqlite` WAL persistence, resilient process execution, and rate-limiting) into a clean, modular, high-performance job application platform tailored specifically to autonomous tech job search workflows.
 
 ---
 
@@ -118,7 +118,7 @@ All domain logic—Discovery, Deduplication, Verification, Matching, Tailoring, 
 ### 7.1 Multi-Account Connection Management
 In OpenMausBot, multi-tenant and multi-user configurations were handled through external Composio entities. For this personal platform:
 - We introduce a local `connected_accounts` table in SQLite (`id`, `email`, `display_name`, `provider`, `access_token`, `refresh_token`, `granted_scopes`, `is_primary`, `status`, `last_synced_at`, `sync_error`).
-- Supports attaching multiple Gmail accounts (e.g. Rahul's primary email `motvanirahul98@gmail.com` and a dedicated recruitment inbox).
+- Supports attaching multiple Gmail accounts (e.g. candidate's primary email and a dedicated recruitment inbox).
 - Every drafted application explicitly records `sending_account_id`.
 - The user selects the sending account per application via the dashboard; no application is ever dispatched without selecting an active, verified account.
 - Scopes are restricted to minimum required: `gmail.compose`, `gmail.send`, `gmail.readonly`.

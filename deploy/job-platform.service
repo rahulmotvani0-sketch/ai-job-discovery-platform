@@ -1,11 +1,12 @@
 [Unit]
-Description=AI-Powered Job Discovery and Application Automation Platform
+Description=JOB DISCOVERY AI - Autonomous Platform Service
 After=network.target
 
 [Service]
 Type=simple
-User=rahul
-WorkingDirectory=/home/rahul/PROJECT'S/JOB
+# Replace with your system username and repository path
+User=your_username
+WorkingDirectory=/path/to/ai-job-discovery-platform
 ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=10

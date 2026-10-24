@@ -1,7 +1,7 @@
 # Platform Improvement & Upgrade Implementation Plan
 
-**Target System:** Personal AI Job Discovery & Application Automation Platform  
-**Target User:** Rahul Motvani (Senior DevOps / Cloud Infrastructure / Platform Engineer, Ahmedabad, India)  
+**Target System:** JOB DISCOVERY AI - Autonomous Platform  
+**Target User:** IT Tech Professionals (Full-Stack, Backend, Frontend, DevOps, SRE, Cloud Infrastructure, AI/ML, Data Engineering, Cybersecurity, Mobile, QA)  
 **Reference Benchmark:** NextRaise.ai & OpenMausBot-main  
 **Architect:** Principal Full-Stack & AI Engineer  
 **Date:** October 2026  
@@ -53,7 +53,7 @@ This plan specifies the concrete engineering steps to upgrade the platform from 
 │  │ - connected_accounts (id, email, display_name, tokens, scopes, is_primary, sync_status)       │  │
 │  │ - llm_configs (provider, endpoint, api_key_enc, default_model, is_enabled)                  │  │
 │  │ - application_drafts (sending_account_id, vacancy_id, status, approval_history)             │  │
-│  │ - user_profile (Rahul Motvani 100% verified facts)                                          │  │
+│  │ - user_profile (Configurable verified candidate facts)                                      │  │
 │  └─────────────────────────────────────────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -108,7 +108,7 @@ This plan specifies the concrete engineering steps to upgrade the platform from 
    - Saved Jobs filter toggle (`★ Saved`).
    - Match score card with percentage badge, matching requirements, and missing skills.
    - "Connect Account" drawer and "AI Provider Settings" modal.
-   - Account picker in the Review & Approve modal so Rahul can choose which Gmail account sends the application.
+   - Account picker in the Review & Approve modal so the user can choose which Gmail account sends the application.
 
 ### Phase 5: Gmail Application Workflow & Explicit Approval Gate
 1. **Application Preparation:**

@@ -1,7 +1,7 @@
 # Step-by-Step Google Cloud OAuth 2.0 Setup Guide
 **For Personal AI Job Search & Application Workstation**
 
-This guide provides instructions to connect your personal Google accounts (`motvanirahul98@gmail.com` and recruitment inboxes) directly to your job platform for:
+This guide provides instructions to connect your personal Google accounts directly to your job platform for:
 1. **Gmail API**: Creating application drafts and sending user-approved applications.
 2. **Google Drive API**: Backing up and storing tailored markdown/PDF resumes.
 3. **Google Sheets API**: Live synchronization of applications to a spreadsheet tracker.
@@ -36,8 +36,8 @@ This guide provides instructions to connect your personal Google accounts (`motv
 2. Select User Type: **External** (standard for personal `@gmail.com` accounts) and click **Create**.
 3. Fill in the App Information:
    - **App name**: `AI Job Workstation`
-   - **User support email**: `motvanirahul98@gmail.com`
-   - **Developer contact information**: `motvanirahul98@gmail.com`
+   - **User support email**: `your.email@gmail.com`
+   - **Developer contact information**: `your.email@gmail.com`
    - Click **Save and Continue**.
 4. In the **Scopes** step:
    - Click **Add or Remove Scopes**.
@@ -51,7 +51,7 @@ This guide provides instructions to connect your personal Google accounts (`motv
    - Click **Update** and **Save and Continue**.
 5. In the **Test Users** step (**Critical!**):
    - Click **+ ADD USERS**.
-   - Add: `motvanirahul98@gmail.com` (and any secondary gmail address you plan to connect).
+   - Add: `your.email@gmail.com` (and any secondary gmail address you plan to connect).
    - Click **Save and Continue**.
 
 ---
@@ -75,7 +75,7 @@ This guide provides instructions to connect your personal Google accounts (`motv
 
 ## Step 5: Add Credentials to Your Platform
 
-Open `/home/rahul/PROJECT'S/JOB/.env` in your editor and update lines 30-33:
+Open `.env` in your editor and configure the variables:
 
 ```env
 # Google Cloud OAuth 2.0 (Gmail / Drive / Sheets)
@@ -94,7 +94,7 @@ Or paste them directly into the platform UI at [http://localhost:3300](http://lo
 1. Open [http://localhost:3300](http://localhost:3300).
 2. Go to the **Connected Accounts** tab.
 3. Click **"Sign in with Google (OAuth)"**.
-4. Choose your Google account (`motvanirahul98@gmail.com`).
+4. Choose your Google account (`your.email@gmail.com`).
 5. Click **Continue** (if Google shows an unverified app screen, click *Advanced &rarr; Go to AI Job Workstation (unsafe)* since it is your own self-hosted personal app).
 6. Google will redirect back to `http://localhost:3300/?auth=success`.
 7. Your account is now connected and verified for live Gmail sending and Drive/Sheets sync!

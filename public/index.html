@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous AI Job Discovery & Application Platform</title>
+  <title>JOB DISCOVERY AI - Autonomous Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -673,10 +673,10 @@
   <!-- Header -->
   <header>
     <div class="brand">
-      <div class="logo-badge">RM</div>
+      <div class="logo-badge">JD</div>
       <div>
         <div class="brand-title">JOB DISCOVERY AI</div>
-        <div class="brand-subtitle">Autonomous Platform for Rahul Motvani</div>
+        <div class="brand-subtitle">Autonomous Platform</div>
       </div>
     </div>
 
@@ -730,12 +730,16 @@
       <!-- NextRaise Category Chips -->
       <div class="category-chips-bar" id="category-chips">
         <div class="category-chip active" onclick="selectCategory('All', this)">All Roles</div>
-        <div class="category-chip" onclick="selectCategory('DevOps', this)">DevOps Engineer</div>
-        <div class="category-chip" onclick="selectCategory('Platform Engineer', this)">Platform Engineer</div>
-        <div class="category-chip" onclick="selectCategory('SRE', this)">Site Reliability Engineer</div>
-        <div class="category-chip" onclick="selectCategory('DevSecOps', this)">DevSecOps / Cloud Security</div>
-        <div class="category-chip" onclick="selectCategory('Cloud Infrastructure', this)">Cloud Infrastructure</div>
-        <div class="category-chip" onclick="selectCategory('Kubernetes', this)">Kubernetes Engineer</div>
+        <div class="category-chip" onclick="selectCategory('Full-Stack', this)">Full-Stack</div>
+        <div class="category-chip" onclick="selectCategory('Backend', this)">Backend</div>
+        <div class="category-chip" onclick="selectCategory('Frontend', this)">Frontend</div>
+        <div class="category-chip" onclick="selectCategory('DevOps', this)">DevOps & SRE</div>
+        <div class="category-chip" onclick="selectCategory('Cloud Infrastructure', this)">Cloud Infra</div>
+        <div class="category-chip" onclick="selectCategory('AI & Machine Learning', this)">AI & ML</div>
+        <div class="category-chip" onclick="selectCategory('Data Engineering', this)">Data Engineering</div>
+        <div class="category-chip" onclick="selectCategory('Cybersecurity', this)">Cybersecurity</div>
+        <div class="category-chip" onclick="selectCategory('Mobile', this)">Mobile</div>
+        <div class="category-chip" onclick="selectCategory('QA & Automation', this)">QA & Automation</div>
       </div>
 
       <!-- Controls & Filter Bar -->
@@ -922,7 +926,7 @@
 
         <div style="margin-bottom: 1rem;">
           <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Account Email Address</label>
-          <input type="email" id="new-account-email" class="input-field" placeholder="e.g. motvanirahul98@gmail.com" style="width: 100%;">
+          <input type="email" id="new-account-email" class="input-field" placeholder="e.g. user@gmail.com" style="width: 100%;">
         </div>
         <div style="margin-bottom: 1rem;">
           <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Display Label</label>
@@ -1118,7 +1122,7 @@
               <div class="job-meta-row">
                 <span>📍 ${v.locationText} (${v.country || 'Worldwide'})</span>
                 <span>💰 ${salaryText}</span>
-                <span>🏷️ ${v.category || 'DevOps'}</span>
+                <span>🏷️ ${v.category || 'Engineering'}</span>
                 <span>📅 Discovered: ${v.discoveredAt.split('T')[0]}</span>
                 <span>Status: <strong style="color: var(--accent-cyan);">${v.status}</strong></span>
               </div>

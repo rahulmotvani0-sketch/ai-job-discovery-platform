@@ -76,7 +76,7 @@ export class MasterOrchestrator {
         vacancy.parsedRequirements = requirements;
         this.db.updateVacancyParsedRequirements(vacancy.id, requirements);
 
-        // Step 2b: Score match against Rahul Motvani's profile
+        // Step 2b: Score match against candidate profile
         const evaluation = JobMatchingAgent.evaluateMatch(vacancy, profile, prefs);
         this.db.saveMatchEvaluation(evaluation);
         vacanciesEvaluated++;
@@ -101,7 +101,8 @@ export class MasterOrchestrator {
 
           // Upload resume to Drive if configured
           if (this.driveService) {
-            this.driveService.uploadResumeFile(tailoredResume.filePath, `Resume_${vacancy.companyName}_Rahul_Motvani.md`).catch(() => {});
+            const candidateSlug = (profile.fullName || 'Candidate').replace(/[^a-zA-Z0-9_-]/g, '_');
+            this.driveService.uploadResumeFile(tailoredResume.filePath, `Resume_${vacancy.companyName}_${candidateSlug}.md`).catch(() => {});
           }
 
           // Sync to Sheets
@@ -139,7 +140,7 @@ export class MasterOrchestrator {
   /**
    * User approval action: Sends an approved application through the Gmail API.
    */
-  async approveAndSend(draftId: string, actor: string = 'rahul_user', sendingAccountId?: string): Promise<ApplicationSubmission> {
+  async approveAndSend(draftId: string, actor: string = 'authorized_user', sendingAccountId?: string): Promise<ApplicationSubmission> {
     // 1. Change status to APPROVED and associate chosen account
     this.gatekeeper.approveDraft(draftId, actor, sendingAccountId);
 

@@ -126,7 +126,7 @@ export class DirectGmailService implements IGmailService {
     gatekeeper.recordSubmission(draftId, 'GMAIL_API', {
       gmailMessageId: messageId,
       gmailThreadId: threadId,
-      actor: 'rahul_user',
+      actor: draft.approvedBy || 'authorized_user',
     });
 
     return { messageId, threadId };

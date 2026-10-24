@@ -23,6 +23,13 @@ export class AshbyAtsConnector implements IJobSourceConnector {
     const limit = options?.limit ?? 35;
     const collected: RawJobPayload[] = [];
     const targetKeywords = [
+      'engineer',
+      'developer',
+      'software',
+      'fullstack',
+      'full-stack',
+      'frontend',
+      'backend',
       'devops',
       'sre',
       'cloud',
@@ -32,6 +39,11 @@ export class AshbyAtsConnector implements IJobSourceConnector {
       'reliability',
       'security',
       'systems',
+      'data',
+      'ai',
+      'machine learning',
+      'mobile',
+      'qa',
     ];
 
     for (const { slug, name } of this.targetCompanies) {

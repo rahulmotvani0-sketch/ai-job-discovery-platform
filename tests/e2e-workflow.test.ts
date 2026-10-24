@@ -46,12 +46,10 @@ describe('Phases 5-7: Resume Tailoring, Security Approval Gate & End-to-End Work
     const tailor = new ResumeTailoringAgent();
     const result = tailor.tailorResume(dummyVacancy, DEFAULT_USER_PROFILE);
 
-    expect(result.markdownContent).toContain('RAHUL MOTVANI');
-    expect(result.markdownContent).toContain('Agile logic Technovations');
-    expect(result.markdownContent).toContain('Azilen Technologies');
+    expect(result.markdownContent).toContain(DEFAULT_USER_PROFILE.fullName.toUpperCase());
     expect(result.markdownContent).toContain('Terraform');
     expect(result.markdownContent).toContain('Kubernetes');
-    expect(result.markdownContent).toContain('https://rahul.techiking.com');
+    expect(result.markdownContent).toContain(DEFAULT_USER_PROFILE.email);
 
     // Hallucination verification: Ensure unearned skills/certifications are NOT present
     expect(result.markdownContent).not.toContain('CCIE Enterprise Infrastructure');
@@ -157,11 +155,11 @@ describe('Phases 5-7: Resume Tailoring, Security Approval Gate & End-to-End Work
     expect(draft.status).toBe('PENDING_REVIEW');
 
     // 3. User approves and sends via interactive approval action
-    const submission = await orchestrator.approveAndSend(draft.id, 'rahul_user');
+    const submission = await orchestrator.approveAndSend(draft.id, 'authorized_user');
     expect(submission).toBeDefined();
     expect(submission.status).toBe('SENT');
     expect(submission.auditHash).toBeDefined();
-    expect(submission.approvedBy).toBe('rahul_user');
+    expect(submission.approvedBy).toBe('authorized_user');
 
     // 4. Verify draft and vacancy status transitions
     const updatedDraft = db.getApplicationDraftById(draft.id);
@@ -172,7 +170,7 @@ describe('Phases 5-7: Resume Tailoring, Security Approval Gate & End-to-End Work
 
     // 5. Duplicate send prevention
     await expect(
-      orchestrator.approveAndSend(draft.id, 'rahul_user')
+      orchestrator.approveAndSend(draft.id, 'authorized_user')
     ).rejects.toThrow(SecurityAuthorizationError);
   });
 });

@@ -1,9 +1,9 @@
 # Ubuntu Deployment & Operations Guide
 
-**Platform**: AI-Powered Job Discovery and Application Automation Platform  
-**Target Host**: Ubuntu 24.04 LTS (x86_64)  
+**Platform**: JOB DISCOVERY AI - Autonomous Platform  
+**Target Host**: Ubuntu 22.04 / 24.04 LTS (x86_64)  
 **Author**: Lead DevOps & Security Engineer  
-**Date**: October 24, 2026
+**Date**: October 2026
 
 ---
 
@@ -22,7 +22,8 @@ The platform is engineered specifically for low-overhead, local-first operation 
 
 ```bash
 # 1. Clone / Navigate to project workspace
-cd "/home/rahul/PROJECT'S/JOB"
+git clone https://github.com/rahulmotvani0-sketch/ai-job-discovery-platform.git
+cd ai-job-discovery-platform
 
 # 2. Install Node.js dependencies
 npm install
@@ -45,7 +46,7 @@ npx tsx src/cli.ts scan
 # 7. Start the interactive server and web dashboard
 npm start
 ```
-Access the dashboard at `http://localhost:3000`.
+Access the dashboard at `http://localhost:3300`.
 
 ---
 
@@ -62,7 +63,7 @@ chmod 600 .env
 
 | Variable | Default Value | Description |
 | :--- | :--- | :--- |
-| `PORT` | `3000` | HTTP Web server and REST API port |
+| `PORT` | `3300` | HTTP Web server and REST API port |
 | `HOST` | `127.0.0.1` | Local loopback interface (security: do not expose to public WAN) |
 | `OLLAMA_ENDPOINT` | `http://127.0.0.1:11434` | Local model inference endpoint |
 | `OLLAMA_MODEL` | `qwen2.5:7b` | Default LLM for extraction, scoring, and drafting |
@@ -88,7 +89,7 @@ The system communicates directly with Google APIs using least-privilege OAuth sc
    - `https://www.googleapis.com/auth/drive.file`
    - `https://www.googleapis.com/auth/spreadsheets`
 6. Create an OAuth 2.0 Client ID (Application Type: Web Application).
-   - Authorized Redirect URI: `http://localhost:3000/oauth2callback`
+   - Authorized Redirect URI: `http://localhost:3300/oauth2callback`
 7. Save client credentials in `.env` under `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
 > **Deterministic Security Note**: In the absence of live Google tokens, the platform functions in a transparent **Simulation/Mock Mode**, logging full message contents, draft IDs, and audit records without failing.

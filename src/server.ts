@@ -43,7 +43,7 @@ export class ApplicationServer {
       const verifiedProfile = loadAuthoritativeProfile();
       this.db.saveUserProfile(verifiedProfile);
       this.db.savePreferences(DEFAULT_JOB_PREFERENCES);
-      logger.info('Initialized database with verified profile of Rahul Motvani.');
+      logger.info('Initialized database with verified candidate profile.');
     }
 
     const discoveryManager = new DiscoveryManager(this.db);
@@ -380,7 +380,8 @@ export class ApplicationServer {
             const parts = pathname.split('/');
             const draftId = parts[3];
             const body = await this.parseBody(req);
-            const submission = await this.orchestrator.approveAndSend(draftId, 'rahul_motvani', body.sendingAccountId);
+            const actor = body.actor || 'authorized_user';
+            const submission = await this.orchestrator.approveAndSend(draftId, actor, body.sendingAccountId);
             return this.sendJson(res, 200, { success: true, submission });
           }
 
@@ -388,7 +389,8 @@ export class ApplicationServer {
             const parts = pathname.split('/');
             const draftId = parts[3];
             const body = await this.parseBody(req);
-            this.db.rejectDraft(draftId, body.notes, 'rahul_motvani');
+            const actor = body.actor || 'authorized_user';
+            this.db.rejectDraft(draftId, body.notes, actor);
             return this.sendJson(res, 200, { success: true });
           }
 

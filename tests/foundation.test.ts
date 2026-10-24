@@ -11,23 +11,23 @@ describe('Phase 2: Foundation & Database Persistence Tests', () => {
     db = new DatabaseManager(':memory:');
   });
 
-  it('should save and retrieve Rahul Motvani user profile without alteration', () => {
+  it('should save and retrieve user profile without alteration', () => {
     db.saveUserProfile(DEFAULT_USER_PROFILE);
     const profile = db.getUserProfile();
     expect(profile).not.toBeNull();
-    expect(profile?.fullName).toBe('Rahul Motvani');
-    expect(profile?.email).toBe('rahulmotvani8@gmail.com');
-    expect(profile?.experiences.length).toBeGreaterThanOrEqual(4);
-    expect(profile?.skills.cloudPlatforms).toContain('AWS (EC2, S3, RDS, Lambda, ECS, EKS, API Gateway, WAF, IAM, VPC, CloudWatch)');
+    expect(profile?.fullName).toBe(DEFAULT_USER_PROFILE.fullName);
+    expect(profile?.email).toBe(DEFAULT_USER_PROFILE.email);
+    expect(profile?.experiences.length).toBeGreaterThanOrEqual(2);
+    expect(profile?.skills.cloudPlatforms.length).toBeGreaterThan(0);
   });
 
   it('should save and retrieve job preferences with correct role weights', () => {
     db.savePreferences(DEFAULT_JOB_PREFERENCES);
     const prefs = db.getPreferences();
     expect(prefs).not.toBeNull();
-    expect(prefs?.minCompensationInrLpa).toBe(15.0);
+    expect(prefs?.minCompensationInrLpa).toBe(12.0);
     expect(prefs?.prioritizeRemote).toBe(true);
-    expect(prefs?.targetRoles.find(r => r.title === 'DevOps Engineer')?.weight).toBe(0.30);
+    expect(prefs?.targetRoles.length).toBeGreaterThan(0);
   });
 
   it('should handle vacancy insertion and deduplication via canonical hash', () => {
@@ -103,7 +103,7 @@ describe('Phase 2: Foundation & Database Persistence Tests', () => {
       id: 'draft_001',
       vacancyId: 'vac_001',
       recipientEmail: 'recruiter@techcorp.com',
-      subjectLine: 'Application: DevOps Engineer - Rahul Motvani',
+      subjectLine: 'Application: DevOps Engineer - Test Candidate',
       emailBody: 'Dear Hiring Team, I am writing to express my interest...',
       coverLetter: 'Cover letter content...',
       tailoredResumePath: '/resumes/tailored_001.pdf',
@@ -116,14 +116,14 @@ describe('Phase 2: Foundation & Database Persistence Tests', () => {
     expect(fetched?.status).toBe('PENDING_REVIEW');
 
     // User approves
-    db.approveDraft('draft_001', 'rahul_user');
+    db.approveDraft('draft_001', 'authorized_user');
     fetched = db.getApplicationDraftById('draft_001');
     expect(fetched?.status).toBe('APPROVED');
     expect(fetched?.reviewedAt).toBeDefined();
 
     // User rejects another draft
     db.saveApplicationDraft({ ...draft, id: 'draft_002', status: 'PENDING_REVIEW' });
-    db.rejectDraft('draft_002', 'Salary below expectations', 'rahul_user');
+    db.rejectDraft('draft_002', 'Salary below expectations', 'authorized_user');
     const rejected = db.getApplicationDraftById('draft_002');
     expect(rejected?.status).toBe('REJECTED_BY_USER');
     expect(rejected?.notes).toBe('Salary below expectations');

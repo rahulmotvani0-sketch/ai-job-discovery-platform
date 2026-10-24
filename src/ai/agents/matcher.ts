@@ -3,7 +3,7 @@ import type { Vacancy, UserProfile, JobPreferences, MatchScoreEvaluation } from 
 
 export class JobMatchingAgent {
   /**
-   * Computes deterministic, evidence-backed 7-factor match score against Rahul Motvani's profile.
+   * Computes deterministic, evidence-backed 7-factor match score against candidate profile.
    */
   static evaluateMatch(
     vacancy: Vacancy,
@@ -45,17 +45,16 @@ export class JobMatchingAgent {
     explanations.push(`Technical Skills: ${skillsMatchCount}/${vacancySkills.length || 1} matched (${technicalSkillsScore}/30 pts). Verified matches: ${matchingSkills.slice(0, 5).join(', ')}.`);
 
     // 2. Experience and seniority (Weight: 20%)
-    // Rahul has 4+ years of hands-on production experience (2022 to Present)
     const userYearsExp = 4.2;
     const reqYears = vacancy.parsedRequirements?.yearsExperienceRequired ?? 3;
     let expScore = 15;
 
     if (userYearsExp >= reqYears) {
       expScore = 20;
-      explanations.push(`Experience & Seniority: Rahul's 4+ years satisfies the required ${reqYears} years (20/20 pts).`);
+      explanations.push(`Experience & Seniority: Candidate's 4+ years satisfies the required ${reqYears} years (20/20 pts).`);
     } else if (userYearsExp >= reqYears - 1) {
       expScore = 14;
-      explanations.push(`Experience & Seniority: Rahul has 4+ years for a role targeting ~${reqYears} years (14/20 pts).`);
+      explanations.push(`Experience & Seniority: Candidate has 4+ years for a role targeting ~${reqYears} years (14/20 pts).`);
     } else {
       expScore = 8;
       explanations.push(`Experience & Seniority: Role requests ${reqYears} years which exceeds current 4+ years (8/20 pts).`);

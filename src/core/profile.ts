@@ -4,22 +4,25 @@ import type { UserProfile, JobPreferences } from '../types/index.js';
 
 export const DEFAULT_JOB_PREFERENCES: JobPreferences = {
   targetRoles: [
-    { title: 'DevOps Engineer', weight: 0.30 },
-    { title: 'Platform Engineer', weight: 0.20 },
-    { title: 'Cloud Infrastructure Engineer', weight: 0.15 },
-    { title: 'DevSecOps Engineer', weight: 0.15 },
-    { title: 'Site Reliability Engineer / SRE I', weight: 0.15 },
-    { title: 'Cloud & Infrastructure Specialist', weight: 0.05 },
+    { title: 'DevOps Engineer', weight: 0.15 },
+    { title: 'Platform Engineer', weight: 0.15 },
+    { title: 'Site Reliability Engineer / SRE I', weight: 0.10 },
+    { title: 'DevSecOps Engineer', weight: 0.10 },
+    { title: 'Full-Stack Engineer', weight: 0.15 },
+    { title: 'Backend Software Engineer', weight: 0.15 },
+    { title: 'Frontend Engineer', weight: 0.10 },
+    { title: 'AI & Machine Learning Engineer', weight: 0.05 },
+    { title: 'Data Engineer', weight: 0.05 },
   ],
-  minExperienceYears: 2,
-  maxExperienceYears: 5,
-  minCompensationInrLpa: 15.0, // ₹15 LPA target
+  minExperienceYears: 1,
+  maxExperienceYears: 8,
+  minCompensationInrLpa: 12.0,
   prioritizeRemote: true,
   allowHybrid: true,
-  baseCountry: 'India',
+  baseCountry: process.env.USER_BASE_COUNTRY || 'India',
   eligibleCountries: [
     'India', 'United States', 'United Kingdom', 'Germany', 'Netherlands', 'Canada',
-    'Australia', 'Singapore', 'United Arab Emirates', 'Saudi Arabia', 'Japan', 'South Korea'
+    'Australia', 'Singapore', 'United Arab Emirates', 'Saudi Arabia', 'Japan', 'South Korea', 'Remote'
   ],
   searchInternational: true,
   dailyQualifiedTarget: 10,
@@ -27,107 +30,78 @@ export const DEFAULT_JOB_PREFERENCES: JobPreferences = {
 };
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  id: 'rahul_motvani_primary',
-  fullName: 'Rahul Motvani',
-  email: 'rahulmotvani8@gmail.com',
-  phone: '+91 89807 80003',
-  location: 'Ahmedabad, Gujarat, India (Open to Remote)',
-  portfolioUrl: 'https://rahul.techiking.com',
-  githubUrl: 'https://github.com/rahulmotvani0-sketch',
-  linkedinUrl: 'https://www.linkedin.com/in/rahulmotvani/',
-  summary: 'DevOps and Cloud Infrastructure Engineer with 4+ years of hands-on production experience architecting multi-cloud infrastructure with Terraform, orchestrating Kubernetes clusters, and embedding DevSecOps shift-left security (SonarQube, Snyk, Trivy) into CI/CD pipelines. Strong systems administration, network segmentation, and observability foundation.',
+  id: process.env.USER_ID || 'primary_candidate',
+  fullName: process.env.USER_FULL_NAME || 'Tech Professional',
+  email: process.env.USER_EMAIL || 'candidate@example.com',
+  phone: process.env.USER_PHONE || '+1-555-0100',
+  location: process.env.USER_LOCATION || 'Global / Remote (Open to Relocation)',
+  portfolioUrl: process.env.USER_PORTFOLIO_URL || 'https://example.com',
+  githubUrl: process.env.USER_GITHUB_URL || 'https://github.com',
+  linkedinUrl: process.env.USER_LINKEDIN_URL || 'https://linkedin.com',
+  summary: 'Senior Software & Infrastructure Engineer with 4+ years of hands-on production experience architecting scalable distributed systems, cloud infrastructure (AWS/GCP/Azure), container orchestration with Kubernetes, CI/CD automation, and modern web applications. Passionate about software reliability, developer tooling, and intelligent automation.',
   experiences: [
     {
-      company: 'Agile logic Technovations',
-      role: 'DevOps Engineer',
-      startDate: '2025-12',
+      company: 'High-Growth Tech Enterprise',
+      role: 'Senior Software / DevOps Engineer',
+      startDate: '2023-01',
       endDate: 'Present',
-      location: 'Ahmedabad, Gujarat, India',
+      location: 'Remote',
       achievements: [
         'Architected multi-cloud infrastructure on AWS, Azure, and GCP using modular Terraform, standardizing provisioning and eliminating manual configuration drift.',
-        'Engineered CI/CD pipelines with Jenkins, GitHub Actions, and GitLab CI with SonarQube SAST and Snyk SCA quality gates blocking vulnerable merges.',
-        'Containerized and orchestrated production workloads on Kubernetes with Helm, enforcing resource limits, rolling updates, and pod anti-affinity.',
+        'Engineered CI/CD pipelines with GitHub Actions and GitLab CI with SAST and SCA quality gates blocking vulnerable merges.',
+        'Containerized and orchestrated production microservices on Kubernetes with Helm, enforcing resource limits, rolling updates, and high availability.',
         'Hardened cloud security posture by implementing least-privilege IAM policies, network segmentation, secrets rotation, and automated vulnerability scanning.',
-        'Built observability stack with Prometheus, Grafana dashboards, and ELK logging, reducing MTTR and enabling structured incident response.',
-        'Integrated ML model serving into Kubernetes-based CI/CD pipelines for automated data science deployments.'
+        'Built observability stack with Prometheus, Grafana dashboards, and structured logging, reducing MTTR and enabling proactive incident alerts.'
       ],
-      skillsUsed: ['Terraform', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'GitHub Actions', 'Jenkins', 'SonarQube', 'Snyk', 'Helm', 'Prometheus', 'Grafana', 'ELK Stack']
+      skillsUsed: ['TypeScript', 'Node.js', 'Python', 'Terraform', 'Kubernetes', 'AWS', 'GCP', 'GitHub Actions', 'Docker', 'Prometheus', 'Grafana']
     },
     {
-      company: 'Azilen Technologies',
-      role: 'IT Infrastructure Engineer',
-      startDate: '2024-08',
-      endDate: '2025-11',
-      location: 'Ahmedabad, Gujarat, India',
+      company: 'Cloud & Systems Solutions',
+      role: 'Systems & Infrastructure Engineer',
+      startDate: '2021-06',
+      endDate: '2022-12',
+      location: 'Hybrid',
       achievements: [
-        'Administered hybrid cloud and on-premises infrastructure spanning Windows and Linux servers, managing virtualization platforms for engineering teams.',
-        'Automated repetitive server provisioning and maintenance tasks with Bash and PowerShell scripts, standardizing configuration.',
-        'Collaborated with engineering teams to diagnose and resolve networking, access control, and deployment issues, improving uptime.',
-        'Documented infrastructure processes and onboarding procedures, establishing repeatable runbooks for operational tasks.'
+        'Administered cloud and on-premises infrastructure, managing Linux systems, virtualization, and networking for engineering teams.',
+        'Automated repetitive server provisioning, testing, and deployment workflows with Bash and Python scripts.',
+        'Collaborated with cross-functional development teams to diagnose and resolve networking, access control, and deployment bottlenecks.'
       ],
-      skillsUsed: ['Linux Administration', 'Windows Server', 'Bash', 'PowerShell', 'Virtualization', 'Networking', 'Troubleshooting']
-    },
-    {
-      company: 'Aruhat Technologies Pvt. Ltd.',
-      role: 'Junior Network Engineer',
-      startDate: '2023-06',
-      endDate: '2024-07',
-      location: 'Ahmedabad, Gujarat, India',
-      achievements: [
-        'Designed and implemented network segmentation and firewall access controls across client infrastructure, resolving security audit findings.',
-        'Led migration to a modernized network architecture, improving scalability, redundancy, and reliability for critical workloads.',
-        'Administered virtualization environments (VMware/Hyper-V) and managed Windows/Linux servers for enterprise clients.',
-        'Performed vulnerability assessments using Nessus and remediated identified risks, strengthening client security postures.'
-      ],
-      skillsUsed: ['Firewalls', 'Network Segmentation', 'VLANs', 'DNS/DHCP', 'VMware', 'Hyper-V', 'Nessus', 'Linux', 'Windows']
-    },
-    {
-      company: 'ABP Network (ABP News)',
-      role: 'Junior IT Engineer',
-      startDate: '2022-07',
-      endDate: '2023-05',
-      location: 'Ahmedabad, Gujarat, India',
-      achievements: [
-        'Monitored and maintained production broadcast and office IT infrastructure, ensuring 24/7 availability for live news operations.',
-        'Resolved network, server, and endpoint issues under tight SLAs, prioritizing rapid incident resolution.',
-        'Supported routine system upgrades, patch management, and hardware lifecycle operations across the broadcast facility.'
-      ],
-      skillsUsed: ['Systems Administration', 'SLA Management', 'Broadcast IT', 'Network Monitoring', 'Incident Response']
+      skillsUsed: ['Linux Administration', 'Python', 'Bash', 'Networking', 'Docker', 'CI/CD']
     }
   ],
   skills: {
-    cloudPlatforms: ['AWS (EC2, S3, RDS, Lambda, ECS, EKS, API Gateway, WAF, IAM, VPC, CloudWatch)', 'Azure (AKS, Blob, VNet, Key Vault)', 'GCP (GKE, Cloud Storage, IAM)'],
-    infrastructureAsCode: ['Terraform', 'Checkov', 'TFLint', 'Terragrunt', 'CloudFormation'],
-    containersAndOrchestration: ['Docker', 'Kubernetes', 'Helm', 'ArgoCD (GitOps)'],
-    ciCdAndGitOps: ['Jenkins', 'GitHub Actions', 'GitLab CI', 'Bitbucket Pipelines', 'ArgoCD'],
-    devSecOpsAndSecurity: ['SonarQube (SAST)', 'Snyk (SCA)', 'Aqua Trivy', 'Semgrep', 'Gitleaks', 'Sigstore Cosign', 'SBOM (Syft)', 'IAM Least Privilege'],
-    observabilityAndMonitoring: ['Prometheus', 'Grafana', 'ELK Stack', 'Loki', 'Alertmanager', 'CloudWatch', 'Datadog'],
-    programmingAndScripting: ['Python', 'Bash', 'PowerShell', 'YAML', 'JSON'],
-    networkingAndAdmin: ['Linux (Ubuntu, Debian, RHEL)', 'Windows Server', 'DNS', 'DHCP', 'VLANs', 'Firewalls', 'VPNs', 'Nessus']
+    cloudPlatforms: ['AWS (EC2, S3, RDS, Lambda, ECS, EKS, IAM, VPC, CloudWatch)', 'GCP (GKE, Cloud Storage, Cloud Run)', 'Azure (AKS, Blob, VNet)'],
+    infrastructureAsCode: ['Terraform', 'Terragrunt', 'CloudFormation'],
+    containersAndOrchestration: ['Docker', 'Kubernetes', 'Helm', 'ArgoCD'],
+    ciCdAndGitOps: ['GitHub Actions', 'GitLab CI', 'Jenkins', 'ArgoCD'],
+    programmingAndScripting: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Bash', 'SQL', 'Rust'],
+    languagesAndFrameworks: ['TypeScript', 'JavaScript', 'Python', 'Go', 'React', 'Node.js', 'Next.js', 'SQL'],
+    devSecOpsAndSecurity: ['SonarQube (SAST)', 'Snyk (SCA)', 'Aqua Trivy', 'IAM Least Privilege', 'Secrets Management'],
+    observabilityAndMonitoring: ['Prometheus', 'Grafana', 'ELK Stack', 'OpenTelemetry', 'Datadog'],
+    networkingAndAdmin: ['Linux (Ubuntu, Debian, RHEL)', 'DNS', 'VLANs', 'Firewalls', 'VPNs']
   },
   certifications: [
-    'Sigma Institute of Engineering Certificate',
-    'DevOps & Cloud Engineering Certifications'
+    'Cloud & Infrastructure Architecture Certifications',
+    'Kubernetes Certified Professional'
   ],
   education: [
     {
-      degree: 'Bachelor of Engineering in Information Technology',
-      institution: 'Sigma Institute of Engineering, Gujarat',
+      degree: 'Bachelor of Technology / Engineering in Information Technology',
+      institution: 'University Engineering Department',
       year: '2022'
     }
   ]
 };
 
 export function loadAuthoritativeProfile(customResumePath?: string): UserProfile {
-  const masterPath = customResumePath || "/home/rahul/PROJECT'S/portfolio-new/resumes/MASTER_RESUME.md";
-  if (existsSync(masterPath)) {
+  const masterPath = customResumePath || process.env.CUSTOM_RESUME_PATH;
+  if (masterPath && existsSync(masterPath)) {
     try {
       const content = readFileSync(masterPath, 'utf-8');
       logger.info(`Loaded authoritative resume from ${masterPath} (${content.length} bytes)`);
-      // Profile is pre-seeded with 100% verified facts from this exact file
       return DEFAULT_USER_PROFILE;
     } catch (err) {
-      logger.warn(`Could not read master resume file, using embedded verified profile: ${err}`);
+      logger.warn(`Could not read master resume file, using default profile: ${err}`);
     }
   }
   return DEFAULT_USER_PROFILE;

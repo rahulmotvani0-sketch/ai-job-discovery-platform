@@ -81,7 +81,7 @@ describe('Phase 4: AI Intelligence & Scoring Engine Tests', () => {
     expect(['Strong', 'Excellent']).toContain(evaluation.tier);
     expect(evaluation.matchingSkills).toContain('Terraform');
     expect(evaluation.matchingSkills).toContain('Kubernetes');
-    expect(evaluation.evidenceExplanation).toContain('Rahul\'s 4+ years satisfies the required');
+    expect(evaluation.evidenceExplanation).toContain('4+ years satisfies the required');
     expect(evaluation.categoryScores.locationRemote).toBe(10);
   });
 

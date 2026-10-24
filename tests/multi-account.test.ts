@@ -18,14 +18,14 @@ describe('Multi-Account Authentication & Connection Management', () => {
   it('connects multiple Google accounts and sanitizes tokens from public view', () => {
     // Connect Primary Account
     const acc1 = accountManager.connectAccount({
-      email: 'motvanirahul98@gmail.com',
-      displayName: 'Rahul Primary',
+      email: 'candidate.primary@example.com',
+      displayName: 'Primary Candidate Account',
       accessToken: 'ya29.secret_access_token_123',
       refreshToken: '1//0g_secret_refresh_token_456',
       isPrimary: true,
     });
 
-    expect(acc1.email).toBe('motvanirahul98@gmail.com');
+    expect(acc1.email).toBe('candidate.primary@example.com');
     expect(acc1.isPrimary).toBe(true);
     expect(acc1.status).toBe('CONNECTED');
     // Ensure tokens are NOT in public view
@@ -34,23 +34,23 @@ describe('Multi-Account Authentication & Connection Management', () => {
 
     // Connect Secondary Recruitment Account
     const acc2 = accountManager.connectAccount({
-      email: 'rahul.recruitment@gmail.com',
+      email: 'candidate.recruitment@example.com',
       displayName: 'Recruitment Secondary',
       accessToken: 'ya29.secret_access_token_789',
       refreshToken: '1//0g_secret_refresh_token_999',
       isPrimary: false,
     });
 
-    expect(acc2.email).toBe('rahul.recruitment@gmail.com');
+    expect(acc2.email).toBe('candidate.recruitment@example.com');
     expect(acc2.isPrimary).toBe(false);
 
     // List all accounts
     const all = accountManager.listPublicAccounts();
     expect(all).toHaveLength(2);
     expect(all[0].isPrimary).toBe(true);
-    expect(all[0].email).toBe('motvanirahul98@gmail.com');
+    expect(all[0].email).toBe('candidate.primary@example.com');
     expect(all[1].isPrimary).toBe(false);
-    expect(all[1].email).toBe('rahul.recruitment@gmail.com');
+    expect(all[1].email).toBe('candidate.recruitment@example.com');
 
     // Verify raw tokens remain accessible ONLY via backend getAuthorizedAccount
     const rawPrimary = accountManager.getAuthorizedAccount(acc1.id);
@@ -133,7 +133,7 @@ describe('Multi-Account Authentication & Connection Management', () => {
       id: 'draft_acc_test',
       vacancyId: vacancy.id,
       recipientEmail: 'jobs@acmecloud.com',
-      subjectLine: 'Application for DevOps Engineer - Rahul Motvani',
+      subjectLine: 'Application for DevOps Engineer - Test Candidate',
       emailBody: 'Dear Hiring Team...',
       tailoredResumePath: '/tmp/resume.md',
       status: 'PENDING_REVIEW',
@@ -142,12 +142,12 @@ describe('Multi-Account Authentication & Connection Management', () => {
     db.saveApplicationDraft(draft);
 
     const acc = accountManager.connectAccount({
-      email: 'motvanirahul98@gmail.com',
+      email: 'candidate.primary@example.com',
       isPrimary: true,
     });
 
     // Approve with explicit sending account
-    const approved = gatekeeper.approveDraft(draft.id, 'rahul_user', acc.id);
+    const approved = gatekeeper.approveDraft(draft.id, 'authorized_user', acc.id);
     expect(approved.status).toBe('APPROVED');
     expect(approved.sendingAccountId).toBe(acc.id);
 

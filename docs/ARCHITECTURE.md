@@ -1,15 +1,15 @@
-# System Architecture Specification: AI-Powered Job Discovery & Application Automation Platform
+# System Architecture Specification: JOB DISCOVERY AI - Autonomous Platform
 
 **Author**: Principal Software Architect & Lead Systems Engineer  
 **Status**: APPROVED & ACTIVE  
-**Last Updated**: October 24, 2026  
-**Target Environment**: Ubuntu Linux (Local-First, Single-User, Low Overhead)
+**Last Updated**: October 2026  
+**Target Environment**: Ubuntu Linux (Local-First, Low Overhead)
 
 ---
 
 ## 1. Architectural Vision & Principles
 
-The **AI-Powered Job Discovery & Application Automation Platform** is an enterprise-grade, local-first system designed to autonomously discover, verify, score, tailor, and track high-quality job opportunities for **Rahul Motvani** (Senior DevOps & Cloud Infrastructure Engineer).
+The **JOB DISCOVERY AI - Autonomous Platform** is an enterprise-grade, local-first system designed to autonomously discover, verify, score, tailor, and track high-quality job opportunities for IT and tech professionals across engineering disciplines.
 
 ### Core Principles
 1. **Local-First & Resource-Efficient**: Runs natively on Ubuntu without requiring high-end GPU hardware. Local models run via CPU/GPU-friendly Ollama (`qwen2.5:7b`, `llama3.2:1b`, `nomic-embed-text`), backed by configurable cloud LLMs.
@@ -95,7 +95,7 @@ The platform decomposes complex job processing into eight focused, deterministic
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Rahul Motvani
+    actor User as Candidate
     participant Orch as Orchestrator
     participant Disc as Discovery Agent
     participant Verif as Verification Agent
@@ -112,7 +112,7 @@ sequenceDiagram
     Verif-->>Orch: Verified active vacancy
     Orch->>JDA: Extract responsibilities, qualifications, location, comp
     JDA-->>Orch: Structured JSON Job Profile
-    Orch->>Match: Evaluate match against Rahul's Master Profile
+    Orch->>Match: Evaluate match against Candidate Profile
     Match-->>Orch: Score (0-100) + Evidence explanation
     alt Score >= 70 (Qualified)
         Orch->>Res: Tailor resume using only verified evidence
@@ -133,14 +133,14 @@ sequenceDiagram
 ### Detailed Agent Responsibilities
 
 1. **Job Discovery Agent**:
-   - Generates targeted query vectors (e.g. *"Remote DevOps Engineer India eligible"*, *"Platform Engineer Kubernetes Terraform"*).
+   - Generates targeted query vectors (e.g. *"Remote Full-Stack Engineer"*, *"Platform Engineer Kubernetes Terraform"*).
    - Ingests opportunities from configured API feeds and RSS/JSON job board endpoints.
    - Detects canonical URLs and preserves raw payload metadata.
 
 2. **Vacancy Verification Agent**:
    - Performs HTTP HEAD / GET checks and verifies company identity.
    - Detects expired listings (HTTP 404, 410, "Job closed" / "Position filled" DOM text markers).
-   - Validates location restrictions (confirming if "Remote" permits candidates based in India).
+   - Validates location restrictions (confirming if "Remote" permits candidates based in regional jurisdictions).
 
 3. **Job Description Analysis Agent**:
    - Parses unstructured markdown/HTML into strict JSON schema:
@@ -154,11 +154,11 @@ sequenceDiagram
      - Technical skills alignment (30%)
      - Experience & seniority (20%)
      - Core responsibilities alignment (15%)
-     - Cloud & infrastructure depth (10%)
+     - Architecture & domain depth (10%)
      - Location & remote eligibility (10%)
      - Compensation alignment (10%)
      - Other practical requirements (5%)
-   - Generates deterministic, line-by-line justification referencing Rahul's career achievements.
+   - Generates deterministic, line-by-line justification referencing candidate's verified achievements.
 
 5. **Resume Agent**:
    - Inspects `MASTER_RESUME.md` and parsed historical resumes.
@@ -167,7 +167,7 @@ sequenceDiagram
 
 6. **Application Writing Agent**:
    - Drafts role-specific, compelling email applications.
-   - Highlights portfolio ([rahul.techiking.com](https://rahul.techiking.com)), GitHub ([github.com/rahulmotvani0-sketch](https://github.com/rahulmotvani0-sketch)), and relevant case studies.
+   - Highlights candidate portfolio, GitHub, and relevant case studies.
    - Generates answers to standard screening prompts based purely on historical profile facts.
 
 7. **Application Tracking Agent**:
