@@ -17,7 +17,8 @@ import type {
   DiscoveryStep,
   SavedSearch,
   InterviewFollowUpDraft,
-  SchedulingPreferences
+  SchedulingPreferences,
+  InterviewPrepDossier
 } from '../types/index.js';
 import type { 
   JobSourceDefinition, 
@@ -223,6 +224,28 @@ export class DatabaseManager {
         meeting_duration_minutes INTEGER NOT NULL DEFAULT 45,
         updated_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS interview_prep_dossiers (
+        id TEXT PRIMARY KEY,
+        interaction_id TEXT,
+        vacancy_id TEXT,
+        submission_id TEXT,
+        company_name TEXT NOT NULL,
+        job_title TEXT NOT NULL,
+        company_intelligence_json TEXT NOT NULL,
+        role_focus_areas_json TEXT NOT NULL,
+        technical_questions_json TEXT NOT NULL,
+        behavioral_questions_json TEXT NOT NULL,
+        questions_for_interviewer_json TEXT NOT NULL,
+        compensation_benchmark_json TEXT NOT NULL,
+        key_advice_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_interview_prep_interaction ON interview_prep_dossiers(interaction_id);
+      CREATE INDEX IF NOT EXISTS idx_interview_prep_vacancy ON interview_prep_dossiers(vacancy_id);
+      CREATE INDEX IF NOT EXISTS idx_interview_prep_company ON interview_prep_dossiers(company_name);
 
       CREATE TABLE IF NOT EXISTS discovery_runs (
         id TEXT PRIMARY KEY,
@@ -1361,6 +1384,128 @@ export class DatabaseManager {
     );
 
     return merged;
+  }
+
+  // Interview Prep Dossiers
+  saveInterviewPrepDossier(dossier: InterviewPrepDossier): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO interview_prep_dossiers (
+        id, interaction_id, vacancy_id, submission_id, company_name, job_title,
+        company_intelligence_json, role_focus_areas_json, technical_questions_json,
+        behavioral_questions_json, questions_for_interviewer_json, compensation_benchmark_json,
+        key_advice_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        interaction_id = excluded.interaction_id,
+        vacancy_id = excluded.vacancy_id,
+        submission_id = excluded.submission_id,
+        company_name = excluded.company_name,
+        job_title = excluded.job_title,
+        company_intelligence_json = excluded.company_intelligence_json,
+        role_focus_areas_json = excluded.role_focus_areas_json,
+        technical_questions_json = excluded.technical_questions_json,
+        behavioral_questions_json = excluded.behavioral_questions_json,
+        questions_for_interviewer_json = excluded.questions_for_interviewer_json,
+        compensation_benchmark_json = excluded.compensation_benchmark_json,
+        key_advice_json = excluded.key_advice_json,
+        updated_at = excluded.updated_at
+    `);
+
+    stmt.run(
+      dossier.id,
+      dossier.interactionId ?? null,
+      dossier.vacancyId ?? null,
+      dossier.submissionId ?? null,
+      dossier.companyName,
+      dossier.jobTitle,
+      JSON.stringify(dossier.companyIntelligence),
+      JSON.stringify(dossier.roleFocusAreas),
+      JSON.stringify(dossier.technicalQuestions),
+      JSON.stringify(dossier.behavioralQuestions),
+      JSON.stringify(dossier.questionsForInterviewer),
+      JSON.stringify(dossier.compensationBenchmark),
+      JSON.stringify(dossier.keyAdvice),
+      dossier.createdAt,
+      dossier.updatedAt || new Date().toISOString()
+    );
+  }
+
+  getInterviewPrepDossierById(id: string): InterviewPrepDossier | null {
+    const row = this.db.prepare('SELECT * FROM interview_prep_dossiers WHERE id = ?').get(id) as any;
+    if (!row) return null;
+    return this.mapInterviewPrepRow(row);
+  }
+
+  getInterviewPrepDossierByInteractionId(interactionId: string): InterviewPrepDossier | null {
+    const row = this.db.prepare('SELECT * FROM interview_prep_dossiers WHERE interaction_id = ? ORDER BY created_at DESC LIMIT 1').get(interactionId) as any;
+    if (!row) return null;
+    return this.mapInterviewPrepRow(row);
+  }
+
+  getInterviewPrepDossierByVacancyId(vacancyId: string): InterviewPrepDossier | null {
+    const row = this.db.prepare('SELECT * FROM interview_prep_dossiers WHERE vacancy_id = ? ORDER BY created_at DESC LIMIT 1').get(vacancyId) as any;
+    if (!row) return null;
+    return this.mapInterviewPrepRow(row);
+  }
+
+  listInterviewPrepDossiers(limit: number = 50): InterviewPrepDossier[] {
+    const rows = this.db.prepare('SELECT * FROM interview_prep_dossiers ORDER BY created_at DESC LIMIT ?').all(limit) as any[];
+    return rows.map(r => this.mapInterviewPrepRow(r));
+  }
+
+  deleteInterviewPrepDossier(id: string): void {
+    this.db.prepare('DELETE FROM interview_prep_dossiers WHERE id = ?').run(id);
+  }
+
+  private mapInterviewPrepRow(r: any): InterviewPrepDossier {
+    let companyIntelligence: any = {
+      name: r.company_name,
+      industry: 'Technology',
+      stageOrSize: 'Growing Tech Company',
+      missionOverview: '',
+      coreTechStack: [],
+      cultureHighlights: [],
+      recentDevelopments: []
+    };
+    let roleFocusAreas: string[] = [];
+    let technicalQuestions: any[] = [];
+    let behavioralQuestions: any[] = [];
+    let questionsForInterviewer: string[] = [];
+    let compensationBenchmark: any = {
+      roleTitle: r.job_title,
+      estimatedMin: 120000,
+      estimatedMax: 180000,
+      currency: 'USD',
+      marketSource: 'Aggregated Tech Industry Benchmarks',
+      negotiationTips: []
+    };
+    let keyAdvice: string[] = [];
+
+    try { if (r.company_intelligence_json) companyIntelligence = JSON.parse(r.company_intelligence_json); } catch {}
+    try { if (r.role_focus_areas_json) roleFocusAreas = JSON.parse(r.role_focus_areas_json); } catch {}
+    try { if (r.technical_questions_json) technicalQuestions = JSON.parse(r.technical_questions_json); } catch {}
+    try { if (r.behavioral_questions_json) behavioralQuestions = JSON.parse(r.behavioral_questions_json); } catch {}
+    try { if (r.questions_for_interviewer_json) questionsForInterviewer = JSON.parse(r.questions_for_interviewer_json); } catch {}
+    try { if (r.compensation_benchmark_json) compensationBenchmark = JSON.parse(r.compensation_benchmark_json); } catch {}
+    try { if (r.key_advice_json) keyAdvice = JSON.parse(r.key_advice_json); } catch {}
+
+    return {
+      id: r.id,
+      interactionId: r.interaction_id ?? undefined,
+      vacancyId: r.vacancy_id ?? undefined,
+      submissionId: r.submission_id ?? undefined,
+      companyName: r.company_name,
+      jobTitle: r.job_title,
+      companyIntelligence,
+      roleFocusAreas,
+      technicalQuestions,
+      behavioralQuestions,
+      questionsForInterviewer,
+      compensationBenchmark,
+      keyAdvice,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    };
   }
 
   // Discovery Runs

@@ -35,5 +35,6 @@ npm-debug.log*
 .idea/
 .vscode/
 *.swp
-*.swo
+# Graphify artifacts
+graphify-out/
 

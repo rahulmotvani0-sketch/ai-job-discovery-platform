@@ -453,3 +453,65 @@ export interface SavedSearch {
   lastResultsCount?: number;
 }
 
+// ==========================================
+// Interview Preparation & Company Intelligence Types
+// ==========================================
+
+export interface TechnicalQuestionPrep {
+  id: string;
+  question: string;
+  category: string;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  relevanceReason: string;
+  candidateTalkingPoints: string[];
+  suggestedAnswerFramework: string;
+}
+
+export interface BehavioralQuestionPrep {
+  id: string;
+  question: string;
+  competency: string;
+  starFramework: {
+    situation: string;
+    task: string;
+    action: string;
+    result: string;
+  };
+  candidateProjectTieIn: string;
+}
+
+export interface CompanyIntelligence {
+  name: string;
+  industry: string;
+  stageOrSize: string;
+  missionOverview: string;
+  coreTechStack: string[];
+  cultureHighlights: string[];
+  recentDevelopments: string[];
+}
+
+export interface InterviewPrepDossier {
+  id: string;
+  interactionId?: string;
+  vacancyId?: string;
+  submissionId?: string;
+  companyName: string;
+  jobTitle: string;
+  companyIntelligence: CompanyIntelligence;
+  roleFocusAreas: string[];
+  technicalQuestions: TechnicalQuestionPrep[];
+  behavioralQuestions: BehavioralQuestionPrep[];
+  questionsForInterviewer: string[];
+  compensationBenchmark: {
+    roleTitle: string;
+    estimatedMin: number;
+    estimatedMax: number;
+    currency: string;
+    marketSource: string;
+    negotiationTips: string[];
+  };
+  keyAdvice: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+

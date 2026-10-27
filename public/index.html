@@ -1833,6 +1833,9 @@
           <p style="color: var(--text-muted); font-size: 0.88rem;">Intelligently analyzes inbound recruiter replies, detects interview invitations & coding assessments, and auto-drafts tailored availability confirmations with an approval gate before transmission.</p>
         </div>
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <button class="btn btn-secondary" onclick="openCustomPrepModal()" style="font-size: 0.82rem; border-color: #8b5cf6; color: #c084fc;">
+            🎯 On-Demand Interview Prep
+          </button>
           <button class="btn btn-secondary" onclick="syncRecruiterInboxUI()" id="sync-inbox-btn" style="font-size: 0.82rem;">
             🔄 Sync Recruiter Inbox
           </button>
@@ -2525,10 +2528,17 @@
         <div class="section-title">Verified Screening Answers</div>
         <div class="code-preview" id="modal-screening-preview" style="max-height: 120px;"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-danger" onclick="rejectCurrentDraft()">Reject Draft</button>
-        <button class="btn btn-success" id="modal-approve-btn" onclick="approveAndSendCurrentDraft()">✓ Authorize & Send Application</button>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div>
+          <button class="btn btn-secondary" onclick="openInterviewPrepForVacancy(currentDraft ? currentDraft.vacancyId : '')" style="font-size: 0.8rem; border-color: #8b5cf6; color: #c084fc; background: rgba(139, 92, 246, 0.1);">
+            🎯 Interview Prep Dossier
+          </button>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-danger" onclick="rejectCurrentDraft()">Reject Draft</button>
+          <button class="btn btn-success" id="modal-approve-btn" onclick="approveAndSendCurrentDraft()">✓ Authorize & Send Application</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2823,6 +2833,93 @@ Senior Technical Talent Partner</textarea>
       <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
         <button class="btn btn-secondary" onclick="closeSimulateRecruiterModal()">Cancel</button>
         <button class="btn btn-primary" onclick="submitSimulatedRecruiterUI()" id="sim-submit-btn">⚡ Ingest & Process Email</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interview Preparation & Company Intelligence Copilot Modal -->
+  <div class="modal-backdrop" id="interview-prep-modal">
+    <div class="modal-window" style="max-width: 960px; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle); padding: 1.1rem 1.75rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <span class="source-tag" style="background: rgba(139, 92, 246, 0.2); border-color: #8b5cf6; color: #c084fc;">INTERVIEW COPILOT</span>
+            <span id="prep-modal-industry" class="meta-pill" style="color: var(--accent-cyan); font-weight: 600;">Technology Platform</span>
+          </div>
+          <h2 id="prep-modal-title" style="font-size: 1.35rem; font-weight: 700; margin: 0; color: var(--text-main);">Company &mdash; Role Title</h2>
+          <div id="prep-modal-subtitle" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">Grounding Architecture, Candidate Skill Mapping & Interview Strategy</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="copyInterviewDossierSummary()" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: rgba(139, 92, 246, 0.4); color: #c084fc;" title="Copy complete preparation brief to clipboard">
+            📋 Copy Brief
+          </button>
+          <button class="modal-close" onclick="closeInterviewPrepModal()">&times;</button>
+        </div>
+      </div>
+
+      <!-- Prep Navigation Tabs -->
+      <div style="display: flex; gap: 0.5rem; padding: 0.75rem 1.75rem; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-subtle); overflow-x: auto;">
+        <button class="filter-chip active" id="prep-tab-intel" onclick="switchPrepTab('intel')">🏢 Company Intel & Tech Stack</button>
+        <button class="filter-chip" id="prep-tab-tech" onclick="switchPrepTab('tech')">💻 Technical Questions (<span id="prep-tech-count">0</span>)</button>
+        <button class="filter-chip" id="prep-tab-behavioral" onclick="switchPrepTab('behavioral')">🌟 Behavioral Q&A (STAR)</button>
+        <button class="filter-chip" id="prep-tab-reverse" onclick="switchPrepTab('reverse')">💡 Reverse Interview Questions</button>
+        <button class="filter-chip" id="prep-tab-comp" onclick="switchPrepTab('comp')">💰 Compensation & Negotiation</button>
+      </div>
+
+      <!-- Prep Modal Content Body -->
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 1.5rem 1.75rem;">
+        <div id="prep-loading-indicator" style="display: none; text-align: center; padding: 3rem 1rem;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎯</div>
+          <div style="font-weight: 700; font-size: 1.15rem; color: var(--text-main);">Synthesizing Company Intelligence & Tailored Interview Q&A...</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+            Analyzing target engineering architecture, mapping your real skills to role requirements, framing STAR responses, and calculating compensation benchmarks.
+          </div>
+        </div>
+
+        <div id="prep-tab-content-intel" class="prep-tab-panel"></div>
+        <div id="prep-tab-content-tech" class="prep-tab-panel" style="display: none;"></div>
+        <div id="prep-tab-content-behavioral" class="prep-tab-panel" style="display: none;"></div>
+        <div id="prep-tab-content-reverse" class="prep-tab-panel" style="display: none;"></div>
+        <div id="prep-tab-content-comp" class="prep-tab-panel" style="display: none;"></div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.75rem; border-top: 1px solid var(--border-subtle); background: rgba(0,0,0,0.2);">
+        <div style="font-size: 0.75rem; color: var(--text-muted);" id="prep-modal-footer-note">
+          ✓ Verified against candidate profile and job requirements.
+        </div>
+        <button class="btn btn-primary" onclick="closeInterviewPrepModal()" style="font-size: 0.82rem; padding: 0.4rem 1.25rem;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- On-Demand Custom Interview Prep Modal -->
+  <div class="modal-backdrop" id="custom-prep-modal">
+    <div class="modal-window" style="max-width: 600px;">
+      <div class="modal-header">
+        <div>
+          <span class="source-tag" style="background: rgba(139, 92, 246, 0.2); border-color: #8b5cf6; color: #c084fc;">ON-DEMAND COPILOT</span>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.25rem;">Generate Custom Interview Preparation Dossier</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Prepare for any upcoming interview by entering company and role specifics.</p>
+        </div>
+        <button class="modal-close" onclick="closeCustomPrepModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Company Name *</label>
+          <input type="text" id="custom-prep-company" class="input-field" placeholder="e.g. Stripe, Datadog, Snowflake, Figma, Linear" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Target Job Title *</label>
+          <input type="text" id="custom-prep-role" class="input-field" placeholder="e.g. Senior Infrastructure Engineer, Lead SRE" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.85rem;">
+          <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.35rem;">Job Description / Key Requirements (Optional)</label>
+          <textarea id="custom-prep-desc" class="input-field" rows="4" placeholder="Paste job requirements or focus areas for maximum grounding..." style="width: 100%; font-size: 0.85rem; line-height: 1.4;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button class="btn btn-secondary" onclick="closeCustomPrepModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCustomPrepUI()" id="custom-prep-submit-btn" style="background: #8b5cf6; border-color: #8b5cf6;">🎯 Generate Dossier</button>
       </div>
     </div>
   </div>
@@ -6091,6 +6188,408 @@ Senior Technical Talent Partner</textarea>
       }
     }
 
+    // ==========================================
+    // Interview Preparation & Company Intelligence Copilot Logic
+    // ==========================================
+    let currentPrepDossier = null;
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function openCustomPrepModal() {
+      const modal = document.getElementById('custom-prep-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeCustomPrepModal() {
+      const modal = document.getElementById('custom-prep-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function closeInterviewPrepModal() {
+      const modal = document.getElementById('interview-prep-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchPrepTab(tabName) {
+      const tabIds = ['intel', 'tech', 'behavioral', 'reverse', 'comp'];
+      tabIds.forEach(t => {
+        const chip = document.getElementById(`prep-tab-${t}`);
+        const panel = document.getElementById(`prep-tab-content-${t}`);
+        if (chip) {
+          if (t === tabName) chip.classList.add('active');
+          else chip.classList.remove('active');
+        }
+        if (panel) {
+          panel.style.display = (t === tabName) ? 'block' : 'none';
+        }
+      });
+    }
+
+    async function openInterviewPrepUI(interactionId) {
+      const modal = document.getElementById('interview-prep-modal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      const loading = document.getElementById('prep-loading-indicator');
+      if (loading) loading.style.display = 'block';
+
+      ['intel', 'tech', 'behavioral', 'reverse', 'comp'].forEach(t => {
+        const p = document.getElementById(`prep-tab-content-${t}`);
+        if (p) p.style.display = 'none';
+      });
+
+      try {
+        const res = await fetch(`/api/interview-prep/interaction/${encodeURIComponent(interactionId)}`);
+        const data = await res.json();
+        if (res.ok && data.success && data.dossier) {
+          renderInterviewPrepModal(data.dossier);
+        } else {
+          alert(`Failed to load interview dossier: ${data.error || 'Server error'}`);
+          closeInterviewPrepModal();
+        }
+      } catch (err) {
+        alert(`Error fetching dossier: ${err.message}`);
+        closeInterviewPrepModal();
+      } finally {
+        if (loading) loading.style.display = 'none';
+      }
+    }
+
+    async function openInterviewPrepForVacancy(vacancyId) {
+      if (!vacancyId) return;
+      const modal = document.getElementById('interview-prep-modal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      const loading = document.getElementById('prep-loading-indicator');
+      if (loading) loading.style.display = 'block';
+
+      ['intel', 'tech', 'behavioral', 'reverse', 'comp'].forEach(t => {
+        const p = document.getElementById(`prep-tab-content-${t}`);
+        if (p) p.style.display = 'none';
+      });
+
+      try {
+        const res = await fetch(`/api/interview-prep/vacancy/${encodeURIComponent(vacancyId)}`);
+        const data = await res.json();
+        if (res.ok && data.success && data.dossier) {
+          renderInterviewPrepModal(data.dossier);
+        } else {
+          alert(`Failed to load interview dossier: ${data.error || 'Server error'}`);
+          closeInterviewPrepModal();
+        }
+      } catch (err) {
+        alert(`Error fetching dossier: ${err.message}`);
+        closeInterviewPrepModal();
+      } finally {
+        if (loading) loading.style.display = 'none';
+      }
+    }
+
+    async function submitCustomPrepUI() {
+      const company = document.getElementById('custom-prep-company')?.value?.trim();
+      const role = document.getElementById('custom-prep-role')?.value?.trim();
+      const desc = document.getElementById('custom-prep-desc')?.value?.trim();
+
+      if (!company || !role) {
+        alert('Please provide both Company Name and Target Job Title.');
+        return;
+      }
+
+      closeCustomPrepModal();
+
+      const modal = document.getElementById('interview-prep-modal');
+      if (modal) modal.style.display = 'flex';
+
+      const loading = document.getElementById('prep-loading-indicator');
+      if (loading) loading.style.display = 'block';
+
+      ['intel', 'tech', 'behavioral', 'reverse', 'comp'].forEach(t => {
+        const p = document.getElementById(`prep-tab-content-${t}`);
+        if (p) p.style.display = 'none';
+      });
+
+      try {
+        const res = await fetch('/api/interview-prep/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyName: company, jobTitle: role, jobDescription: desc })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.dossier) {
+          renderInterviewPrepModal(data.dossier);
+        } else {
+          alert(`Failed to generate dossier: ${data.error || 'Server error'}`);
+          closeInterviewPrepModal();
+        }
+      } catch (err) {
+        alert(`Error generating dossier: ${err.message}`);
+        closeInterviewPrepModal();
+      } finally {
+        if (loading) loading.style.display = 'none';
+      }
+    }
+
+    function renderInterviewPrepModal(dossier) {
+      currentPrepDossier = dossier;
+
+      document.getElementById('prep-modal-title').textContent = `${dossier.companyName} — ${dossier.jobTitle}`;
+      document.getElementById('prep-modal-industry').textContent = dossier.companyIntelligence.industry || 'Technology';
+      document.getElementById('prep-tech-count').textContent = (dossier.technicalQuestions || []).length;
+
+      // 1. Company Intel Tab
+      const intelEl = document.getElementById('prep-tab-content-intel');
+      const ci = dossier.companyIntelligence;
+      const techStackPills = (ci.coreTechStack || []).map(t => `<span class="tag" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc; font-size: 0.75rem;">${escapeHtml(t)}</span>`).join(' ');
+      const cultureList = (ci.cultureHighlights || []).map(c => `<li style="margin-bottom: 0.4rem; color: #cbd5e1;">${escapeHtml(c)}</li>`).join('');
+      const newsList = (ci.recentInitiativesOrNews || []).map(n => `<li style="margin-bottom: 0.4rem; color: #cbd5e1;">${escapeHtml(n)}</li>`).join('');
+      const focusAreas = (dossier.roleFocusAreas || []).map(f => `<span style="font-size: 0.75rem; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.35); color: #22d3ee; padding: 3px 8px; border-radius: 6px;">${escapeHtml(f)}</span>`).join(' ');
+      const adviceList = (dossier.keyAdvice || []).map(a => `<div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 0.6rem 0.85rem; border-radius: 4px; font-size: 0.82rem; color: #fde68a; margin-bottom: 0.5rem;">💡 ${escapeHtml(a)}</div>`).join('');
+
+      intelEl.innerHTML = `
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--accent-cyan); letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+              🏢 Company Overview & Architecture
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-main); line-height: 1.5; margin-bottom: 1rem;">
+              ${escapeHtml(ci.overview || '')}
+            </p>
+            <div style="margin-bottom: 1rem;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase;">Verified Core Tech Stack</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">${techStackPills}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase;">Role Core Focus Areas</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">${focusAreas}</div>
+            </div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--accent-emerald); letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+              📊 Company Snapshot
+            </div>
+            <div style="font-size: 0.82rem; display: flex; flex-direction: column; gap: 0.6rem; color: var(--text-muted);">
+              <div><strong style="color: var(--text-main);">Industry:</strong> ${escapeHtml(ci.industry || 'Technology')}</div>
+              <div><strong style="color: var(--text-main);">Company Size:</strong> ${escapeHtml(ci.estimatedSize || 'Mid-Market / Enterprise')}</div>
+              ${ci.website ? `<div><strong style="color: var(--text-main);">Website:</strong> <a href="${ci.website.startsWith('http') ? ci.website : 'https://' + ci.website}" target="_blank" rel="noopener" style="color: var(--accent-cyan);">${escapeHtml(ci.website)} &nearr;</a></div>` : ''}
+            </div>
+            <div style="margin-top: 1.25rem;">
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase;">Strategic Advice & Key Mindset</div>
+              ${adviceList}
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #fbbf24; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+              🎯 Engineering Culture & Values
+            </div>
+            <ul style="padding-left: 1.2rem; font-size: 0.84rem; margin: 0; line-height: 1.45;">
+              ${cultureList}
+            </ul>
+          </div>
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #a78bfa; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+              📰 Recent News & Architecture Initiatives
+            </div>
+            <ul style="padding-left: 1.2rem; font-size: 0.84rem; margin: 0; line-height: 1.45;">
+              ${newsList}
+            </ul>
+          </div>
+        </div>
+      `;
+
+      // 2. Technical Questions Tab
+      const techEl = document.getElementById('prep-tab-content-tech');
+      const diffStyles = {
+        EASY: { bg: 'rgba(16, 185, 129, 0.15)', border: '#10b981', color: '#34d399' },
+        MEDIUM: { bg: 'rgba(6, 182, 212, 0.15)', border: '#06b6d4', color: '#22d3ee' },
+        HARD: { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', color: '#fbbf24' },
+      };
+
+      techEl.innerHTML = (dossier.technicalQuestions || []).map((q, idx) => {
+        const diff = diffStyles[q.difficulty] || diffStyles.MEDIUM;
+        const talkingPoints = (q.candidateTalkingPoints || []).map(p => `
+          <li style="margin-bottom: 0.35rem; color: #e2e8f0;">
+            <strong style="color: var(--accent-cyan);">&bull;</strong> ${escapeHtml(p)}
+          </li>
+        `).join('');
+
+        return `
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.65rem; gap: 0.5rem; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.72rem; font-weight: 800; background: ${diff.bg}; border: 1px solid ${diff.border}; color: ${diff.color}; padding: 2px 7px; border-radius: 6px;">
+                  ${q.difficulty}
+                </span>
+                <span style="font-size: 0.72rem; font-weight: 700; background: rgba(148, 163, 184, 0.12); color: #94a3b8; padding: 2px 7px; border-radius: 6px;">
+                  ${escapeHtml(q.category)}
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Q#${idx + 1}</span>
+              </div>
+            </div>
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.75rem 0; line-height: 1.4;">
+              ${escapeHtml(q.question)}
+            </h4>
+            
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.85rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #c084fc; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+                🎯 Recommended Answer Framework
+              </div>
+              <div style="font-size: 0.83rem; color: #cbd5e1; line-height: 1.45;">
+                ${escapeHtml(q.suggestedAnswerFramework)}
+              </div>
+            </div>
+
+            <div style="background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 8px; padding: 0.85rem 1rem;">
+              <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--accent-cyan); letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+                ⚡ Your Tailored Talking Points (Grounded in Verified Profile)
+              </div>
+              <ul style="list-style: none; padding-left: 0; margin: 0; font-size: 0.83rem; line-height: 1.45;">
+                ${talkingPoints}
+              </ul>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 3. Behavioral Q&A Tab (STAR)
+      const behavEl = document.getElementById('prep-tab-content-behavioral');
+      behavEl.innerHTML = (dossier.behavioralQuestions || []).map((b, idx) => {
+        return `
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="font-size: 0.72rem; font-weight: 700; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; padding: 2px 8px; border-radius: 9999px;">
+                ⭐ ${escapeHtml(b.competency)}
+              </span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Scenario #${idx + 1}</span>
+            </div>
+            <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0 0 1rem 0; line-height: 1.4;">
+              ${escapeHtml(b.question)}
+            </h4>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #60a5fa; text-transform: uppercase; margin-bottom: 0.25rem;">[S] Situation</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">${escapeHtml(b.starFramework.situation)}</div>
+              </div>
+              <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #c084fc; text-transform: uppercase; margin-bottom: 0.25rem;">[T] Task</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">${escapeHtml(b.starFramework.task)}</div>
+              </div>
+              <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #34d399; text-transform: uppercase; margin-bottom: 0.25rem;">[A] Action</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">${escapeHtml(b.starFramework.action)}</div>
+              </div>
+              <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 0.75rem;">
+                <div style="font-size: 0.7rem; font-weight: 800; color: #fbbf24; text-transform: uppercase; margin-bottom: 0.25rem;">[R] Result</div>
+                <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">${escapeHtml(b.starFramework.result)}</div>
+              </div>
+            </div>
+
+            <div style="background: rgba(139, 92, 246, 0.1); border-left: 3px solid #8b5cf6; padding: 0.65rem 0.9rem; border-radius: 4px; font-size: 0.82rem; color: #e9d5ff;">
+              <strong>🔗 Candidate Experience Tie-In:</strong> ${escapeHtml(b.candidateProjectTieIn)}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 4. Reverse Questions Tab
+      const revEl = document.getElementById('prep-tab-content-reverse');
+      revEl.innerHTML = `
+        <div style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+          High-leverage, insightful questions to ask your interviewers. Demonstrates deep architectural domain maturity, engineering rigor, and long-term ownership.
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          ${(dossier.questionsForInterviewer || []).map((q, idx) => `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1rem 1.25rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+              <span style="font-size: 1.1rem; color: var(--accent-cyan); font-weight: 700;">#${idx + 1}</span>
+              <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.45; font-weight: 500;">
+                "${escapeHtml(q)}"
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      // 5. Compensation & Negotiation Tab
+      const compEl = document.getElementById('prep-tab-content-comp');
+      const comp = dossier.compensationBenchmark;
+      const minStr = comp.estimatedMin ? `${comp.currency} ${comp.estimatedMin.toLocaleString()}` : 'N/A';
+      const maxStr = comp.estimatedMax ? `${comp.currency} ${comp.estimatedMax.toLocaleString()}` : 'N/A';
+      const tipsList = (comp.negotiationTips || []).map(t => `<li style="margin-bottom: 0.5rem; color: #cbd5e1;">${escapeHtml(t)}</li>`).join('');
+
+      compEl.innerHTML = `
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center;">
+          <div style="font-size: 0.75rem; font-weight: 800; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+            Estimated Market Total Base / Target Compensation Range
+          </div>
+          <div style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); font-family: var(--font-heading); margin-bottom: 0.25rem;">
+            ${minStr} &mdash; ${maxStr}
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            Based on role seniority tier (${escapeHtml(dossier.jobTitle)}), verified market data, and engineering scope.
+          </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 0.75rem; font-weight: 800; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+            💰 Strategic Negotiation Guidance & Candidate Leverage
+          </div>
+          <ul style="padding-left: 1.2rem; font-size: 0.85rem; margin: 0; line-height: 1.5;">
+            ${tipsList}
+          </ul>
+        </div>
+      `;
+
+      switchPrepTab('intel');
+    }
+
+    function copyInterviewDossierSummary() {
+      if (!currentPrepDossier) return;
+      const d = currentPrepDossier;
+
+      let md = `# Interview Preparation Brief: ${d.companyName} — ${d.jobTitle}\n\n`;
+      md += `## Company Intelligence\n${d.companyIntelligence.overview}\n\n`;
+      md += `### Core Tech Stack\n${(d.companyIntelligence.coreTechStack || []).join(', ')}\n\n`;
+      md += `### Compensation Benchmark\nRange: ${d.compensationBenchmark.currency} ${d.compensationBenchmark.estimatedMin.toLocaleString()} - ${d.compensationBenchmark.estimatedMax.toLocaleString()}\n\n`;
+      md += `## Key Technical Questions & Talking Points\n`;
+      (d.technicalQuestions || []).forEach((q, i) => {
+        md += `\n### ${i + 1}. [${q.difficulty}] ${q.question}\n`;
+        md += `*Framework:* ${q.suggestedAnswerFramework}\n`;
+        md += `*Candidate Points:*\n${(q.candidateTalkingPoints || []).map(p => `  - ${p}`).join('\n')}\n`;
+      });
+      md += `\n## Behavioral STAR Scenarios\n`;
+      (d.behavioralQuestions || []).forEach((b, i) => {
+        md += `\n### ${i + 1}. [${b.competency}] ${b.question}\n`;
+        md += `- Situation: ${b.starFramework.situation}\n`;
+        md += `- Task: ${b.starFramework.task}\n`;
+        md += `- Action: ${b.starFramework.action}\n`;
+        md += `- Result: ${b.starFramework.result}\n`;
+        md += `- Experience Tie-in: ${b.candidateProjectTieIn}\n`;
+      });
+      md += `\n## Questions for Interviewer\n`;
+      (d.questionsForInterviewer || []).forEach((q, i) => {
+        md += `${i + 1}. "${q}"\n`;
+      });
+
+      navigator.clipboard.writeText(md).then(() => {
+        alert('✓ Interview Preparation Brief copied to clipboard in markdown format!');
+      }).catch(() => {
+        alert('Failed to copy to clipboard automatically.');
+      });
+    }
+
     function renderInterviewsList() {
       const container = document.getElementById('interviews-list-container');
       if (!container) return;
@@ -6226,6 +6725,13 @@ ${draft.body}
 
             ${slotsHtml}
             ${draftHtml}
+
+            <!-- Interview Preparation Copilot Quick Action -->
+            <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-start; margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.08);">
+              <button class="btn btn-secondary" onclick="openInterviewPrepUI('${item.id}')" style="font-size: 0.78rem; padding: 0.35rem 0.85rem; border-color: #8b5cf6; color: #c084fc; background: rgba(139, 92, 246, 0.1);">
+                🎯 Interview Dossier & Q&A Copilot
+              </button>
+            </div>
           </div>
         `;
       }).join('');

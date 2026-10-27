@@ -68,9 +68,9 @@ export class InMemoryRateLimiter {
   }
 }
 
-export function extractClientIp(req: IncomingMessage): string {
+export function extractClientIp(req: IncomingMessage, trustProxy = false): string {
   const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') {
+  if (trustProxy && typeof forwarded === 'string') {
     return forwarded.split(',')[0].trim();
   }
   return req.socket?.remoteAddress || '127.0.0.1';

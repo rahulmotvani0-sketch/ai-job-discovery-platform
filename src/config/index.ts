@@ -35,6 +35,8 @@ export interface AppConfig {
   port: number;
   host: string;
   apiAuthToken?: string;
+  corsOrigin: string;
+  trustProxy: boolean;
   // Instant Mobile Alerts
   telegramBotToken?: string;
   telegramChatId?: string;
@@ -66,8 +68,18 @@ export function loadConfig(customEnvPath?: string): AppConfig {
   const dbPath = process.env.DB_PATH || join(dataDir, 'job_platform.db');
   const googleTokenPath = process.env.GOOGLE_TOKEN_PATH || join(dataDir, 'google_tokens.json');
 
+  const env = (process.env.NODE_ENV || 'development') as AppConfig['env'];
+  if (!['development', 'test', 'production'].includes(env)) {
+    throw new Error(`Invalid NODE_ENV: ${env}`);
+  }
+
+  const apiAuthToken = process.env.API_AUTH_TOKEN?.trim() || undefined;
+  if (env === 'production' && (!apiAuthToken || apiAuthToken.length < 32)) {
+    throw new Error('API_AUTH_TOKEN must be configured with at least 32 characters in production');
+  }
+
   return {
-    env: (process.env.NODE_ENV as any) || 'development',
+    env,
     dataDir,
     dbPath,
     ollamaEndpoint: process.env.OLLAMA_ENDPOINT || 'http://127.0.0.1:11434',
@@ -89,7 +101,9 @@ export function loadConfig(customEnvPath?: string): AppConfig {
     googleTokenPath,
     port: parseInt(process.env.PORT || '3000', 10),
     host: process.env.HOST || '127.0.0.1',
-    apiAuthToken: process.env.API_AUTH_TOKEN,
+    apiAuthToken,
+    corsOrigin: process.env.CORS_ORIGIN || (env === 'production' ? '' : '*'),
+    trustProxy: process.env.TRUST_PROXY === 'true',
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
     telegramChatId: process.env.TELEGRAM_CHAT_ID,
     discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL,

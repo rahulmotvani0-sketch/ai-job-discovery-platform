@@ -10,6 +10,7 @@ import { ApplicationWritingAgent } from '../applications/writer.js';
 import { ApprovalGatekeeper } from '../applications/approval-gate.js';
 import { AlertNotificationManager } from '../notifications/alert-manager.js';
 import { InterviewSchedulingEngine } from './interview-engine.js';
+import { InterviewCopilotEngine } from './interview-copilot.js';
 import type { IGmailService } from '../integrations/google/gmail.js';
 import type { IDriveService } from '../integrations/google/drive.js';
 import type { ISheetsService } from '../integrations/google/sheets.js';
@@ -53,6 +54,7 @@ export class MasterOrchestrator {
   private sheetsService?: ISheetsService;
   private alertManager: AlertNotificationManager;
   private interviewEngine: InterviewSchedulingEngine;
+  private interviewCopilot: InterviewCopilotEngine;
 
   constructor(deps: {
     db: DatabaseManager;
@@ -77,6 +79,7 @@ export class MasterOrchestrator {
       gmailService: this.gmailService,
       alertManager: this.alertManager,
     });
+    this.interviewCopilot = new InterviewCopilotEngine(this.db);
   }
 
   getGatekeeper(): ApprovalGatekeeper {
@@ -89,6 +92,10 @@ export class MasterOrchestrator {
 
   getInterviewEngine(): InterviewSchedulingEngine {
     return this.interviewEngine;
+  }
+
+  getInterviewCopilot(): InterviewCopilotEngine {
+    return this.interviewCopilot;
   }
 
   /**

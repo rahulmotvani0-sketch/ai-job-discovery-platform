@@ -146,7 +146,7 @@ export class ApplicationServer {
     const json = JSON.stringify(data);
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': config.corsOrigin || 'null',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Request-ID',
       ...SECURITY_HEADERS,
@@ -161,7 +161,7 @@ export class ApplicationServer {
   private sendHtml(res: ServerResponse, statusCode: number, html: string, requestId?: string) {
     const headers: Record<string, string> = {
       'Content-Type': 'text/html; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': config.corsOrigin || 'null',
       ...SECURITY_HEADERS,
     };
     if (requestId) {
@@ -183,12 +183,12 @@ export class ApplicationServer {
     return new Promise((resolve) => {
       this.server = createServer(async (req, res) => {
         const requestId = getOrCreateRequestId(req);
-        const clientIp = extractClientIp(req);
+        const clientIp = extractClientIp(req, config.trustProxy);
 
         // Handle CORS Preflight
         if (req.method === 'OPTIONS') {
           res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': config.corsOrigin || 'null',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, X-Request-ID',
             'X-Request-ID': requestId,
@@ -215,7 +215,7 @@ export class ApplicationServer {
         try {
           // Guard mutating endpoints if API_AUTH_TOKEN is configured
           const isMutating = req.method !== 'GET' && req.method !== 'OPTIONS' && !pathname.startsWith('/oauth2callback');
-          if (isMutating && config.apiAuthToken) {
+          if (isMutating && (config.env === 'production' || config.apiAuthToken)) {
             const authCheck = validateAuthorization(req, config.apiAuthToken);
             if (!authCheck.authorized) {
               return this.sendJson(res, 401, { error: authCheck.error }, requestId);
@@ -1284,6 +1284,60 @@ export class ApplicationServer {
           if (pathname === '/api/scheduling/available-slots' && req.method === 'GET') {
             const slots = this.orchestrator.getInterviewEngine().generateAvailableSlots();
             return this.sendJson(res, 200, { slots, count: slots.length });
+          }
+
+          // ==========================================
+          // Interview Preparation & Company Intelligence Copilot API
+          // ==========================================
+          if (pathname === '/api/interview-prep' && req.method === 'GET') {
+            const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+            const dossiers = this.db.listInterviewPrepDossiers(limit);
+            return this.sendJson(res, 200, { success: true, count: dossiers.length, dossiers });
+          }
+
+          if (pathname === '/api/interview-prep/generate' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              const dossier = await this.orchestrator.getInterviewCopilot().generateDossier(body);
+              return this.sendJson(res, 201, { success: true, dossier });
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message });
+            }
+          }
+
+          if (pathname.startsWith('/api/interview-prep/interaction/') && req.method === 'GET') {
+            try {
+              const interactionId = pathname.replace('/api/interview-prep/interaction/', '');
+              const dossier = await this.orchestrator.getInterviewCopilot().getOrGenerateDossier({ interactionId });
+              return this.sendJson(res, 200, { success: true, dossier });
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message });
+            }
+          }
+
+          if (pathname.startsWith('/api/interview-prep/vacancy/') && req.method === 'GET') {
+            try {
+              const vacancyId = pathname.replace('/api/interview-prep/vacancy/', '');
+              const dossier = await this.orchestrator.getInterviewCopilot().getOrGenerateDossier({ vacancyId });
+              return this.sendJson(res, 200, { success: true, dossier });
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message });
+            }
+          }
+
+          if (pathname.startsWith('/api/interview-prep/') && !pathname.includes('/interaction/') && !pathname.includes('/vacancy/') && !pathname.endsWith('/generate') && req.method === 'GET') {
+            const id = pathname.replace('/api/interview-prep/', '');
+            const dossier = this.db.getInterviewPrepDossierById(id);
+            if (!dossier) {
+              return this.sendJson(res, 404, { error: `Interview prep dossier ${id} not found` });
+            }
+            return this.sendJson(res, 200, { success: true, dossier });
+          }
+
+          if (pathname.startsWith('/api/interview-prep/') && req.method === 'DELETE') {
+            const id = pathname.replace('/api/interview-prep/', '');
+            this.db.deleteInterviewPrepDossier(id);
+            return this.sendJson(res, 200, { success: true, message: `Dossier ${id} deleted` });
           }
 
           if (pathname === '/api/resumes/generate-pdf' && req.method === 'POST') {

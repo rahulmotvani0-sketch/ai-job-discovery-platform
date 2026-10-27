@@ -46,8 +46,14 @@ PORT=3300
 HOST=127.0.0.1
 DATA_DIR=/opt/job-discovery-platform/data
 
-# Optional: API security token for mutating endpoints
-API_AUTH_TOKEN=generate_a_secure_token_here
+# Required: API security token for mutating endpoints (minimum 32 characters)
+API_AUTH_TOKEN=generate_a_secure_32_character_token_here
+
+# Required when exposing a browser client in production; use the exact HTTPS origin
+CORS_ORIGIN=https://jobs.example.com
+
+# Set true only when a trusted reverse proxy overwrites X-Forwarded-For
+TRUST_PROXY=false
 
 # Optional: Alerts
 TELEGRAM_BOT_TOKEN=
