@@ -1,134 +1,182 @@
-# JOB DISCOVERY AI - Autonomous Platform
+# Autonomous Job Discovery & Application Automation Platform
 
-An enterprise-grade, open-source, local-first autonomous job discovery and application workstation built for **all IT and tech job seekers** (Full-Stack, Backend, Frontend, DevOps, SRE, Cloud Infrastructure, AI & Machine Learning, Data Engineering, Cybersecurity, Mobile, and QA & Automation).
+A production-grade, local-first, privacy-respecting autonomous job discovery and application platform for software engineers, DevOps/SREs, and technology professionals.
 
-Built with a local-first philosophy, the platform combines multi-source direct ATS scraping, local CPU inference via Ollama, hybrid cloud LLM routing, Google Cloud OAuth 2.0 integration, and human-in-the-loop security approval gates.
+Built with a local-first philosophy, the platform combines direct multi-source ATS connectors, semantic AI matching, automated ATS resume tailoring, scheduled background discovery, and **strict human-in-the-loop approval gates** before transmitting any external communication.
 
 ---
 
 ## 🌟 Key Capabilities
 
-- **Universal Multi-Source Job Discovery**:
-  - Direct ATS scraping from **Greenhouse** (Elastic, Cloudflare, Datadog, MongoDB, Stripe, Canonical, etc.)
-  - Direct ATS scraping from **Lever** (Palantir, OptionMetrics, BrightEdge, Nextech, etc.)
-  - Direct ATS scraping from **Ashby** (Linear, Supabase, Ramp, Perplexity, Resend, PostHog, Vanta, Replit, etc.)
-  - Remote tech job feeds from **Himalayas Remote API**, **RemoteOK API**, and **Jobicy API**
-- **Modern Discovery UX**:
-  - Multi-Domain Role Chips (`All Roles`, `Full-Stack`, `Backend`, `Frontend`, `DevOps & SRE`, `Cloud Infra`, `AI & ML`, `Data Engineering`, `Cybersecurity`, `Mobile`, `QA & Automation`)
-  - **"✦ Early Applicant"** Badges prioritizing vacancies active &le; 48 hours for 3–4× higher recruiter response rates
-  - Country & Residency Filters with strict remote-eligibility matching (India-eligible, Worldwide, US, UK, Germany, Canada, Singapore, Australia, etc.)
-  - Job Bookmarking / Saved Jobs tracking
-- **AI Matching & Tailored Resumes**:
-  - Semantic compatibility evaluation based on candidate profile and skills
-  - Automated ATS-optimized markdown resume tailoring adhering strictly to target job requirements
-  - Zero-hallucination policy strictly grounded in verified achievements
-- **Flexible Model Routing (Local CPU + Cloud)**:
-  - Local CPU inference via **Ollama** (`qwen2.5:7b`, `llama3.2:3b`, `mistral`)
-  - Configurable Cloud LLMs (**Google Gemini**, **OpenAI**, **Anthropic**, **OpenRouter**) with live latency testing and masked keys
-  - Dynamic switching between `local-only`, `cloud-only`, and `hybrid` inference modes
-- **Multi-Account Authentication**:
-  - Direct Google Cloud OAuth 2.0 (Gmail API, Google Drive API, Google Sheets API)
-  - Management of primary sending account and secondary recruitment inboxes
-  - Tokens stored encrypted locally; zero third-party intermediaries (e.g. no Composio)
+- **Direct ATS & Job-Source Connectors**:
+  - Live API/feed integrations for **Ashby**, **Greenhouse**, **Lever**, **SmartRecruiters**, **Workable**, **Recruitee**, **RemoteOK**, and **Remotive**.
+  - Built-in SSRF protections, client-side rate limiters, exponential backoff, and circuit breakers.
+- **AI Matching & Semantic Scoring**:
+  - Offline local inference via **Ollama** (`qwen2.5:7b`, `llama3.2:3b`, `mistral`) or optional cloud providers (**Gemini**, **OpenAI**, **Anthropic**, **OpenRouter**).
+  - Fact-grounded resume tailoring: Highlights verified achievements without fabricating skills or employment history.
 - **Strict Human-in-the-Loop Security Gate**:
-  - Strict approval gate prevents unauthorized automatic email dispatches
-  - Per-application sending account selection
-  - Cryptographic SHA-256 audit logging of all authorized submissions
-- **Automated Scheduler**:
-  - Hourly discovery cron jobs with daily qualified vacancy targets
-  - Production systemd unit template for 24/7 background autopilot on Ubuntu
+  - Application emails, tailored resumes, and recruiter responses **cannot be dispatched automatically**.
+  - Explicit user approval is enforced cryptographically and transactionally before any email is sent.
+- **Enterprise-Grade Persistence & Reliability**:
+  - SQLite WAL mode with 5000ms busy timeout, transactional rollbacks, foreign keys, and integrity verification.
+  - Mutual exclusion lock on background scheduler to prevent overlapping discovery scans.
+- **Security & Privacy First**:
+  - Fail-closed configuration schema in production mode.
+  - Constant-time secret comparison via SHA-256 fixed-length digests (`crypto.timingSafeEqual`).
+  - Strict SSRF defense blocking RFC 1918 private IPv4, IPv6 loopback/mapped/link-local addresses, decimal/hex IPs, and cloud metadata.
+  - Single-use cryptographically random OAuth state tokens to eliminate CSRF.
+  - Automatic deep redaction of API keys, tokens, passwords, and personal resume text from logs.
+
+---
+
+## 🔒 Privacy & Data Disclosures
+
+### What Data Is Stored
+- **User Profile**: Name, contact email, location, phone, links, and structured career skills.
+- **Job Vacancies & Scores**: Job postings discovered across configured connectors, semantic compatibility scores, and match justifications.
+- **Generated Resumes**: Tailored Markdown and ATS PDF resumes generated locally in `./data/resumes/tailored/`.
+- **Audit Logs**: SHA-256 hashed records of approved actions and submissions in `./logs/audit.log`.
+
+### Where Data Is Stored
+- **Local SQLite Database**: Stored on your filesystem at `./data/job_platform.db` (file permissions restricted to `0o600`).
+- **OAuth Credentials**: Stored at `./data/google_tokens.json` (file permissions restricted to `0o600`).
+- **Logs**: Kept locally in `./logs/platform.log` and `./logs/audit.log`.
+
+### External Services & Transmission Notice
+- **Local Mode (Default)**: When running with local Ollama, **zero data leaves your machine**.
+- **Optional Cloud AI**: If cloud LLM inference is enabled, job descriptions and anonymized resume qualifications are transmitted to your configured provider (OpenAI, Anthropic, or Google Gemini).
+- **Optional Google Workspace**: Connecting Google OAuth allows sending approved applications via Gmail API, saving PDFs to Google Drive, and logging applied vacancies to Google Sheets. All Google integrations are disabled by default until credentials are configured.
+- **Optional Alerts**: If Telegram or Discord webhooks are configured, job notifications scoring above your threshold are pushed to your private chat.
 
 ---
 
 ## 🛠️ Architecture & Tech Stack
 
-- **Backend**: Node.js (v22+ ESM), TypeScript, Node.js Built-in SQLite (`node:sqlite`)
-- **Frontend**: Vanilla HTML5, Modern CSS (Glassmorphism, dark palette, CSS Grid/Flexbox), Vanilla JavaScript
-- **AI / LLMs**: Ollama (local CPU), Google Gemini API, OpenAI API, Anthropic Claude API
-- **Integrations**: Direct Google OAuth 2.0 (Gmail, Drive, Sheets)
-- **Testing**: Vitest (41 automated tests across 8 test suites)
+- **Runtime**: Node.js (v22+ ESM native)
+- **Language**: TypeScript (strict mode, 0 compile errors)
+- **Persistence**: Node.js Built-in SQLite (`node:sqlite`) with WAL mode
+- **Testing**: Vitest (227 tests across 27 comprehensive test suites)
+- **Frontend**: Vanilla HTML5, Modern CSS (Glassmorphism, dark palette), Vanilla JavaScript
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Installation
+### 1. Prerequisites
+- **Node.js**: v20.0.0 or higher (v22 recommended)
+- **npm**: v10.0.0 or higher
+- **(Optional) Ollama**: Installed locally for zero-cost offline AI matching (`ollama pull qwen2.5:7b`)
 
+### 2. Installation
 ```bash
 git clone https://github.com/rahulmotvani0-sketch/ai-job-discovery-platform.git
 cd ai-job-discovery-platform
 npm install
 ```
 
-### 2. Configuration
-
-Copy the example environment configuration:
-
+### 3. Configuration
+Copy the safe template environment configuration:
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` to configure your profile details, preferred port, and optional LLM / Google OAuth credentials:
-
+Review and adjust settings in `.env`. By default, the application runs entirely offline and binds to `127.0.0.1:3300`:
 ```env
+NODE_ENV=development
 PORT=3300
 HOST=127.0.0.1
+DATA_DIR=./data
+DB_PATH=./data/job_platform.db
 
-# Candidate Profile Customization
-USER_FULL_NAME=Your Full Name
-USER_EMAIL=your.email@example.com
-USER_PHONE=+1-555-0100
-USER_LOCATION=Remote / Global
-USER_PORTFOLIO_URL=https://yourportfolio.com
-USER_GITHUB_URL=https://github.com/yourusername
-USER_LINKEDIN_URL=https://linkedin.com/in/yourprofile
-
-# Local Ollama Inference (CPU/GPU)
+# Offline Local Ollama
 OLLAMA_ENDPOINT=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen2.5:7b
+
+# Cloud LLM (Disabled by default)
+CLOUD_DISABLED=true
+CLOUD_PROVIDER=none
 ```
 
-### 3. Run Automated Tests
+### 4. Run Automated Preflight Verification
+Verify runtime environment, directory permissions, database health, and configuration:
+```bash
+npm run preflight
+```
 
+### 5. Run Test Suite
 ```bash
 npm test
 ```
 
-### 4. Start the Application Server
-
+### 6. Build & Start the Platform
 ```bash
+npm run build
 npm start
 ```
+Access the web dashboard in your browser at `http://127.0.0.1:3300`.
 
-Open your browser to:
-**`http://localhost:3300`**
+---
+
+## 🛡️ Production Deployment & Operations
+
+### 1. Production Requirements
+In production (`NODE_ENV=production`):
+- `API_AUTH_TOKEN`: Mandatory, minimum 32 characters.
+- `CORS_ORIGIN`: Must specify exact origins (wildcard `*` is prohibited).
+- `HOST`: Set to `127.0.0.1` when deployed behind a reverse proxy (e.g., Nginx, Caddy).
+- `TRUST_PROXY`: Set to `true` only when running behind an authorized reverse proxy.
+
+### 2. Systemd Deployment
+A hardened systemd unit file is provided at `deploy/job-platform.service` implementing:
+- Dedicated least-privilege system user (`jobplatform`)
+- Filesystem sandboxing (`ProtectSystem=strict`, `ProtectHome=true`)
+- Explicit write permissions restricted to `./data`, `./logs`, and `./backups`
+- Resource constraints (`MemoryMax=1G`, `CPUQuota=200%`)
+- Clean shutdown timeout (`TimeoutStopSec=30`)
+
+To deploy on Ubuntu/Debian:
+```bash
+# 1. Create system user
+sudo useradd -r -s /bin/false jobplatform
+
+# 2. Deploy repository to /opt/job-platform
+sudo cp -r . /opt/job-platform
+sudo chown -R jobplatform:jobplatform /opt/job-platform
+
+# 3. Install systemd unit
+sudo cp deploy/job-platform.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now job-platform
+```
+
+### 3. Health Probes
+The platform exposes four unauthenticated observability endpoints:
+- `GET /health/live`: Liveness probe reporting process uptime.
+- `GET /health/startup`: Startup probe validating database connectivity and integrity.
+- `GET /health/ready`: Readiness probe verifying scheduler status and persistence health.
+- `GET /api/health`: Comprehensive system telemetry (version, mode, scheduler state).
+
+### 4. Backups and Disaster Recovery
+- **Online Backup**: Safely checkpoints SQLite WAL and archives tailored resumes:
+  ```bash
+  npm run backup
+  ```
+- **Restore**:
+  ```bash
+  bash scripts/restore.sh ./backups/YYYYMMDD_HHMMSS
+  ```
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions from the developer community! Whether you want to add new ATS connectors (e.g., Workable, SmartRecruiters, BambooHR), improve UX filters, enhance the matching engine, or add new AI model providers, check out our [CONTRIBUTING.md](CONTRIBUTING.md) guide.
+We welcome community contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before submitting pull requests.
 
----
-
-## 🔒 Privacy & Security First
-
-- **Zero Data Leak Policy**: No private candidate profiles, credentials, or personal tokens are tracked in git.
-- **Local-First Storage**: All vacancies, evaluated matches, tailored resumes, and audit logs are kept in local SQLite files in `data/`.
-- **Token Privacy**: OAuth tokens and API keys are stored encrypted locally on your workstation.
-
----
-
-## 📄 Operational Documentation
-
-- [CONTRIBUTING.md](CONTRIBUTING.md): Guide for open-source contributors and adding new ATS connectors.
-- [docs/PLATFORM_IMPROVEMENT_PLAN.md](docs/PLATFORM_IMPROVEMENT_PLAN.md): Strategic architecture and phase roadmap.
-- [docs/OPENMAUSBOT_AUDIT.md](docs/OPENMAUSBOT_AUDIT.md): Technical audit of OpenMausBot patterns.
-- [docs/GOOGLE_OAUTH_SETUP_GUIDE.md](docs/GOOGLE_OAUTH_SETUP_GUIDE.md): 3-minute Google Cloud OAuth setup guide.
-- [docs/FINAL_IMPLEMENTATION_REPORT.md](docs/FINAL_IMPLEMENTATION_REPORT.md): Complete test suite and verification evidence.
+Security vulnerabilities should be reported according to [SECURITY.md](SECURITY.md).
 
 ---
 
 ## 📜 License
 
-MIT License. Open-source and free for all job seekers and developers.
+Licensed under the **Apache License, Version 2.0** (the "License"). You may obtain a copy of the License in the [LICENSE](LICENSE) file or at:
+http://www.apache.org/licenses/LICENSE-2.0

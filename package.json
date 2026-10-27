@@ -9,7 +9,9 @@
     "start": "node --import tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "preflight": "node scripts/preflight-check.mjs",
+    "backup": "bash scripts/backup.sh"
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.7",

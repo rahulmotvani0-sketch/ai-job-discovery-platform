@@ -1,5 +1,5 @@
 import { IncomingMessage } from 'node:http';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash, timingSafeEqual } from 'node:crypto';
 
 export const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
@@ -84,6 +84,16 @@ export function getOrCreateRequestId(req: IncomingMessage): string {
   return randomUUID();
 }
 
+/**
+ * Constant-time comparison using fixed-length SHA-256 digests to protect against timing attacks.
+ */
+export function timingSafeEqualTokenCompare(provided?: string, expected?: string): boolean {
+  if (!provided || !expected) return false;
+  const hashA = createHash('sha256').update(provided).digest();
+  const hashB = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(hashA, hashB);
+}
+
 export function validateAuthorization(req: IncomingMessage, configuredToken?: string): { authorized: boolean; error?: string } {
   if (!configuredToken || configuredToken.trim() === '') {
     // Local single-operator mode (authorized by default)
@@ -95,12 +105,12 @@ export function validateAuthorization(req: IncomingMessage, configuredToken?: st
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim();
-    if (token === configuredToken) {
+    if (timingSafeEqualTokenCompare(token, configuredToken)) {
       return { authorized: true };
     }
   }
 
-  if (typeof apiKeyHeader === 'string' && apiKeyHeader.trim() === configuredToken) {
+  if (typeof apiKeyHeader === 'string' && timingSafeEqualTokenCompare(apiKeyHeader.trim(), configuredToken)) {
     return { authorized: true };
   }
 

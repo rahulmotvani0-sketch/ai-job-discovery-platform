@@ -11,12 +11,41 @@ const SENSITIVE_PATTERNS = [
   /(?:password[:=]\s*["']?)([^"'\s]{6,})(?:["']?)/gi,
 ];
 
+const SENSITIVE_KEY_REGEX = /(?:password|secret|token|api[_-]?key|auth|bearer|cookie|credential|private[_-]?key|resume_?text|raw_?resume|email_?body)/i;
+
 export function sanitizeText(text: string): string {
   let cleaned = text;
   for (const pattern of SENSITIVE_PATTERNS) {
     cleaned = cleaned.replace(pattern, (match, secret) => match.replace(secret, '[REDACTED]'));
   }
   return cleaned;
+}
+
+export function deepSanitize(val: any, depth = 0): any {
+  if (depth > 6) return '[MAX_DEPTH]';
+  if (val === null || val === undefined) return val;
+
+  if (typeof val === 'string') {
+    return sanitizeText(val);
+  }
+
+  if (Array.isArray(val)) {
+    return val.map(item => deepSanitize(item, depth + 1));
+  }
+
+  if (typeof val === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (SENSITIVE_KEY_REGEX.test(k)) {
+        cleaned[k] = '[REDACTED]';
+      } else {
+        cleaned[k] = deepSanitize(v, depth + 1);
+      }
+    }
+    return cleaned;
+  }
+
+  return val;
 }
 
 export class Logger {
@@ -35,9 +64,22 @@ export class Logger {
 
   private write(level: LogLevel, message: string, meta?: Record<string, unknown>) {
     const timestamp = new Date().toISOString();
-    const metaStr = meta ? ` | ${sanitizeText(JSON.stringify(meta))}` : '';
+    const isJson = process.env.LOG_FORMAT === 'json' || process.env.NODE_ENV === 'production';
     const sanitizedMsg = sanitizeText(message);
-    const line = `[${timestamp}] [${level}] ${sanitizedMsg}${metaStr}\n`;
+    const sanitizedMeta = meta ? deepSanitize(meta) : undefined;
+
+    let line: string;
+    if (isJson) {
+      line = JSON.stringify({
+        timestamp,
+        level,
+        message: sanitizedMsg,
+        ...(sanitizedMeta ? { meta: sanitizedMeta } : {}),
+      }) + '\n';
+    } else {
+      const metaStr = sanitizedMeta ? ` | ${JSON.stringify(sanitizedMeta)}` : '';
+      line = `[${timestamp}] [${level}] ${sanitizedMsg}${metaStr}\n`;
+    }
 
     if (level === 'ERROR') {
       process.stderr.write(line);

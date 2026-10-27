@@ -54,6 +54,7 @@ export class DatabaseManager {
   }
 
   private initPragmas() {
+    this.db.exec('PRAGMA busy_timeout = 5000;');
     this.db.exec('PRAGMA journal_mode = WAL;');
     this.db.exec('PRAGMA synchronous = NORMAL;');
     this.db.exec('PRAGMA foreign_keys = ON;');
@@ -61,6 +62,12 @@ export class DatabaseManager {
 
   private initSchema() {
     this.db.exec(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        applied_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS user_profile (
         id TEXT PRIMARY KEY,
         full_name TEXT NOT NULL,
@@ -471,6 +478,52 @@ export class DatabaseManager {
     try {
       this.cleanupDuplicateEvaluations();
     } catch {}
+
+    this.recordMigration(1, 'initial_schema_and_increments');
+  }
+
+  private recordMigration(version: number, name: string): void {
+    try {
+      const existing = this.db.prepare('SELECT version FROM schema_migrations WHERE version = ?').get(version);
+      if (!existing) {
+        this.db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(
+          version,
+          name,
+          new Date().toISOString()
+        );
+      }
+    } catch {}
+  }
+
+  /**
+   * Executes a callback within a SQLite transaction (BEGIN IMMEDIATE / COMMIT / ROLLBACK).
+   */
+  transaction<T>(fn: () => T): T {
+    this.db.exec('BEGIN IMMEDIATE;');
+    try {
+      const result = fn();
+      this.db.exec('COMMIT;');
+      return result;
+    } catch (err) {
+      try {
+        this.db.exec('ROLLBACK;');
+      } catch (rollbackErr) {
+        logger.error(`Database rollback failed: ${rollbackErr}`);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Executes PRAGMA integrity_check to verify database health.
+   */
+  integrityCheck(): boolean {
+    try {
+      const row = this.db.prepare('PRAGMA integrity_check;').get() as { integrity_check?: string } | undefined;
+      return row?.integrity_check === 'ok';
+    } catch {
+      return false;
+    }
   }
 
   // User Profile
@@ -494,12 +547,12 @@ export class DatabaseManager {
       profile.id,
       profile.fullName,
       profile.email,
-      profile.phone,
-      profile.location,
-      profile.portfolioUrl,
-      profile.githubUrl,
-      profile.linkedinUrl,
-      profile.summary,
+      profile.phone ?? null,
+      profile.location ?? null,
+      profile.portfolioUrl ?? null,
+      profile.githubUrl ?? null,
+      profile.linkedinUrl ?? null,
+      profile.summary ?? null,
       JSON.stringify(profile),
       new Date().toISOString()
     );

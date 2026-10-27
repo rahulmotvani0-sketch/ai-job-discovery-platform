@@ -44,6 +44,7 @@ export interface SchedulerConfig {
 
 export interface SchedulerStatus extends SchedulerConfig {
   isRunning: boolean;
+  isExecuting: boolean;
   lastRunTime?: string;
   nextRunTime?: string;
   dailyQualifiedDiscovered: number;
@@ -68,6 +69,8 @@ export class JobScheduler {
   private limitPerSource: number;
 
   private isRunning: boolean = false;
+  private isExecuting: boolean = false;
+  private inFlightRun?: Promise<EndToEndRunResult>;
   private lastRunTime?: string;
   private totalRuns: number = 0;
   private dailyQualifiedDiscovered: number = 0;
@@ -102,36 +105,65 @@ export class JobScheduler {
 
   /**
    * Executes a discovery cycle, tracking the run in SQLite and pushing alerts to Telegram/Discord.
+   * Guarded by an execution lock to prevent overlapping runs.
    */
   async executeSingleRun(triggerType: 'SCHEDULED' | 'MANUAL' = 'SCHEDULED'): Promise<EndToEndRunResult> {
-    this.resetDailyQuotaIfNewDay();
-    this.lastRunTime = new Date().toISOString();
-    this.totalRuns++;
+    if (this.isExecuting && this.inFlightRun) {
+      logger.warn(`[Scheduler] Cycle already in progress. Re-using active run for ${triggerType} trigger.`);
+      return this.inFlightRun;
+    }
 
-    logger.info(
-      `[Scheduler] Executing discovery cycle #${this.totalRuns} (Trigger: ${triggerType}, Sources: ${this.targetSourceTypes.join(', ') || 'ALL'})...`
-    );
-
-    try {
-      const result = await this.orchestrator.runPipeline({
-        triggerType,
-        sourceIds: this.targetSourceTypes.length > 0 ? this.targetSourceTypes : undefined,
-        limitPerSource: this.limitPerSource,
-        minScoreToDraft: this.minScoreToDraft,
-        minScoreToAlert: this.minScoreToAlert,
-      });
-
-      this.dailyQualifiedDiscovered += result.qualifiedCount;
-      this.lastRunResult = result;
+    this.isExecuting = true;
+    this.inFlightRun = (async () => {
+      this.resetDailyQuotaIfNewDay();
+      this.lastRunTime = new Date().toISOString();
+      this.totalRuns++;
 
       logger.info(
-        `[Scheduler] Cycle #${this.totalRuns} completed. Discovered: ${result.scanReport.totalDiscovered}, Qualified: ${result.qualifiedCount}, Drafts: ${result.draftsPrepared}, Alerts Sent: ${result.alertsSent}. (Today: ${this.dailyQualifiedDiscovered}/${this.dailyTarget})`
+        `[Scheduler] Executing discovery cycle #${this.totalRuns} (Trigger: ${triggerType}, Sources: ${this.targetSourceTypes.join(', ') || 'ALL'})...`
       );
 
-      return result;
-    } catch (err: any) {
-      logger.error(`[Scheduler] Cycle #${this.totalRuns} failed: ${err.message || err}`);
-      throw err;
+      try {
+        const result = await this.orchestrator.runPipeline({
+          triggerType,
+          sourceIds: this.targetSourceTypes.length > 0 ? this.targetSourceTypes : undefined,
+          limitPerSource: this.limitPerSource,
+          minScoreToDraft: this.minScoreToDraft,
+          minScoreToAlert: this.minScoreToAlert,
+        });
+
+        this.dailyQualifiedDiscovered += result.qualifiedCount;
+        this.lastRunResult = result;
+
+        logger.info(
+          `[Scheduler] Cycle #${this.totalRuns} completed. Discovered: ${result.scanReport.totalDiscovered}, Qualified: ${result.qualifiedCount}, Drafts: ${result.draftsPrepared}, Alerts Sent: ${result.alertsSent}. (Today: ${this.dailyQualifiedDiscovered}/${this.dailyTarget})`
+        );
+
+        return result;
+      } catch (err: any) {
+        logger.error(`[Scheduler] Cycle #${this.totalRuns} failed: ${err.message || err}`);
+        throw err;
+      } finally {
+        this.isExecuting = false;
+        this.inFlightRun = undefined;
+      }
+    })();
+
+    return this.inFlightRun;
+  }
+
+  /**
+   * Awaits completion of any in-flight execution cycle up to timeoutMs.
+   */
+  async waitForCompletion(timeoutMs = 10000): Promise<void> {
+    if (!this.isExecuting || !this.inFlightRun) return;
+    try {
+      await Promise.race([
+        this.inFlightRun,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Scheduler drain timeout')), timeoutMs)),
+      ]);
+    } catch (err) {
+      logger.warn(`[Scheduler] Drain completed with status: ${err}`);
     }
   }
 
@@ -231,6 +263,7 @@ export class JobScheduler {
 
     return {
       isRunning: this.isRunning,
+      isExecuting: this.isExecuting,
       cronExpression: this.cronExpression,
       preset: this.preset,
       dailyTarget: this.dailyTarget,

@@ -115,4 +115,4 @@ Add test cases in `tests/discovery.test.ts` verifying parsing, payload normaliza
 
 ## 📄 License
 
-By contributing to this repository, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
+By contributing to this repository, you agree that your contributions will be licensed under the project's [Apache License Version 2.0](LICENSE).

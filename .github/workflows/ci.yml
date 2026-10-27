@@ -33,18 +33,22 @@ jobs:
       - name: Gate 3: Secret Leakage & System Path Scan
         run: |
           echo "Scanning for accidental secret or local path leaks..."
-          # Fail if private keys or un-redacted personal emails are tracked in git
+          # Fail if private keys or un-redacted personal credentials are tracked in git
           ! git grep -i "BEGIN RSA PRIVATE KEY" -- ':!*.md'
           ! git grep -i "BEGIN OPENSSH PRIVATE KEY" -- ':!*.md'
           echo "Secret scan passed cleanly."
 
-      - name: Gate 4: Smoke Test Health Probes
+      - name: Gate 4: Production Preflight Check
+        run: npm run preflight
+
+      - name: Gate 5: Smoke Test Health Probes
         run: |
           node --import tsx src/index.ts &
           SERVER_PID=$!
           echo "Waiting for server startup on port 3300..."
           sleep 4
           curl -f http://127.0.0.1:3300/health/live
+          curl -f http://127.0.0.1:3300/health/startup
           curl -f http://127.0.0.1:3300/health/ready
           kill -15 $SERVER_PID
           echo "Smoke test passed successfully."

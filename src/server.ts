@@ -213,9 +213,23 @@ export class ApplicationServer {
         const pathname = url.pathname;
 
         try {
-          // Guard mutating endpoints if API_AUTH_TOKEN is configured
           const isMutating = req.method !== 'GET' && req.method !== 'OPTIONS' && !pathname.startsWith('/oauth2callback');
-          if (isMutating && (config.env === 'production' || config.apiAuthToken)) {
+          const isPublicEndpoint =
+            pathname === '/' ||
+            pathname === '/dashboard' ||
+            pathname === '/index.html' ||
+            pathname === '/favicon.ico' ||
+            pathname.startsWith('/oauth2callback') ||
+            pathname === '/health/live' ||
+            pathname === '/health/ready' ||
+            pathname === '/health/startup' ||
+            pathname === '/api/health';
+
+          // Guard sensitive API endpoints in production or when API_AUTH_TOKEN is configured
+          const requiresAuth = (config.env === 'production' || Boolean(config.apiAuthToken)) &&
+            (!isPublicEndpoint && (isMutating || pathname.startsWith('/api/')));
+
+          if (requiresAuth) {
             const authCheck = validateAuthorization(req, config.apiAuthToken);
             if (!authCheck.authorized) {
               return this.sendJson(res, 401, { error: authCheck.error }, requestId);
@@ -231,9 +245,19 @@ export class ApplicationServer {
             }, requestId);
           }
 
+          if (pathname === '/health/startup') {
+            const isHealthy = this.db.integrityCheck();
+            return this.sendJson(res, isHealthy ? 200 : 503, {
+              status: isHealthy ? 'started' : 'degraded',
+              database: isHealthy ? 'ok' : 'corrupted',
+              timestamp: new Date().toISOString(),
+            }, requestId);
+          }
+
           if (pathname === '/health/ready') {
             try {
-              this.db.getDashboardMetrics();
+              const isDbOk = this.db.integrityCheck();
+              if (!isDbOk) throw new Error('Database integrity check failed');
               return this.sendJson(res, 200, {
                 status: 'ready',
                 database: 'connected',
@@ -244,7 +268,7 @@ export class ApplicationServer {
               return this.sendJson(res, 503, {
                 status: 'not_ready',
                 database: 'disconnected',
-                error: err.message,
+                error: config.env === 'production' ? 'Database check failed' : err.message,
                 timestamp: new Date().toISOString(),
               }, requestId);
             }
@@ -758,9 +782,15 @@ export class ApplicationServer {
           // OAuth 2.0 Callback
           if (pathname === '/oauth2callback') {
             const code = url.searchParams.get('code');
+            const state = url.searchParams.get('state');
             const error = url.searchParams.get('error');
             if (error) {
               res.writeHead(302, { Location: `/?auth=error&message=${encodeURIComponent(error)}` });
+              return res.end();
+            }
+            if (!this.googleOAuthManager.validateState(state || undefined)) {
+              logger.warn(`OAuth CSRF defense: rejected invalid or expired state token "${state}"`);
+              res.writeHead(302, { Location: `/?auth=error&message=${encodeURIComponent('Invalid or expired OAuth state parameter')}` });
               return res.end();
             }
             if (!code) {
@@ -1360,17 +1390,22 @@ export class ApplicationServer {
           }
 
           if (pathname.startsWith('/api/resumes/')) {
-            const fileName = basename(pathname.replace('/api/resumes/', ''));
+            const rawFileName = pathname.replace('/api/resumes/', '');
+            const fileName = basename(rawFileName);
+            if (!/^[a-zA-Z0-9_\-\.]+\.(pdf|md)$/.test(fileName)) {
+              return this.sendJson(res, 400, { error: 'Invalid resume file format' }, requestId);
+            }
             const filePath = join(process.cwd(), 'data', 'resumes', 'tailored', fileName);
             if (!existsSync(filePath)) {
-              return this.sendJson(res, 404, { error: 'Resume file not found' });
+              return this.sendJson(res, 404, { error: 'Resume file not found' }, requestId);
             }
             const isPdf = fileName.endsWith('.pdf');
             const data = readFileSync(filePath);
             res.writeHead(200, {
               'Content-Type': isPdf ? 'application/pdf' : 'text/markdown; charset=utf-8',
               'Content-Disposition': `inline; filename="${fileName}"`,
-              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Origin': config.corsOrigin || 'null',
+              ...SECURITY_HEADERS,
             });
             return res.end(data);
           }
@@ -1399,10 +1434,24 @@ export class ApplicationServer {
   }
 
   stop(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       this.scheduler.stop();
+      try {
+        await this.scheduler.waitForCompletion(3000);
+      } catch {}
+
       if (this.server) {
+        if (typeof (this.server as any).closeIdleConnections === 'function') {
+          (this.server as any).closeIdleConnections();
+        }
+        const forceTimeout = setTimeout(() => {
+          if (typeof (this.server as any).closeAllConnections === 'function') {
+            (this.server as any).closeAllConnections();
+          }
+        }, 5000);
+
         this.server.close(() => {
+          clearTimeout(forceTimeout);
           this.db.close();
           resolve();
         });

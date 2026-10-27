@@ -25,7 +25,11 @@ export function validateSafeUrl(urlString: string): URL {
     throw new Error(`Prohibited protocol '${parsed.protocol}'. Only HTTP and HTTPS are permitted.`);
   }
 
-  const hostname = parsed.hostname.toLowerCase();
+  // Strip brackets from IPv6 hostnames (e.g. [::1] -> ::1)
+  let hostname = parsed.hostname.toLowerCase();
+  if (hostname.startsWith('[') && hostname.endsWith(']')) {
+    hostname = hostname.slice(1, -1);
+  }
 
   // Prohibit loopback and standard localhost variants
   if (
@@ -33,9 +37,12 @@ export function validateSafeUrl(urlString: string): URL {
     hostname === '127.0.0.1' ||
     hostname === '::1' ||
     hostname === '0.0.0.0' ||
+    hostname === '::' ||
     hostname.endsWith('.localhost') ||
     hostname.endsWith('.local') ||
-    hostname.endsWith('.internal')
+    hostname.endsWith('.internal') ||
+    hostname.endsWith('.lan') ||
+    hostname.endsWith('.corp')
   ) {
     throw new Error(`SSRF Protection: Requests to local/internal destination '${hostname}' are blocked.`);
   }
@@ -49,13 +56,42 @@ export function validateSafeUrl(urlString: string): URL {
     throw new Error(`SSRF Protection: Access to cloud instance metadata service is strictly blocked.`);
   }
 
+  // Check IPv6 link-local (fe80:), unique local (fc00:/fd00:)
+  if (
+    hostname.startsWith('fe80:') ||
+    hostname.startsWith('fc00:') ||
+    hostname.startsWith('fd00:')
+  ) {
+    throw new Error(`SSRF Protection: Private/Link-local IPv6 address '${hostname}' is blocked.`);
+  }
+
+  // Check IPv4-mapped IPv6 (::ffff:x.x.x.x or ::ffff:hex)
+  if (hostname.startsWith('::ffff:')) {
+    throw new Error(`SSRF Protection: IPv4-mapped IPv6 address '${hostname}' is blocked.`);
+  }
+
+  // Check numeric decimal or octal/hex IP representation (e.g., 2130706433 or 0x7f000001)
+  if (/^(?:0x[0-9a-f]+|\d+)$/i.test(hostname)) {
+    throw new Error(`SSRF Protection: Numeric/Hex integer IP notation '${hostname}' is blocked.`);
+  }
+
   // Parse numeric IPv4 to check RFC 1918 private IP ranges
   const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
   const match = hostname.match(ipv4Regex);
   if (match) {
     const octet1 = parseInt(match[1], 10);
     const octet2 = parseInt(match[2], 10);
+    const octet3 = parseInt(match[3], 10);
+    const octet4 = parseInt(match[4], 10);
 
+    if ([octet1, octet2, octet3, octet4].some(o => o < 0 || o > 255)) {
+      throw new Error(`SSRF Protection: Invalid IPv4 octets in '${hostname}'.`);
+    }
+
+    // 0.0.0.0/8 current network
+    if (octet1 === 0) {
+      throw new Error(`SSRF Protection: Zero address range 0.0.0.0/8 blocked.`);
+    }
     // 10.0.0.0/8
     if (octet1 === 10) {
       throw new Error(`SSRF Protection: Private IP range 10.0.0.0/8 blocked.`);
@@ -131,6 +167,7 @@ export abstract class BaseSourceConnector implements IJobSourceConnector {
       try {
         const response = await fetch(validatedUrl.toString(), {
           ...init,
+          redirect: 'error',
           signal: controller.signal,
           headers: {
             'User-Agent': 'JobDiscoveryPlatform/2.0 (Open-Source AI Job Discovery; +https://github.com)',

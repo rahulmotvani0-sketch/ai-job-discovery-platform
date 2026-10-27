@@ -1,23 +1,41 @@
 [Unit]
-Description=JOB DISCOVERY AI - Autonomous Platform Service
+Description=Job Discovery and Application Automation Platform
+Documentation=https://github.com/rahulmotvani0-sketch/ai-job-discovery-platform
 After=network.target
 
 [Service]
 Type=simple
-# Replace with your system username and repository path
-User=your_username
-WorkingDirectory=/path/to/ai-job-discovery-platform
+# Dedicated unprivileged system user and group
+User=jobplatform
+Group=jobplatform
+WorkingDirectory=/opt/job-platform
+ExecStartPre=/usr/bin/node /opt/job-platform/scripts/preflight-check.mjs
 ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=10
+TimeoutStopSec=30
+
+# Environment Configuration
+EnvironmentFile=-/opt/job-platform/.env
 Environment=NODE_ENV=production
 Environment=PORT=3300
 Environment=HOST=127.0.0.1
 
-# Security Hardening
-ProtectSystem=full
+# Security Hardening & Sandbox
+ProtectSystem=strict
+ProtectHome=true
 NoNewPrivileges=true
 PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/opt/job-platform/data /opt/job-platform/logs /opt/job-platform/backups
+
+# Resource Limits
+LimitNOFILE=65536
+MemoryMax=1G
+CPUQuota=200%
 
 [Install]
 WantedBy=multi-user.target

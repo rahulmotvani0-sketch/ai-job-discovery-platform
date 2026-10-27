@@ -240,8 +240,10 @@ export class MasterOrchestrator {
    * User approval action: Sends an approved application through the Gmail API.
    */
   async approveAndSend(draftId: string, actor: string = 'authorized_user', sendingAccountId?: string): Promise<ApplicationSubmission> {
-    // 1. Change status to APPROVED and associate chosen account
-    this.gatekeeper.approveDraft(draftId, actor, sendingAccountId);
+    // 1. Transactionally change status to APPROVED and associate chosen account
+    this.db.transaction(() => {
+      this.gatekeeper.approveDraft(draftId, actor, sendingAccountId);
+    });
 
     // 2. Transmit via GmailService (enforces security check)
     const { messageId, threadId } = await this.gmailService.sendApprovedApplication(draftId, this.gatekeeper);
