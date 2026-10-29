@@ -1,0 +1,42 @@
+services:
+  job-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job-discovery-platform
+    restart: unless-stopped
+    ports:
+      - "3300:3300"
+    environment:
+      - NODE_ENV=production
+      - PORT=3300
+      - HOST=0.0.0.0
+      - DATA_DIR=/app/data
+      - DB_PATH=/app/data/job_platform.db
+      - OLLAMA_ENDPOINT=http://ollama:11434
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    depends_on:
+      ollama:
+        condition: service_started
+        required: false
+
+  # Optional local AI inference container (zero cloud cost & total privacy)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: job-platform-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    profiles:
+      - ai
+
+volumes:
+  ollama_data:

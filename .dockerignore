@@ -1,0 +1,12 @@
+node_modules
+dist
+data/*.db*
+data/google_tokens.json
+data/resumes/tailored/*
+logs/*
+backups/*
+.env
+.env.local
+.git
+.github
+graphify-out

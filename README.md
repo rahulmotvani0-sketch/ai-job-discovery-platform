@@ -1,6 +1,7 @@
 # Autonomous Job Discovery & Application Automation Platform
+### The Autonomous Career Command Center for Job Seekers & Tech Professionals
 
-A production-grade, local-first, privacy-respecting autonomous job discovery and application platform for software engineers, DevOps/SREs, and technology professionals.
+> 🎯 **Built Exclusively for Candidates & Job Seekers**: This platform is your personal, local-first career copilot—**NOT** an enterprise recruiter or HR screening tool. It runs locally on your machine to find top roles across major ATS systems, tailor resumes to your verified achievements with zero hallucinations, gate every email submission behind your personal approval, and help you negotiate and interview with incoming recruiters.
 
 Built with a local-first philosophy, the platform combines direct multi-source ATS connectors, semantic AI matching, automated ATS resume tailoring, scheduled background discovery, and **strict human-in-the-loop approval gates** before transmitting any external communication.
 
@@ -165,6 +166,15 @@ The platform exposes four unauthenticated observability endpoints:
   ```bash
   bash scripts/restore.sh ./backups/YYYYMMDD_HHMMSS
   ```
+
+---
+
+## 📚 Guides & Documentation
+
+- **[Candidate & Job Seeker Operating Guide](docs/JOB_SEEKER_GUIDE.md)**: Complete step-by-step walkthrough covering profile configuration, ATS discovery, fact-grounded resume tailoring, human-in-the-loop approvals, and recruiter interview prep.
+- **[System Architecture Specification](docs/ARCHITECTURE.md)**: Deep dive into the local-first engine, security gates, persistence layer, and connector rate limiting.
+- **[Google OAuth Workspace Setup](docs/GOOGLE_OAUTH_SETUP_GUIDE.md)**: Instructions for connecting personal Gmail, Google Drive, and Google Sheets integrations securely.
+- **[Ubuntu / Linux Production Deployment](docs/UBUNTU_DEPLOYMENT.md)**: Systemd service configuration, unprivileged execution, and security sandboxing.
 
 ---
 
