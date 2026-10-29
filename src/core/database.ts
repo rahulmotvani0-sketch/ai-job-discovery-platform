@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, existsSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { logger } from './logger.js';
 import type { 
   Vacancy, 
@@ -633,10 +633,14 @@ export class DatabaseManager {
 
   // Vacancies
   insertOrUpdateVacancy(vacancy: Vacancy): { inserted: boolean; isNew: boolean; id: string; vacancy: Vacancy } {
-    const existing = this.getVacancyByCanonicalHash(vacancy.canonicalHash);
+    const vAny = vacancy as any;
+    const company = vacancy.companyName || vAny.company || 'Unknown Company';
+    const title = vacancy.title || 'Unknown Title';
+    const canonicalHash = vacancy.canonicalHash || createHash('sha256').update(`${company.toLowerCase().trim()}:${title.toLowerCase().trim()}`).digest('hex');
+    const existing = this.getVacancyByCanonicalHash(canonicalHash);
     if (existing) {
       // Update alternate URLs and verification time
-      const mergedUrls = Array.from(new Set([...existing.alternateUrls, vacancy.sourceUrl, ...vacancy.alternateUrls]));
+      const mergedUrls = Array.from(new Set([...existing.alternateUrls, vacancy.sourceUrl, ...(vacancy.alternateUrls || [])]));
       const updateStmt = this.db.prepare(`
         UPDATE vacancies SET
           alternate_urls = ?,
@@ -671,26 +675,26 @@ export class DatabaseManager {
     try {
       stmt.run(
         vacancy.id,
-        vacancy.canonicalHash,
-        vacancy.sourceType,
-        vacancy.sourceUrl,
+        canonicalHash,
+        vacancy.sourceType || 'manual',
+        vacancy.sourceUrl || '',
         JSON.stringify(vacancy.alternateUrls || []),
-        vacancy.companyName,
-        vacancy.title,
-        vacancy.normalizedTitle,
-        vacancy.locationText,
+        company,
+        title,
+        vacancy.normalizedTitle || title.toLowerCase(),
+        vacancy.locationText || vAny.location || 'Remote',
         vacancy.isRemote ? 1 : 0,
         vacancy.acceptsIndia ? 1 : 0,
-        vacancy.employmentType,
+        vacancy.employmentType || 'FULL_TIME',
         vacancy.salaryMin ?? null,
         vacancy.salaryMax ?? null,
-        vacancy.currency ?? null,
-        vacancy.rawDescription,
+        vacancy.currency ?? 'USD',
+        vacancy.rawDescription || vAny.description || '',
         vacancy.parsedRequirements ? JSON.stringify(vacancy.parsedRequirements) : null,
-        vacancy.publishedAt,
-        vacancy.discoveredAt,
-        vacancy.lastVerifiedAt,
-        vacancy.status,
+        vacancy.publishedAt || vAny.postedAt || new Date().toISOString(),
+        vacancy.discoveredAt || new Date().toISOString(),
+        vacancy.lastVerifiedAt || new Date().toISOString(),
+        vacancy.status || 'QUALIFIED',
         vacancy.isContractOrFreelance ? 1 : 0,
         vacancy.isEarlyApplicant ? 1 : 0,
         vacancy.isSaved ? 1 : 0,
@@ -785,7 +789,8 @@ export class DatabaseManager {
     return Number(res.changes);
   }
 
-  getVacancyByCanonicalHash(canonicalHash: string): Vacancy | null {
+  getVacancyByCanonicalHash(canonicalHash?: string): Vacancy | null {
+    if (!canonicalHash) return null;
     const stmt = this.db.prepare('SELECT * FROM vacancies WHERE canonical_hash = ?');
     const row = stmt.get(canonicalHash) as any;
     if (!row) return null;
@@ -995,14 +1000,14 @@ export class DatabaseManager {
       draft.vacancyId,
       draft.sendingAccountId ?? null,
       draft.recipientEmail,
-      draft.subjectLine,
-      draft.emailBody,
+      draft.subjectLine || (draft as any).subject || 'Application',
+      draft.emailBody || (draft as any).bodyText || '',
       draft.coverLetter ?? null,
-      draft.tailoredResumePath,
+      draft.tailoredResumePath || '',
       draft.tailoredPdfPath ?? null,
       draft.screeningAnswers ? JSON.stringify(draft.screeningAnswers) : null,
-      draft.status,
-      draft.createdAt,
+      draft.status || 'AWAITING_APPROVAL',
+      draft.createdAt || new Date().toISOString(),
       draft.reviewedAt ?? null,
       draft.notes ?? null
     );
@@ -1053,18 +1058,19 @@ export class DatabaseManager {
       INSERT INTO application_submissions (id, draft_id, vacancy_id, sent_at, approved_by, channel, gmail_message_id, gmail_thread_id, status, sheets_row_index, audit_hash)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+    const sAny = submission as any;
     stmt.run(
       submission.id,
       submission.draftId,
-      submission.vacancyId,
-      submission.sentAt,
-      submission.approvedBy,
-      submission.channel,
-      submission.gmailMessageId ?? null,
-      submission.gmailThreadId ?? null,
+      submission.vacancyId || 'unknown_vac',
+      submission.sentAt || sAny.submittedAt || new Date().toISOString(),
+      submission.approvedBy || 'authorized_user',
+      submission.channel || 'GMAIL_API',
+      submission.gmailMessageId ?? sAny.messageId ?? null,
+      submission.gmailThreadId ?? sAny.threadId ?? null,
       submission.status || 'SENT',
       submission.sheetsRowIndex ?? null,
-      submission.auditHash
+      submission.auditHash || 'audit_hash'
     );
 
     // Update draft and vacancy status
@@ -1121,18 +1127,25 @@ export class DatabaseManager {
         sent_reply_at = COALESCE(excluded.sent_reply_at, recruiter_interactions.sent_reply_at),
         reply_message_id = COALESCE(excluded.reply_message_id, recruiter_interactions.reply_message_id)
     `);
+    const threadId = interaction.threadId || `thread_${interaction.id}`;
+    const messageId = interaction.messageId || `msg_${interaction.id}`;
+    const senderEmail = interaction.senderEmail || 'recruiter@example.com';
+    const subject = interaction.subject || 'Recruiter Communication';
+    const snippet = interaction.snippet || '';
+    const receivedAt = interaction.receivedAt || new Date().toISOString();
+
     stmt.run(
       interaction.id,
-      interaction.submissionId || null,
-      interaction.threadId,
-      interaction.messageId,
-      interaction.senderEmail,
-      interaction.subject,
-      interaction.snippet,
-      interaction.detectedIntent,
+      interaction.submissionId ?? null,
+      threadId,
+      messageId,
+      senderEmail,
+      subject,
+      snippet,
+      interaction.detectedIntent ?? 'OTHER',
       interaction.actionRequired ? 1 : 0,
       interaction.actionDetails ?? null,
-      interaction.receivedAt,
+      receivedAt,
       interaction.companyName ?? null,
       interaction.jobTitle ?? null,
       interaction.candidateAvailabilityOptions ? JSON.stringify(interaction.candidateAvailabilityOptions) : null,
@@ -1265,16 +1278,16 @@ export class DatabaseManager {
       draft.interactionId,
       draft.submissionId ?? null,
       draft.recipientEmail,
-      draft.companyName,
-      draft.jobTitle,
-      draft.intent,
+      draft.companyName || (draft as any).company || 'Company',
+      draft.jobTitle || 'Role',
+      draft.intent || 'INTERVIEW_INVITATION',
       draft.subject,
       draft.body,
       JSON.stringify(draft.suggestedSlots || []),
       draft.status,
       draft.approvedAt ?? null,
       draft.sentAt ?? null,
-      draft.createdAt,
+      draft.createdAt || new Date().toISOString(),
       draft.updatedAt ?? new Date().toISOString()
     );
   }

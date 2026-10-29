@@ -37,7 +37,7 @@
    - **Problem:** Disconnecting an account simply updated `status = 'DISCONNECTED'`. However, `is_primary` was not reassigned if the disconnected account was primary. In `public/index.html:3383`, the account card still rendered with a green status pill and maintained the "Disconnect" and "Sync" action buttons.
 2. **Unauthenticated Fake Account State:**
    - **Location:** `data/job_platform.db` (table `connected_accounts`)
-   - **Problem:** Contained 3 seeded accounts (`motvanirahul98@gmail.com`, `rahul.recruitment@gmail.com`, `rahulmotvani0@gmail.com`) with `access_token = NULL` and `refresh_token = NULL`, yet falsely marked as `CONNECTED`.
+   - **Problem:** Contained 3 seeded accounts (`candidate.primary@example.com`, `candidate.recruitment@example.com`, `candidate.secondary@example.com`) with `access_token = NULL` and `refresh_token = NULL`, yet falsely marked as `CONNECTED`.
 3. **No Remote Token Revocation:**
    - **Location:** `src/integrations/google/oauth.ts`
    - **Problem:** Lacked `revokeToken()` calling `https://oauth2.googleapis.com/revoke` to invalidate Google OAuth sessions upon disconnection.

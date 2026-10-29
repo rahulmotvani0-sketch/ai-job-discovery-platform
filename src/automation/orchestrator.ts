@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { logger } from '../core/logger.js';
+import { config, loadConfig } from '../config/index.js';
 import type { DatabaseManager } from '../core/database.js';
 import type { DiscoveryManager, DiscoveryScanReport } from '../discovery/connectors/manager.js';
 import type { ModelRouter } from '../ai/providers/router.js';
@@ -238,8 +239,42 @@ export class MasterOrchestrator {
 
   /**
    * User approval action: Sends an approved application through the Gmail API.
+   * Guarded by APPLICATION_SUBMISSION_ENABLED and simulated in demo mode.
    */
   async approveAndSend(draftId: string, actor: string = 'authorized_user', sendingAccountId?: string): Promise<ApplicationSubmission> {
+    const currentConfig = loadConfig();
+
+    // Demo mode: simulate submission safely without invoking external APIs
+    if (currentConfig.appMode === 'demo') {
+      logger.info(`[Demo Mode] Application draft ${draftId} approval simulated without external transmission.`);
+      this.db.transaction(() => {
+        this.gatekeeper.approveDraft(draftId, actor, sendingAccountId);
+      });
+      const draft = this.db.getApplicationDraftById(draftId)!;
+      const simSubmission: ApplicationSubmission = {
+        id: randomUUID(),
+        draftId,
+        vacancyId: draft?.vacancyId || 'unknown_vac',
+        channel: 'GMAIL_API',
+        approvedBy: actor,
+        sentAt: new Date().toISOString(),
+        gmailMessageId: `demo_msg_${Date.now()}`,
+        gmailThreadId: `demo_thread_${Date.now()}`,
+        status: 'SENT',
+        auditHash: 'demo_audit_hash',
+      };
+      this.db.saveSubmission(simSubmission);
+      return simSubmission;
+    }
+
+    // Safety gate: explicitly reject if submission is not enabled
+    if (!currentConfig.applicationSubmissionEnabled) {
+      throw new Error(
+        'Application submission is disabled (APPLICATION_SUBMISSION_ENABLED=false). ' +
+        'Set APPLICATION_SUBMISSION_ENABLED=true in your environment to permit sending applications.'
+      );
+    }
+
     // 1. Transactionally change status to APPROVED and associate chosen account
     this.db.transaction(() => {
       this.gatekeeper.approveDraft(draftId, actor, sendingAccountId);

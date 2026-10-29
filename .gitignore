@@ -12,15 +12,12 @@ dist/
 build/
 *.tsbuildinfo
 
-# SQLite databases & data files
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
-data/*test*.db
-data/*test*.json
-data/google_tokens.json
-data/resumes/tailored/
+# SQLite databases & private candidate files
+data/*
+!data/.gitkeep
+*.pdf
+*.docx
+*.rtf
 
 # Backups
 backups/

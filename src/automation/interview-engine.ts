@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { logger } from '../core/logger.js';
+import { config, loadConfig } from '../config/index.js';
 import type { DatabaseManager } from '../core/database.js';
 import type { IGmailService } from '../integrations/google/gmail.js';
 import { AlertNotificationManager } from '../notifications/alert-manager.js';
@@ -453,6 +454,35 @@ export class InterviewSchedulingEngine {
     const interaction = this.db.getRecruiterInteractionById(draft.interactionId);
     const threadId = interaction?.threadId;
     const inReplyToMessageId = interaction?.messageId;
+
+    const currentConfig = loadConfig();
+
+    // Demo mode: simulate follow-up reply without invoking external APIs
+    if (currentConfig.appMode === 'demo') {
+      logger.info(`[Demo Mode] Interview follow-up draft ${draftId} approval simulated without external transmission.`);
+      this.db.updateInterviewFollowUpDraft(draftId, {
+        subject,
+        body,
+        suggestedSlots,
+        status: 'SENT',
+        sentAt: new Date().toISOString(),
+      });
+      const updatedDraft = this.db.getInterviewFollowUpDraftById(draftId)!;
+      return {
+        success: true,
+        messageId: `demo_interview_msg_${Date.now()}`,
+        threadId: threadId || `demo_thread_${Date.now()}`,
+        draft: updatedDraft,
+      };
+    }
+
+    // Safety gate: explicitly reject if submission is not enabled
+    if (!currentConfig.applicationSubmissionEnabled) {
+      throw new Error(
+        'Email response transmission is disabled (APPLICATION_SUBMISSION_ENABLED=false). ' +
+        'Set APPLICATION_SUBMISSION_ENABLED=true in your environment to permit sending emails.'
+      );
+    }
 
     // Transmit via Gmail API
     let sentResult = { messageId: `msg_${Date.now()}`, threadId: threadId || `thread_${Date.now()}` };

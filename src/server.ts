@@ -295,7 +295,9 @@ export class ApplicationServer {
             return this.sendJson(res, 200, {
               status: 'healthy',
               timestamp: new Date().toISOString(),
-              version: '1.1.0',
+              version: '1.2.0',
+              appMode: config.appMode,
+              applicationSubmissionEnabled: config.applicationSubmissionEnabled,
               scheduler: this.scheduler.getStatus(),
               inferenceMode: this.router.getMode(),
             }, requestId);
@@ -1427,10 +1429,70 @@ export class ApplicationServer {
       });
 
       this.server.listen(this.port, this.host, () => {
-        logger.info(`Job Discovery Platform running at http://${this.host}:${this.port}`);
+        logger.info(`Job Discovery Platform running at http://${this.host}:${this.port} [Mode: ${config.appMode.toUpperCase()}]`);
+        if (config.appMode === 'demo') {
+          this.seedDemoDataIfEmpty();
+        }
+        if (config.hourlyDiscovery) {
+          this.scheduler.start();
+        }
         resolve();
       });
     });
+  }
+
+  private seedDemoDataIfEmpty(): void {
+    if (config.appMode !== 'demo' || config.env === 'test') return;
+    try {
+      // 1. Seed demo profile if none exists
+      if (!this.db.getUserProfile()) {
+        const demoProfilePath = join(process.cwd(), 'examples', 'demo-profile.json');
+        if (existsSync(demoProfilePath)) {
+          const demoProfile = JSON.parse(readFileSync(demoProfilePath, 'utf-8'));
+          this.db.saveUserProfile(demoProfile);
+          logger.info('[Demo Mode] Seeded synthetic candidate profile for Alex Chen.');
+        }
+      }
+
+      // 2. Seed mock vacancies if database is empty
+      if (this.db.listVacancies().length === 0) {
+        const mockVacanciesPath = join(process.cwd(), 'examples', 'mock-data', 'mock-vacancies.json');
+        if (existsSync(mockVacanciesPath)) {
+          const mockVacancies = JSON.parse(readFileSync(mockVacanciesPath, 'utf-8'));
+          for (const v of mockVacancies) {
+            this.db.insertOrUpdateVacancy(v);
+          }
+          logger.info(`[Demo Mode] Seeded ${mockVacancies.length} synthetic job vacancies.`);
+        }
+      }
+
+      // 3. Seed mock recruiter replies if empty
+      if (this.db.listRecruiterInteractions().length === 0) {
+        const mockRepliesPath = join(process.cwd(), 'examples', 'mock-data', 'mock-recruiter-replies.json');
+        if (existsSync(mockRepliesPath)) {
+          const mockReplies = JSON.parse(readFileSync(mockRepliesPath, 'utf-8'));
+          for (const r of mockReplies) {
+            this.db.saveRecruiterInteraction({
+              id: r.id,
+              submissionId: `sub_${r.id}`,
+              senderEmail: r.recruiterEmail,
+              companyName: r.company,
+              subject: r.subject,
+              snippet: r.snippet,
+              detectedIntent: r.detectedIntent,
+              receivedAt: r.receivedAt,
+              threadId: `thread_${r.id}`,
+              messageId: `msg_${r.id}`,
+              actionRequired: true,
+              replyStatus: 'NONE',
+            });
+          }
+          logger.info(`[Demo Mode] Seeded ${mockReplies.length} synthetic recruiter replies.`);
+        }
+      }
+    } catch (err: any) {
+      logger.warn(`[Demo Mode] Could not seed synthetic demo dataset: ${err.message}`);
+    }
   }
 
   stop(): Promise<void> {

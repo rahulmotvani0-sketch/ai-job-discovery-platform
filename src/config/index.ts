@@ -8,8 +8,10 @@ const EXAMPLE_ENV_PATH = join(process.cwd(), '.env.example');
 
 export interface AppConfig {
   env: 'development' | 'production' | 'test';
+  appMode: 'demo' | 'personal' | 'production';
   dataDir: string;
   dbPath: string;
+  customResumePath?: string;
   // Local LLM
   ollamaEndpoint: string;
   ollamaModel: string;
@@ -26,6 +28,7 @@ export interface AppConfig {
   dailyTargetQualified: number;
   hourlyDiscovery: boolean;
   minMatchScore: number;
+  applicationSubmissionEnabled: boolean;
   // Google Integration
   googleClientId?: string;
   googleClientSecret?: string;
@@ -82,6 +85,21 @@ export function loadConfig(customEnvPath?: string): AppConfig {
     throw new Error(`Invalid NODE_ENV: ${env}`);
   }
 
+  const rawAppMode = process.env.APP_MODE?.trim().toLowerCase();
+  const defaultMode: AppConfig['appMode'] = env === 'production' ? 'production' : (env === 'test' ? 'personal' : 'demo');
+  const appMode: AppConfig['appMode'] = (rawAppMode as any) || defaultMode;
+  if (!['demo', 'personal', 'production'].includes(appMode)) {
+    throw new Error(`Invalid APP_MODE: ${process.env.APP_MODE}. Must be 'demo', 'personal', or 'production'.`);
+  }
+
+  // Application submission gate: strictly disabled in demo mode; requires explicit opt-in in personal/production.
+  const applicationSubmissionEnabled = appMode !== 'demo' && (
+    env === 'test'
+      ? process.env.APPLICATION_SUBMISSION_ENABLED !== 'false'
+      : process.env.APPLICATION_SUBMISSION_ENABLED === 'true'
+  );
+  const customResumePath = process.env.CUSTOM_RESUME_PATH?.trim() || undefined;
+
   const apiAuthToken = process.env.API_AUTH_TOKEN?.trim() || undefined;
   if (env === 'production' && (!apiAuthToken || apiAuthToken.length < 32)) {
     throw new Error('API_AUTH_TOKEN must be configured with at least 32 characters in production');
@@ -107,8 +125,10 @@ export function loadConfig(customEnvPath?: string): AppConfig {
 
   return {
     env,
+    appMode,
     dataDir,
     dbPath,
+    customResumePath,
     ollamaEndpoint: process.env.OLLAMA_ENDPOINT || 'http://127.0.0.1:11434',
     ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
     ollamaEmbeddingModel: process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text:latest',
@@ -122,6 +142,7 @@ export function loadConfig(customEnvPath?: string): AppConfig {
     dailyTargetQualified: parseInteger(process.env.DAILY_TARGET_QUALIFIED, 10, 1),
     hourlyDiscovery: process.env.HOURLY_DISCOVERY === 'true',
     minMatchScore: parseInteger(process.env.MIN_MATCH_SCORE, 70, 0, 100),
+    applicationSubmissionEnabled,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3300/oauth2callback',
