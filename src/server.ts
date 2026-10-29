@@ -23,6 +23,12 @@ import { listAllConnectorCapabilities } from './discovery/capabilities.js';
 import { config } from './config/index.js';
 import { GoogleOAuthManager } from './integrations/google/oauth.js';
 import {
+  GLOBAL_PORTALS_REGISTRY,
+  getGlobalPortalsSummary,
+  getGlobalPortalsByCategory,
+  getGlobalPortalsByCountry,
+} from './discovery/registry/global-directory.js';
+import {
   SECURITY_HEADERS,
   InMemoryRateLimiter,
   extractClientIp,
@@ -521,6 +527,40 @@ export class ApplicationServer {
               hourlyDiscoveryEnabled: enabled,
               schedulerStatus: this.scheduler.getStatus(),
             });
+          }
+
+          // Master Global Directory of Job Portals (13 Source-Type Groups)
+          if (pathname === '/api/discovery/directory' && req.method === 'GET') {
+            const group = url.searchParams.get('group') as any;
+            const country = url.searchParams.get('country') || undefined;
+            const search = url.searchParams.get('search') || undefined;
+            const status = url.searchParams.get('status') || undefined;
+
+            let portals = [...GLOBAL_PORTALS_REGISTRY];
+            if (group) {
+              portals = portals.filter(p => p.category === group);
+            }
+            if (country) {
+              const cUpper = country.toUpperCase();
+              portals = portals.filter(p => p.countries.includes(cUpper) || p.countries.includes('GLOBAL'));
+            }
+            if (status) {
+              portals = portals.filter(p => p.connectorStatus === status);
+            }
+            if (search) {
+              const sLower = search.toLowerCase();
+              portals = portals.filter(p => 
+                p.portalName.toLowerCase().includes(sLower) || 
+                p.supportedRoles.some(r => r.toLowerCase().includes(sLower)) ||
+                p.termsRestrictions.toLowerCase().includes(sLower)
+              );
+            }
+
+            return this.sendJson(res, 200, {
+              total: portals.length,
+              summary: getGlobalPortalsSummary(),
+              portals,
+            }, requestId);
           }
 
           // Global Discovery Source Registry & Coverage Endpoints

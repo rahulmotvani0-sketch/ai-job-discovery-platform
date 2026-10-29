@@ -144,3 +144,39 @@ export interface SourceRegistrySummary {
   regionsCovered: string[];
   lastGlobalSyncAt?: string;
 }
+
+export type GlobalPortalCategoryGroup =
+  | 'GLOBAL_GENERAL'
+  | 'TECH_STARTUP'
+  | 'REMOTE_WORK'
+  | 'FREELANCE_CONTRACT'
+  | 'INDIA'
+  | 'US_CANADA'
+  | 'UK_IRELAND'
+  | 'EUROPE'
+  | 'ASIA_PACIFIC'
+  | 'MIDDLE_EAST_AFRICA'
+  | 'LATIN_AMERICA'
+  | 'PUBLIC_NONPROFIT'
+  | 'DIRECT_ATS';
+
+export interface GlobalPortalRegistryEntry {
+  portalName: string;
+  category: GlobalPortalCategoryGroup;
+  countries: string[];
+  supportedRoles: string[];
+  officialApiOrFeedUrl: string;
+  authenticationRequirement: SourceAuthRequirement;
+  rateLimits: {
+    requestsPerMinute?: number;
+    burstLimit?: number;
+  };
+  termsRestrictions: string;
+  connectorStatus: SourceImplementationStatus;
+  lastSuccessfulSync: string | null;
+  attributionRequirement: {
+    required: boolean;
+    text: string;
+    url?: string;
+  };
+}
