@@ -1,10 +1,54 @@
 import { logger } from '../../core/logger.js';
-import type { IJobSourceConnector } from './types.js';
 import type { RawJobPayload } from '../../types/index.js';
+import type { ConnectorHealthCheckResult, JobSourceCategory } from '../registry/types.js';
+import { BaseSourceConnector } from './base.js';
 
-export class RemoteOkConnector implements IJobSourceConnector {
+export class RemoteOkConnector extends BaseSourceConnector {
+  readonly sourceId = 'remoteok';
   readonly name = 'RemoteOK';
   readonly sourceType = 'remoteok';
+  readonly category: JobSourceCategory = 'REMOTE_EMPLOYMENT';
+  readonly officialUrl = 'https://remoteok.com';
+
+  override readonly countriesAndRegions = {
+    countries: ['GLOBAL'],
+    regions: ['Worldwide'],
+  };
+  override readonly authRequirements = {
+    type: 'NONE' as const,
+    description: 'Public legal JSON endpoint',
+  };
+  override readonly usageRestrictions = 'Public RemoteOK feed. Respect published rate limits and caching headers.';
+  override get attribution() {
+    return {
+      required: true,
+      text: 'Jobs provided by RemoteOK',
+      url: 'https://remoteok.com',
+    };
+  }
+
+  validateConfig(): { valid: boolean; missingVars: string[] } {
+    return { valid: true, missingVars: [] };
+  }
+
+  async healthCheck(): Promise<ConnectorHealthCheckResult> {
+    try {
+      const resp = await this.safeFetch('https://remoteok.com/api', undefined, 5000);
+      return {
+        sourceId: this.sourceId,
+        healthy: resp.ok,
+        message: resp.ok ? 'RemoteOK API reachable' : `HTTP ${resp.status}`,
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        sourceId: this.sourceId,
+        healthy: false,
+        message: `Health check failed: ${err.message}`,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+  }
 
   async fetchVacancies(options?: { tags?: string[]; limit?: number }): Promise<RawJobPayload[]> {
     const limit = options?.limit ?? 25;
@@ -12,21 +56,8 @@ export class RemoteOkConnector implements IJobSourceConnector {
     logger.info(`Fetching vacancies from RemoteOK API (${url})...`);
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-
-      const resp = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-        },
-      });
-      clearTimeout(timer);
-
-      if (!resp.ok) {
-        throw new Error(`RemoteOK responded with status ${resp.status}`);
-      }
+      const resp = await this.safeFetch(url, undefined, 12000);
+      this.lastSuccessfulSync = new Date().toISOString();
 
       const data = await resp.json() as any[];
       // First item in RemoteOK array is often legal / metadata

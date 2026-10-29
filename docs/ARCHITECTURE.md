@@ -12,11 +12,13 @@
 The **JOB DISCOVERY AI - Autonomous Platform** is an enterprise-grade, local-first system designed to autonomously discover, verify, score, tailor, and track high-quality job opportunities for IT and tech professionals across engineering disciplines.
 
 ### Core Principles
-1. **Local-First & Resource-Efficient**: Runs natively on Ubuntu without requiring high-end GPU hardware. Local models run via CPU/GPU-friendly Ollama (`qwen2.5:7b`, `llama3.2:1b`, `nomic-embed-text`), backed by configurable cloud LLMs.
-2. **Absolute Factual Integrity**: The system never hallucinates credentials, employment dates, certifications, or technical capabilities. Every statement in a tailored resume or cover letter must link directly to verified evidence from the authoritative user profile.
-3. **Deterministic Security Gate (Zero Unapproved Side-Effects)**: No email is ever dispatched, no application is ever submitted, and no external state is ever modified without an explicit, interactive user approval in the UI.
-4. **Resilient Multi-Source Ingestion**: Discovers vacancies across public APIs, ATS platforms (Greenhouse, Lever, Ashby, Workable), remote boards (RemoteOK, Jobicy, Himalayas, WeWorkRemotely), and official career portals using both keyword search and semantic matching.
-5. **Direct, Least-Privilege OAuth**: Direct integration with Google APIs (Gmail, Google Drive, Google Sheets) without intermediate third-party SaaS proxies like Composio.
+1. **Key Product Mandate**: *"Discover jobs globally from accessible, authorized sources—not scrape the entire internet indiscriminately."* The platform does not claim to crawl the entire internet or bypass authentication, CAPTCHAs, `robots.txt`, rate limits, paywalls, or anti-bot controls.
+2. **Global Connector Architecture**: Connects to official APIs, public ATS feeds (Greenhouse, Lever, Ashby, Workable, SmartRecruiters, Recruitee), RSS/JSON feeds (RemoteOK, Remotive, Himalayas, Jobicy), licensed aggregators (Adzuna, USAJobs), startup networks (YC Jobs), and verified direct career endpoints. Every connector defines source name, regions, categories, authentication, usage restrictions, rate limits, pagination, retry policy, health status, last sync timestamp, and attribution.
+3. **Local-First & Resource-Efficient**: Runs natively on Ubuntu Linux without requiring high-end GPU hardware. Local models run via CPU/GPU-friendly Ollama (`qwen2.5:7b`, `llama3.2:1b`, `nomic-embed-text`), backed by configurable cloud LLMs.
+4. **Absolute Factual Integrity & Zero Seeded Data**: The system never hallucinates credentials or work history. The production release starts with an empty database; zero fake jobs or seeded candidate records.
+5. **Deterministic Security Gate (Zero Unapproved Side-Effects)**: No email is ever dispatched, no application is ever submitted, and no external state is ever modified without an explicit, interactive user approval in the UI.
+6. **Isolated Fault Tolerance**: Discovery continues reliably when individual sources fail. Upstream connector errors are isolated, logged with exponential backoff, and reported in the health dashboard.
+7. **Direct, Least-Privilege OAuth**: Direct integration with Google APIs (Gmail, Google Drive, Google Sheets) without intermediate third-party SaaS proxies.
 
 ---
 

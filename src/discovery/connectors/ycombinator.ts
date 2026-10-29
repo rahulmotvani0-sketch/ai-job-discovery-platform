@@ -1,10 +1,31 @@
 import { logger } from '../../core/logger.js';
-import type { IJobSourceConnector } from './types.js';
 import type { RawJobPayload } from '../../types/index.js';
+import type { ConnectorHealthCheckResult, JobSourceCategory } from '../registry/types.js';
+import { BaseSourceConnector } from './base.js';
 
-export class YCombinatorStartupsConnector implements IJobSourceConnector {
+export class YCombinatorStartupsConnector extends BaseSourceConnector {
+  readonly sourceId = 'ycombinator';
   readonly name = 'Y Combinator Startups';
   readonly sourceType = 'ycombinator';
+  readonly category: JobSourceCategory = 'STARTUP_GROWTH';
+  readonly officialUrl = 'https://www.workatastartup.com';
+
+  override readonly countriesAndRegions = {
+    countries: ['US', 'GLOBAL'],
+    regions: ['North America', 'Worldwide'],
+  };
+  override readonly authRequirements = {
+    type: 'NONE' as const,
+    description: 'Public authorized ATS endpoints of YC alumni companies',
+  };
+  override readonly usageRestrictions = 'Public company career feeds. Respect ATS rate limits and robots rules.';
+  override get attribution() {
+    return {
+      required: true,
+      text: 'Sourced from Y Combinator portfolio companies',
+      url: 'https://www.workatastartup.com',
+    };
+  }
 
   private targetYcStartups = [
     { name: 'PostHog', greenhouseId: 'posthog' },
@@ -16,6 +37,29 @@ export class YCombinatorStartupsConnector implements IJobSourceConnector {
     { name: 'GitLab', greenhouseId: 'gitlab' },
     { name: 'Zapier', greenhouseId: 'zapier' },
   ];
+
+  validateConfig(): { valid: boolean; missingVars: string[] } {
+    return { valid: true, missingVars: [] };
+  }
+
+  async healthCheck(): Promise<ConnectorHealthCheckResult> {
+    try {
+      const resp = await this.safeFetch('https://boards-api.greenhouse.io/v1/boards/posthog/jobs', undefined, 5000);
+      return {
+        sourceId: this.sourceId,
+        healthy: resp.ok,
+        message: resp.ok ? 'YC Startup ATS endpoints reachable' : `HTTP ${resp.status}`,
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        sourceId: this.sourceId,
+        healthy: false,
+        message: `Health check failed: ${err.message}`,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+  }
 
   async fetchVacancies(options?: { tags?: string[]; limit?: number }): Promise<RawJobPayload[]> {
     const limit = options?.limit ?? 30;
@@ -30,9 +74,6 @@ export class YCombinatorStartupsConnector implements IJobSourceConnector {
       if (collected.length >= limit) break;
 
       try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 6000);
-
         let url = '';
         if (startup.greenhouseId) {
           url = `https://boards-api.greenhouse.io/v1/boards/${startup.greenhouseId}/jobs?content=true`;
@@ -44,8 +85,8 @@ export class YCombinatorStartupsConnector implements IJobSourceConnector {
 
         if (!url) continue;
 
-        const resp = await fetch(url, { signal: controller.signal });
-        clearTimeout(timer);
+        const resp = await this.safeFetch(url, undefined, 6000);
+        this.lastSuccessfulSync = new Date().toISOString();
 
         if (!resp.ok) continue;
 

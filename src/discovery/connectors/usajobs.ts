@@ -10,6 +10,28 @@ export class USAJobsConnector extends BaseSourceConnector {
   readonly category: JobSourceCategory = 'GOVERNMENT_PUBLIC';
   readonly officialUrl = 'https://developer.usajobs.gov';
 
+  override readonly countriesAndRegions = {
+    countries: ['US'],
+    regions: ['North America'],
+  };
+  override readonly authRequirements = {
+    type: 'API_KEY' as const,
+    description: 'Requires USAJOBS_API_KEY and USAJOBS_USER_AGENT',
+    requiredEnvVars: ['USAJOBS_API_KEY', 'USAJOBS_USER_AGENT'],
+  };
+  override readonly usageRestrictions = 'USAJOBS Developer API Terms of Service. Exclusively for legitimate job search assistance for US federal employment.';
+  override get attribution() {
+    return {
+      required: true,
+      text: 'Jobs provided by USAJOBS - U.S. Office of Personnel Management',
+      url: 'https://www.usajobs.gov',
+    };
+  }
+  override readonly pagination = {
+    type: 'PAGE_NUMBER' as const,
+    maxPageSize: 100,
+  };
+
   protected rateLimitRpm = 60;
   protected timeoutMs = 8000;
 

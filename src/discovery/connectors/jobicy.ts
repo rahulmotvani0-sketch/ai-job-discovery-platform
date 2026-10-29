@@ -1,10 +1,54 @@
 import { logger } from '../../core/logger.js';
-import type { IJobSourceConnector } from './types.js';
 import type { RawJobPayload } from '../../types/index.js';
+import type { ConnectorHealthCheckResult, JobSourceCategory } from '../registry/types.js';
+import { BaseSourceConnector } from './base.js';
 
-export class JobicyConnector implements IJobSourceConnector {
+export class JobicyConnector extends BaseSourceConnector {
+  readonly sourceId = 'jobicy';
   readonly name = 'Jobicy';
   readonly sourceType = 'jobicy';
+  readonly category: JobSourceCategory = 'REMOTE_EMPLOYMENT';
+  readonly officialUrl = 'https://jobicy.com';
+
+  override readonly countriesAndRegions = {
+    countries: ['GLOBAL'],
+    regions: ['Worldwide'],
+  };
+  override readonly authRequirements = {
+    type: 'NONE' as const,
+    description: 'Public authorized REST endpoint',
+  };
+  override readonly usageRestrictions = 'Public Jobicy RSS/JSON feed. Respect rate limits and caching policies.';
+  override get attribution() {
+    return {
+      required: true,
+      text: 'Jobs provided by Jobicy',
+      url: 'https://jobicy.com',
+    };
+  }
+
+  validateConfig(): { valid: boolean; missingVars: string[] } {
+    return { valid: true, missingVars: [] };
+  }
+
+  async healthCheck(): Promise<ConnectorHealthCheckResult> {
+    try {
+      const resp = await this.safeFetch('https://jobicy.com/api/v2/remote-jobs?count=1', undefined, 5000);
+      return {
+        sourceId: this.sourceId,
+        healthy: resp.ok,
+        message: resp.ok ? 'Jobicy API reachable' : `HTTP ${resp.status}`,
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        sourceId: this.sourceId,
+        healthy: false,
+        message: `Health check failed: ${err.message}`,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+  }
 
   async fetchVacancies(options?: { tags?: string[]; limit?: number }): Promise<RawJobPayload[]> {
     const limit = options?.limit ?? 25;
@@ -12,17 +56,8 @@ export class JobicyConnector implements IJobSourceConnector {
     logger.info(`Fetching vacancies from Jobicy API (${url})...`);
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-
-      const resp = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json',
-        },
-      });
-      clearTimeout(timer);
+      const resp = await this.safeFetch(url, undefined, 12000);
+      this.lastSuccessfulSync = new Date().toISOString();
 
       if (!resp.ok) {
         throw new Error(`Jobicy responded with status ${resp.status}`);

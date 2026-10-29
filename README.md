@@ -1,17 +1,25 @@
 # Autonomous Job Discovery & Application Automation Platform
 ### The Autonomous Career Command Center for Job Seekers & Tech Professionals
 
-> 🎯 **Built Exclusively for Candidates & Job Seekers**: This platform is your personal, local-first career copilot—**NOT** an enterprise recruiter or HR screening tool. It runs locally on your machine to find top roles across major ATS systems, tailor resumes to your verified achievements with zero hallucinations, gate every email submission behind your personal approval, and help you negotiate and interview with incoming recruiters.
+> 🌍 **Key Product Statement**:
+> *"Discover jobs globally from accessible, authorized sources—not scrape the entire internet indiscriminately."*
 
-Built with a local-first philosophy, the platform combines direct multi-source ATS connectors, semantic AI matching, automated ATS resume tailoring, scheduled background discovery, and **strict human-in-the-loop approval gates** before transmitting any external communication.
+> 🎯 **Built Exclusively for Candidates & Job Seekers**: This platform is your personal, local-first career copilot—**NOT** an enterprise recruiter or HR screening tool. It aggregates jobs from legally accessible and user-authorized sources worldwide. It does not claim to crawl the entire internet or bypass authentication, CAPTCHAs, `robots.txt`, rate limits, paywalls, or anti-bot controls.
+
+Built with a local-first philosophy, the platform combines a distributed **Global Connector System**, semantic AI matching, fact-grounded ATS resume tailoring, scheduled background discovery, and **strict human-in-the-loop approval gates** before transmitting any external communication.
 
 ---
 
 ## 🌟 Key Capabilities
 
-- **Direct ATS & Job-Source Connectors**:
-  - Live API/feed integrations for **Ashby**, **Greenhouse**, **Lever**, **SmartRecruiters**, **Workable**, **Recruitee**, **RemoteOK**, and **Remotive**.
-  - Built-in SSRF protections, client-side rate limiters, exponential backoff, and circuit breakers.
+- **Global Connector System (14+ Supported Platforms & User-Configured Feeds)**:
+  - **Public ATS Feeds**: Live integrations for **Greenhouse**, **Lever**, **Ashby**, **Workable**, **SmartRecruiters**, and **Recruitee**.
+  - **Public Remote RSS / JSON Feeds**: Automated feeds from **RemoteOK**, **Remotive**, **Himalayas**, and **Jobicy**.
+  - **Startup Networks**: Curated ATS endpoints across **Y Combinator Startups**.
+  - **Official APIs & Aggregators**: Verified connectors for **USAJobs** and **Adzuna**.
+  - **Permitted Career Portals**: Verified direct career endpoints for top infrastructure and technology organizations.
+  - **User-Configured Feeds**: Custom user-provided RSS/JSON and ATS endpoints.
+  - **Built-in Compliance & Defenses**: SSRF protections (`validateSafeUrl`), client-side rate limiters, exponential backoff on HTTP 429/503/504, attribution preservation, and isolated fault tolerance.
 - **AI Matching & Semantic Scoring**:
   - Offline local inference via **Ollama** (`qwen2.5:7b`, `llama3.2:3b`, `mistral`) or optional cloud providers (**Gemini**, **OpenAI**, **Anthropic**, **OpenRouter**).
   - Fact-grounded resume tailoring: Highlights verified achievements without fabricating skills or employment history.

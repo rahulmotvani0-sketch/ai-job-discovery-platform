@@ -10,6 +10,28 @@ export class AdzunaConnector extends BaseSourceConnector {
   readonly category: JobSourceCategory = 'INTERNATIONAL_BOARDS';
   readonly officialUrl = 'https://developer.adzuna.com';
 
+  override readonly countriesAndRegions = {
+    countries: ['GB', 'US', 'IN', 'CA', 'AU', 'DE', 'FR', 'NL', 'PL', 'BR'],
+    regions: ['Global', 'North America', 'Europe', 'Asia-Pacific'],
+  };
+  override readonly authRequirements = {
+    type: 'API_KEY' as const,
+    description: 'Requires ADZUNA_APP_ID and ADZUNA_APP_KEY',
+    requiredEnvVars: ['ADZUNA_APP_ID', 'ADZUNA_APP_KEY'],
+  };
+  override readonly usageRestrictions = 'Adzuna Developer API terms. Rate limited; requires backlink attribution to Adzuna.';
+  override get attribution() {
+    return {
+      required: true,
+      text: 'Jobs powered by Adzuna',
+      url: 'https://www.adzuna.com',
+    };
+  }
+  override readonly pagination = {
+    type: 'PAGE_NUMBER' as const,
+    maxPageSize: 50,
+  };
+
   protected rateLimitRpm = 60;
   protected timeoutMs = 8000;
 

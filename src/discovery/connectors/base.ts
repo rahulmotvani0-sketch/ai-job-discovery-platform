@@ -6,7 +6,15 @@ import type {
   ConnectorHealthCheckResult, 
   JobSourceDefinition 
 } from '../registry/types.js';
-import type { IJobSourceConnector } from './types.js';
+import type { 
+  IJobSourceConnector,
+  ConnectorCountriesAndRegions,
+  ConnectorAuthRequirements,
+  ConnectorRateLimits,
+  ConnectorPagination,
+  ConnectorRetryPolicy,
+  ConnectorAttribution
+} from './types.js';
 
 /**
  * Validates that a destination URL is strictly safe from SSRF attacks,
@@ -123,6 +131,40 @@ export abstract class BaseSourceConnector implements IJobSourceConnector {
   abstract readonly sourceType: RawJobPayload['sourceType'];
   abstract readonly category: JobSourceCategory;
   abstract readonly officialUrl: string;
+
+  // Metadata conforming to Global Connector Specification
+  readonly countriesAndRegions: ConnectorCountriesAndRegions = {
+    countries: ['GLOBAL'],
+    regions: ['Worldwide'],
+  };
+  readonly supportedCategories: string[] = [
+    'Software Engineering', 'DevOps', 'Cloud Infrastructure', 'SRE', 'Data', 'Security'
+  ];
+  readonly authRequirements: ConnectorAuthRequirements = {
+    type: 'NONE',
+    description: 'Public authorized endpoint or feed'
+  };
+  readonly usageRestrictions: string = 
+    'Respect published API terms, rate limits, and robots.txt rules. Indiscriminate crawling prohibited.';
+  get rateLimits(): ConnectorRateLimits {
+    return { requestsPerMinute: this.rateLimitRpm };
+  }
+  readonly pagination: ConnectorPagination = {
+    type: 'NONE',
+    maxPageSize: 100
+  };
+  get retryPolicy(): ConnectorRetryPolicy {
+    return { maxRetries: this.maxRetries, backoffMs: 500 };
+  }
+  healthStatus: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' | 'UNTESTED' = 'HEALTHY';
+  lastSuccessfulSync: string | null = null;
+  get attribution(): ConnectorAttribution {
+    return {
+      required: true,
+      text: `Jobs provided by ${this.name}`,
+      url: this.officialUrl
+    };
+  }
 
   protected rateLimitRpm: number = 60;
   protected timeoutMs: number = 8000;

@@ -1,10 +1,54 @@
 import { logger } from '../../core/logger.js';
-import type { IJobSourceConnector } from './types.js';
 import type { RawJobPayload } from '../../types/index.js';
+import type { ConnectorHealthCheckResult, JobSourceCategory } from '../registry/types.js';
+import { BaseSourceConnector } from './base.js';
 
-export class HimalayasConnector implements IJobSourceConnector {
+export class HimalayasConnector extends BaseSourceConnector {
+  readonly sourceId = 'himalayas';
   readonly name = 'Himalayas Remote';
   readonly sourceType = 'himalayas';
+  readonly category: JobSourceCategory = 'REMOTE_EMPLOYMENT';
+  readonly officialUrl = 'https://himalayas.app';
+
+  override readonly countriesAndRegions = {
+    countries: ['GLOBAL'],
+    regions: ['Worldwide'],
+  };
+  override readonly authRequirements = {
+    type: 'NONE' as const,
+    description: 'Public authorized JSON feed',
+  };
+  override readonly usageRestrictions = 'Public Himalayas remote feed. Respect rate limits and caching policies.';
+  override get attribution() {
+    return {
+      required: true,
+      text: 'Jobs sourced from Himalayas',
+      url: 'https://himalayas.app',
+    };
+  }
+
+  validateConfig(): { valid: boolean; missingVars: string[] } {
+    return { valid: true, missingVars: [] };
+  }
+
+  async healthCheck(): Promise<ConnectorHealthCheckResult> {
+    try {
+      const resp = await this.safeFetch('https://himalayas.app/jobs/api?limit=1', undefined, 5000);
+      return {
+        sourceId: this.sourceId,
+        healthy: resp.ok,
+        message: resp.ok ? 'Himalayas API reachable' : `HTTP ${resp.status}`,
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      return {
+        sourceId: this.sourceId,
+        healthy: false,
+        message: `Health check failed: ${err.message}`,
+        checkedAt: new Date().toISOString(),
+      };
+    }
+  }
 
   async fetchVacancies(options?: { tags?: string[]; limit?: number }): Promise<RawJobPayload[]> {
     const limit = options?.limit ?? 25;
@@ -12,11 +56,8 @@ export class HimalayasConnector implements IJobSourceConnector {
     const targetKeywords = ['devops', 'sre', 'cloud', 'infrastructure', 'platform', 'kubernetes', 'reliability', 'automation', 'security', 'systems'];
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 6000);
-
-      const resp = await fetch(url, { signal: controller.signal });
-      clearTimeout(timer);
+      const resp = await this.safeFetch(url, undefined, 8000);
+      this.lastSuccessfulSync = new Date().toISOString();
 
       if (!resp.ok) {
         logger.warn(`Himalayas API returned HTTP ${resp.status}`);
