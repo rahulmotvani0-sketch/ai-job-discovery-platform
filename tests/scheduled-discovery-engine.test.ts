@@ -7,6 +7,8 @@ import { AlertNotificationManager } from '../src/notifications/alert-manager.js'
 import type { IGmailService } from '../src/integrations/google/gmail.js';
 import type { IJobSourceConnector } from '../src/discovery/connectors/types.js';
 import type { RawJobPayload } from '../src/types/index.js';
+import { TEST_CANDIDATE_PROFILE } from './fixtures/test-fixtures.js';
+import { DEFAULT_JOB_PREFERENCES } from '../src/core/profile.js';
 
 describe('Automated Scheduled Discovery Engine Suite', () => {
   let db: DatabaseManager;
@@ -14,6 +16,8 @@ describe('Automated Scheduled Discovery Engine Suite', () => {
 
   beforeEach(() => {
     db = new DatabaseManager(':memory:');
+    db.saveUserProfile(TEST_CANDIDATE_PROFILE);
+    db.savePreferences(DEFAULT_JOB_PREFERENCES);
     mockGmailService = {
       isReady: () => false,
       getStatus: () => ({ email: null, isAuthorized: false, hasRefreshToken: false, tokenExpiresAt: null }),

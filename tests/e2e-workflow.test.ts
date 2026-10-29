@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DatabaseManager } from '../src/core/database.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES } from '../src/core/profile.js';
+import { TEST_CANDIDATE_PROFILE } from './fixtures/test-fixtures.js';
 import { ResumeTailoringAgent } from '../src/applications/resume-tailor.js';
 import { ApplicationWritingAgent } from '../src/applications/writer.js';
 import { ApprovalGatekeeper, SecurityAuthorizationError } from '../src/applications/approval-gate.js';
@@ -44,12 +45,12 @@ describe('Phases 5-7: Resume Tailoring, Security Approval Gate & End-to-End Work
     };
 
     const tailor = new ResumeTailoringAgent();
-    const result = tailor.tailorResume(dummyVacancy, DEFAULT_USER_PROFILE);
+    const result = tailor.tailorResume(dummyVacancy, TEST_CANDIDATE_PROFILE);
 
-    expect(result.markdownContent).toContain(DEFAULT_USER_PROFILE.fullName.toUpperCase());
+    expect(result.markdownContent).toContain(TEST_CANDIDATE_PROFILE.fullName.toUpperCase());
     expect(result.markdownContent).toContain('Terraform');
     expect(result.markdownContent).toContain('Kubernetes');
-    expect(result.markdownContent).toContain(DEFAULT_USER_PROFILE.email);
+    expect(result.markdownContent).toContain(TEST_CANDIDATE_PROFILE.email);
 
     // Hallucination verification: Ensure unearned skills/certifications are NOT present
     expect(result.markdownContent).not.toContain('CCIE Enterprise Infrastructure');

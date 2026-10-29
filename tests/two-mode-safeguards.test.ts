@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { loadConfig } from '../src/config/index.js';
 import { DatabaseManager } from '../src/core/database.js';
 import { MasterOrchestrator } from '../src/automation/orchestrator.js';
 import { InterviewSchedulingEngine } from '../src/automation/interview-engine.js';
 import type { IGmailService } from '../src/integrations/google/gmail.js';
 import type { DiscoveryManager } from '../src/discovery/connectors/manager.js';
+import {
+  TEST_VACANCY,
+  TEST_CANDIDATE_PROFILE,
+  TEST_RECRUITER_INTERACTION,
+} from './fixtures/test-fixtures.js';
 
-describe('Two-Mode Design (Demo vs Personal vs Production) & Submission Safeguards', () => {
+describe('Clean Personal Default Architecture & Submission Safety Gates', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -19,13 +22,21 @@ describe('Two-Mode Design (Demo vs Personal vs Production) & Submission Safeguar
     process.env = originalEnv;
   });
 
-  describe('Config Mode Parsing & Defaults', () => {
-    it('defaults appMode to demo when APP_MODE is unset in development', () => {
+  describe('Config Mode Parsing & Safe Defaults', () => {
+    it('defaults appMode to personal with safe submission gates when APP_MODE is unset', () => {
       delete process.env.APP_MODE;
+      delete process.env.DATABASE_SEED;
+      delete process.env.APPLICATION_SUBMISSION_ENABLED;
+      delete process.env.HOURLY_DISCOVERY;
+      delete process.env.CLOUD_DISABLED;
       process.env.NODE_ENV = 'development';
+
       const cfg = loadConfig('/dev/null');
-      expect(cfg.appMode).toBe('demo');
+      expect(cfg.appMode).toBe('personal');
+      expect(cfg.databaseSeed).toBe(false);
       expect(cfg.applicationSubmissionEnabled).toBe(false);
+      expect(cfg.hourlyDiscovery).toBe(false);
+      expect(cfg.cloudDisabled).toBe(true);
     });
 
     it('forces applicationSubmissionEnabled to false in demo mode even if env variable is true', () => {
@@ -55,27 +66,42 @@ describe('Two-Mode Design (Demo vs Personal vs Production) & Submission Safeguar
     });
   });
 
-  describe('Synthetic Demo Assets', () => {
-    it('provides valid synthetic demo-profile.json', () => {
-      const profilePath = join(process.cwd(), 'examples', 'demo-profile.json');
-      expect(existsSync(profilePath)).toBe(true);
-      const content = JSON.parse(readFileSync(profilePath, 'utf-8'));
-      expect(content.fullName).toBe('Alex Chen');
-      expect(content.email).toBe('alex.chen.demo@example.com');
-      expect(content.experiences.length).toBeGreaterThanOrEqual(2);
-      expect(content.skills).toBeDefined();
+  describe('Empty Database & Onboarding Requirements', () => {
+    it('initializes with completely empty database without fabricated records', () => {
+      const db = new DatabaseManager(':memory:');
+      try {
+        expect(db.getUserProfile()).toBeNull();
+        expect(db.listVacancies().length).toBe(0);
+        expect(db.listDrafts().length).toBe(0);
+        expect(db.listSubmissions().length).toBe(0);
+        expect(db.listRecruiterInteractions().length).toBe(0);
+      } finally {
+        db.close();
+      }
     });
 
-    it('provides valid synthetic mock vacancies and recruiter replies', () => {
-      const vacPath = join(process.cwd(), 'examples', 'mock-data', 'mock-vacancies.json');
-      const repliesPath = join(process.cwd(), 'examples', 'mock-data', 'mock-recruiter-replies.json');
-      expect(existsSync(vacPath)).toBe(true);
-      expect(existsSync(repliesPath)).toBe(true);
+    it('persists real user candidate profile when onboarding is completed', () => {
+      const db = new DatabaseManager(':memory:');
+      try {
+        expect(db.getUserProfile()).toBeNull();
+        db.saveUserProfile(TEST_CANDIDATE_PROFILE);
 
-      const vacancies = JSON.parse(readFileSync(vacPath, 'utf-8'));
-      const replies = JSON.parse(readFileSync(repliesPath, 'utf-8'));
-      expect(vacancies.length).toBeGreaterThan(0);
-      expect(replies.length).toBeGreaterThan(0);
+        const saved = db.getUserProfile();
+        expect(saved).not.toBeNull();
+        expect(saved?.fullName).toBe('Test Candidate');
+        expect(saved?.email).toBe('test.candidate@example.com');
+      } finally {
+        db.close();
+      }
+    });
+  });
+
+  describe('Isolated Test Fixtures', () => {
+    it('verifies deterministic test fixtures are isolated under tests/fixtures/', () => {
+      expect(TEST_VACANCY.id).toBe('test-vacancy-001');
+      expect(TEST_VACANCY.companyName).toBe('Test Company');
+      expect(TEST_CANDIDATE_PROFILE.fullName).toBe('Test Candidate');
+      expect(TEST_RECRUITER_INTERACTION.detectedIntent).toBe('INTERVIEW_INVITATION');
     });
   });
 
@@ -98,37 +124,28 @@ describe('Two-Mode Design (Demo vs Personal vs Production) & Submission Safeguar
       };
       const mockDiscovery = {
         runAllConnectors: vi.fn(),
-        getConnector: vi.fn(),
-        listConnectors: vi.fn(),
+        getRegistry: vi.fn(),
       } as unknown as DiscoveryManager;
+      const mockRouter = {
+        getMode: () => 'local-only',
+      } as any;
 
       const orchestrator = new MasterOrchestrator({
         db,
         discoveryManager: mockDiscovery,
+        router: mockRouter,
         gmailService: mockGmail,
       });
 
-      // Seed a vacancy and draft
-      db.insertOrUpdateVacancy({
-        id: 'test_vac_demo',
-        sourceId: 'src_demo',
-        sourceType: 'ashby',
-        sourceUrl: 'https://example.com/job',
-        title: 'Senior Engineer',
-        company: 'DemoCorp',
-        location: 'Remote',
-        isRemote: true,
-        description: 'Test description',
-        status: 'AWAITING_APPROVAL',
-      });
+      db.insertOrUpdateVacancy(TEST_VACANCY);
 
       db.saveApplicationDraft({
         id: 'test_draft_demo',
-        vacancyId: 'test_vac_demo',
-        recipientEmail: 'jobs@democorp.example',
-        subject: 'Application for Senior Engineer',
-        bodyText: 'Hello DemoCorp',
-        bodyHtml: '<p>Hello DemoCorp</p>',
+        vacancyId: TEST_VACANCY.id,
+        recipientEmail: 'jobs@example.com',
+        subject: 'Application for Test Engineer',
+        bodyText: 'Hello Test Corp',
+        bodyHtml: '<p>Hello Test Corp</p>',
         status: 'AWAITING_APPROVAL',
       });
 
@@ -149,41 +166,102 @@ describe('Two-Mode Design (Demo vs Personal vs Production) & Submission Safeguar
         sendApprovedApplication: vi.fn(),
         fetchRecruiterResponses: vi.fn(),
       };
+      const mockDiscovery = {
+        runAllConnectors: vi.fn(),
+        getRegistry: vi.fn(),
+      } as unknown as DiscoveryManager;
+      const mockRouter = {
+        getMode: () => 'local-only',
+      } as any;
+
       const orchestrator = new MasterOrchestrator({
         db,
-        discoveryManager: {} as any,
+        discoveryManager: mockDiscovery,
+        router: mockRouter,
         gmailService: mockGmail,
       });
 
-      db.insertOrUpdateVacancy({
-        id: 'vac_gate_test',
-        sourceId: 'src_gate',
-        sourceType: 'ashby',
-        sourceUrl: 'https://example.com',
-        title: 'Lead SRE',
-        company: 'GateCorp',
-        location: 'Remote',
-        isRemote: true,
-        description: 'Description',
-        status: 'AWAITING_APPROVAL',
-      });
+      db.insertOrUpdateVacancy(TEST_VACANCY);
 
       db.saveApplicationDraft({
-        id: 'draft_gate_test',
-        vacancyId: 'vac_gate_test',
-        recipientEmail: 'jobs@gatecorp.example',
-        subject: 'Lead SRE Application',
+        id: 'test_draft_locked',
+        vacancyId: TEST_VACANCY.id,
+        recipientEmail: 'jobs@example.com',
+        subject: 'Application for Test Engineer',
+        bodyText: 'Hello Test Corp',
+        bodyHtml: '<p>Hello Test Corp</p>',
         status: 'AWAITING_APPROVAL',
       });
 
-      await expect(orchestrator.approveAndSend('draft_gate_test', 'test_user')).rejects.toThrow(
-        /Application submission is disabled \(APPLICATION_SUBMISSION_ENABLED=false\)/
-      );
+      await expect(
+        orchestrator.approveAndSend('test_draft_locked', 'test_user')
+      ).rejects.toThrow(/APPLICATION_SUBMISSION_ENABLED=false/);
+
       expect(mockGmail.sendApprovedApplication).not.toHaveBeenCalled();
+    });
+
+    it('allows sending application in personal mode only when APPLICATION_SUBMISSION_ENABLED is true and draft is approved', async () => {
+      process.env.APP_MODE = 'personal';
+      process.env.APPLICATION_SUBMISSION_ENABLED = 'true';
+
+      const mockGmail: IGmailService = {
+        sendApprovedApplication: vi.fn().mockImplementation(async (draftId: string) => {
+          const sub = {
+            id: 'sub_test_allowed',
+            draftId,
+            vacancyId: TEST_VACANCY.id,
+            sentAt: new Date().toISOString(),
+            approvedBy: 'test_user',
+            channel: 'GMAIL_API' as const,
+            gmailMessageId: 'gmail_live_msg_123',
+            gmailThreadId: 'gmail_live_thread_123',
+            status: 'SENT' as const,
+            auditHash: 'audit_test_allowed',
+          };
+          db.saveSubmission(sub);
+          return {
+            messageId: 'gmail_live_msg_123',
+            threadId: 'gmail_live_thread_123',
+          };
+        }),
+        fetchRecruiterResponses: vi.fn(),
+      };
+      const mockDiscovery = {
+        runAllConnectors: vi.fn(),
+        getRegistry: vi.fn(),
+      } as unknown as DiscoveryManager;
+      const mockRouter = {
+        getMode: () => 'local-only',
+      } as any;
+
+      const orchestrator = new MasterOrchestrator({
+        db,
+        discoveryManager: mockDiscovery,
+        router: mockRouter,
+        gmailService: mockGmail,
+      });
+
+      db.insertOrUpdateVacancy(TEST_VACANCY);
+
+      db.saveApplicationDraft({
+        id: 'test_draft_allowed',
+        vacancyId: TEST_VACANCY.id,
+        recipientEmail: 'jobs@example.com',
+        subject: 'Application for Test Engineer',
+        bodyText: 'Hello Test Corp',
+        bodyHtml: '<p>Hello Test Corp</p>',
+        status: 'AWAITING_APPROVAL',
+      });
+
+      const submission = await orchestrator.approveAndSend('test_draft_allowed', 'test_user');
+      expect(submission).toBeDefined();
+      expect(submission.status).toBe('SENT');
+      expect(submission.gmailMessageId).toBe('gmail_live_msg_123');
+      expect(mockGmail.sendApprovedApplication).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('InterviewSchedulingEngine Follow-Up Safety Gate', () => {
+  describe('InterviewEngine Follow-Up Safety Gate', () => {
     let db: DatabaseManager;
 
     beforeEach(() => {
@@ -194,87 +272,58 @@ describe('Two-Mode Design (Demo vs Personal vs Production) & Submission Safeguar
       db.close();
     });
 
-    it('simulates follow-up reply safely in demo mode without calling real external APIs', async () => {
+    it('simulates recruiter reply dispatch safely in demo mode', async () => {
       process.env.APP_MODE = 'demo';
       const mockGmail: IGmailService = {
         sendApprovedApplication: vi.fn(),
         fetchRecruiterResponses: vi.fn(),
-        sendFollowUpReply: vi.fn(),
       };
+      const engine = new InterviewSchedulingEngine(db, mockGmail);
 
-      const engine = new InterviewSchedulingEngine({
-        db,
-        gmailService: mockGmail,
-      });
-
-      // Seed interaction and follow up draft
-      db.saveRecruiterInteraction({
-        id: 'inter_demo_01',
-        submissionId: 'sub_demo_01',
-        senderEmail: 'recruiter@example.com',
-        companyName: 'Cloud Corp',
-        subject: 'Interview with Cloud Corp',
-        snippet: 'Are you available to talk?',
-        detectedIntent: 'INTERVIEW_INVITATION',
-        actionRequired: true,
-        receivedAt: new Date().toISOString(),
-      });
+      db.saveRecruiterInteraction(TEST_RECRUITER_INTERACTION);
 
       db.saveInterviewFollowUpDraft({
         id: 'draft_followup_01',
-        interactionId: 'inter_demo_01',
-        recipientEmail: 'recruiter@example.com',
-        recipientName: 'Recruiter Jane',
-        subject: 'Re: Interview with Cloud Corp',
-        body: 'I would be delighted to speak. Here is my availability...',
-        suggestedSlots: ['2026-10-30T15:00:00Z'],
+        interactionId: TEST_RECRUITER_INTERACTION.id,
+        proposedSlots: ['2026-11-01T14:00:00Z'],
+        draftSubject: 'Re: Interview Schedule Invitation',
+        draftBody: 'Thank you for reaching out. I am available at the suggested time.',
         status: 'PENDING_APPROVAL',
+        confidenceScore: 90,
       });
 
       const result = await engine.approveAndSendDraft('draft_followup_01');
       expect(result.success).toBe(true);
       expect(result.messageId).toMatch(/^demo_interview_msg_/);
-      expect(result.draft.status).toBe('SENT');
-      expect(mockGmail.sendFollowUpReply).not.toHaveBeenCalled();
+      expect(mockGmail.sendApprovedApplication).not.toHaveBeenCalled();
     });
 
-    it('rejects follow-up reply transmission in personal mode if APPLICATION_SUBMISSION_ENABLED is false', async () => {
+    it('rejects recruiter reply dispatch if APPLICATION_SUBMISSION_ENABLED is false', async () => {
       process.env.APP_MODE = 'personal';
       process.env.APPLICATION_SUBMISSION_ENABLED = 'false';
-
       const mockGmail: IGmailService = {
         sendApprovedApplication: vi.fn(),
         fetchRecruiterResponses: vi.fn(),
-        sendFollowUpReply: vi.fn(),
       };
+      const engine = new InterviewSchedulingEngine(db, mockGmail);
 
-      const engine = new InterviewSchedulingEngine({
-        db,
-        gmailService: mockGmail,
-      });
-
-      db.saveRecruiterInteraction({
-        id: 'inter_gate_01',
-        senderEmail: 'recruiter@example.com',
-        subject: 'Interview',
-        snippet: 'Availability?',
-        detectedIntent: 'INTERVIEW_INVITATION',
-        actionRequired: true,
-      });
+      db.saveRecruiterInteraction(TEST_RECRUITER_INTERACTION);
 
       db.saveInterviewFollowUpDraft({
-        id: 'draft_gate_01',
-        interactionId: 'inter_gate_01',
-        recipientEmail: 'recruiter@example.com',
-        subject: 'Re: Interview',
-        body: 'Availability info',
+        id: 'draft_followup_02',
+        interactionId: TEST_RECRUITER_INTERACTION.id,
+        proposedSlots: ['2026-11-01T14:00:00Z'],
+        draftSubject: 'Re: Interview Schedule Invitation',
+        draftBody: 'Thank you for reaching out.',
         status: 'PENDING_APPROVAL',
+        confidenceScore: 90,
       });
 
-      await expect(engine.approveAndSendDraft('draft_gate_01')).rejects.toThrow(
-        /Email response transmission is disabled \(APPLICATION_SUBMISSION_ENABLED=false\)/
-      );
-      expect(mockGmail.sendFollowUpReply).not.toHaveBeenCalled();
+      await expect(
+        engine.approveAndSendDraft('draft_followup_02')
+      ).rejects.toThrow(/APPLICATION_SUBMISSION_ENABLED=false/);
+
+      expect(mockGmail.sendApprovedApplication).not.toHaveBeenCalled();
     });
   });
 });

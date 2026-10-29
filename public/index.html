@@ -1103,6 +1103,28 @@
 
     <!-- Explorer View -->
     <div id="view-explorer">
+      <!-- First Launch Onboarding Notice -->
+      <div id="first-launch-banner" style="display: none; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.3rem;">🚀</span>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Autonomous Candidate Onboarding</h3>
+            </div>
+            <div id="first-launch-msg-profile" style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.5; margin-bottom: 0.35rem;">
+              <strong>No candidate profile configured.</strong> Upload your resume or configure your profile to begin.
+            </div>
+            <div id="first-launch-msg-connectors" style="color: var(--text-dim); font-size: 0.88rem;">
+              No job sources are enabled. Configure a connector to start discovering jobs.
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="switchTab('profile')">📄 Upload Resume & Setup Profile</button>
+            <button class="btn btn-secondary" onclick="switchTab('global-discovery')">⚙ Configure Connectors</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Role Category Chips -->
       <div class="category-chips-bar" id="category-chips">
         <div class="category-chip active" onclick="selectCategory('All', this)">All Roles</div>
@@ -2951,11 +2973,28 @@ Senior Technical Talent Partner</textarea>
         connectedAccounts = await accRes.json();
         const health = await healthRes.json();
         document.getElementById('global-status-text').textContent = `${health.inferenceMode.toUpperCase()} AI READY`;
-        document.getElementById('inference-mode-select').value = health.inferenceMode;
-
         allVacancies = await vacRes.json();
         applyFilters();
         loadSchedulerStatus();
+
+        const banner = document.getElementById('first-launch-banner');
+        if (banner) {
+          const noProfile = !health.hasProfile;
+          const noVacancies = !allVacancies || allVacancies.length === 0;
+          if (noProfile || noVacancies) {
+            banner.style.display = 'block';
+            const msgProfile = document.getElementById('first-launch-msg-profile');
+            if (msgProfile) {
+              msgProfile.style.display = noProfile ? 'block' : 'none';
+            }
+            const msgConnectors = document.getElementById('first-launch-msg-connectors');
+            if (msgConnectors) {
+              msgConnectors.style.display = (health.enabledSourcesCount === 0 || noVacancies) ? 'block' : 'none';
+            }
+          } else {
+            banner.style.display = 'none';
+          }
+        }
 
         try {
           const intRes = await fetch('/api/recruiter-interactions');
@@ -3663,6 +3702,22 @@ Senior Technical Talent Partner</textarea>
     function renderVacancies(list, containerId) {
       const container = document.getElementById(containerId);
       if (!list || list.length === 0) {
+        if (!allVacancies || allVacancies.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 4rem 2rem; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-subtle);">
+              <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🧭</div>
+              <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main);">No job sources are enabled.</div>
+              <div style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.75rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+                Configure a connector to start discovering jobs across global career sites and direct ATS feeds.
+              </div>
+              <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="switchTab('global-discovery')">⚙ Configure Connectors</button>
+                <button class="btn btn-secondary" onclick="switchTab('profile')">📄 Upload Candidate Resume</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
         container.innerHTML = `
           <div style="text-align: center; padding: 4rem; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border-subtle);">
             <div style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">No opportunities matching selected filters</div>

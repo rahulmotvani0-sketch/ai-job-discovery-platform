@@ -22,10 +22,17 @@ export class InterviewSchedulingEngine {
   private gmailService?: IGmailService;
   private alertManager: AlertNotificationManager;
 
-  constructor(options: InterviewEngineOptions) {
-    this.db = options.db;
-    this.gmailService = options.gmailService;
-    this.alertManager = options.alertManager || new AlertNotificationManager();
+  constructor(optionsOrDb: InterviewEngineOptions | DatabaseManager, maybeGmail?: IGmailService, maybeAlertManager?: AlertNotificationManager) {
+    if (optionsOrDb && ('prepare' in (optionsOrDb as any).db || 'getUserProfile' in optionsOrDb)) {
+      this.db = optionsOrDb as DatabaseManager;
+      this.gmailService = maybeGmail!;
+      this.alertManager = maybeAlertManager || new AlertNotificationManager();
+    } else {
+      const opts = optionsOrDb as InterviewEngineOptions;
+      this.db = opts.db;
+      this.gmailService = opts.gmailService;
+      this.alertManager = opts.alertManager || new AlertNotificationManager();
+    }
   }
 
   /**

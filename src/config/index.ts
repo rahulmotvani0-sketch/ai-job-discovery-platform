@@ -9,6 +9,7 @@ const EXAMPLE_ENV_PATH = join(process.cwd(), '.env.example');
 export interface AppConfig {
   env: 'development' | 'production' | 'test';
   appMode: 'demo' | 'personal' | 'production';
+  databaseSeed: boolean;
   dataDir: string;
   dbPath: string;
   customResumePath?: string;
@@ -86,11 +87,13 @@ export function loadConfig(customEnvPath?: string): AppConfig {
   }
 
   const rawAppMode = process.env.APP_MODE?.trim().toLowerCase();
-  const defaultMode: AppConfig['appMode'] = env === 'production' ? 'production' : (env === 'test' ? 'personal' : 'demo');
+  const defaultMode: AppConfig['appMode'] = env === 'production' ? 'production' : 'personal';
   const appMode: AppConfig['appMode'] = (rawAppMode as any) || defaultMode;
   if (!['demo', 'personal', 'production'].includes(appMode)) {
     throw new Error(`Invalid APP_MODE: ${process.env.APP_MODE}. Must be 'demo', 'personal', or 'production'.`);
   }
+
+  const databaseSeed = process.env.DATABASE_SEED === 'true';
 
   // Application submission gate: strictly disabled in demo mode; requires explicit opt-in in personal/production.
   const applicationSubmissionEnabled = appMode !== 'demo' && (
@@ -117,7 +120,7 @@ export function loadConfig(customEnvPath?: string): AppConfig {
   }
 
   const cloudProvider = (process.env.CLOUD_PROVIDER as AppConfig['cloudProvider']) || 'none';
-  const cloudDisabled = process.env.CLOUD_DISABLED === 'true' || cloudProvider === 'none';
+  const cloudDisabled = process.env.CLOUD_DISABLED !== 'false' || cloudProvider === 'none';
   const cloudApiKey = process.env.CLOUD_API_KEY?.trim() || undefined;
   if (!cloudDisabled && !cloudApiKey && env === 'production') {
     throw new Error(`CLOUD_API_KEY is required in production when CLOUD_PROVIDER is set to '${cloudProvider}'.`);
@@ -126,6 +129,7 @@ export function loadConfig(customEnvPath?: string): AppConfig {
   return {
     env,
     appMode,
+    databaseSeed,
     dataDir,
     dbPath,
     customResumePath,

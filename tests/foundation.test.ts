@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DatabaseManager } from '../src/core/database.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES } from '../src/core/profile.js';
+import { TEST_CANDIDATE_PROFILE } from './fixtures/test-fixtures.js';
 import { sanitizeText } from '../src/core/logger.js';
 import type { Vacancy, ApplicationDraft } from '../src/types/index.js';
 
@@ -12,11 +13,11 @@ describe('Phase 2: Foundation & Database Persistence Tests', () => {
   });
 
   it('should save and retrieve user profile without alteration', () => {
-    db.saveUserProfile(DEFAULT_USER_PROFILE);
+    db.saveUserProfile(TEST_CANDIDATE_PROFILE);
     const profile = db.getUserProfile();
     expect(profile).not.toBeNull();
-    expect(profile?.fullName).toBe(DEFAULT_USER_PROFILE.fullName);
-    expect(profile?.email).toBe(DEFAULT_USER_PROFILE.email);
+    expect(profile?.fullName).toBe(TEST_CANDIDATE_PROFILE.fullName);
+    expect(profile?.email).toBe(TEST_CANDIDATE_PROFILE.email);
     expect(profile?.experiences.length).toBeGreaterThanOrEqual(2);
     expect(profile?.skills.cloudPlatforms.length).toBeGreaterThan(0);
   });

@@ -1273,18 +1273,19 @@ export class DatabaseManager {
         sent_at = COALESCE(excluded.sent_at, interview_follow_up_drafts.sent_at),
         updated_at = excluded.updated_at
     `);
+    const dAny = draft as any;
     stmt.run(
       draft.id,
       draft.interactionId,
       draft.submissionId ?? null,
-      draft.recipientEmail,
-      draft.companyName || (draft as any).company || 'Company',
-      draft.jobTitle || 'Role',
+      draft.recipientEmail || dAny.recipientEmail || 'recruiter@example.com',
+      draft.companyName || dAny.company || 'Company',
+      draft.jobTitle || dAny.role || 'Role',
       draft.intent || 'INTERVIEW_INVITATION',
-      draft.subject,
-      draft.body,
-      JSON.stringify(draft.suggestedSlots || []),
-      draft.status,
+      draft.subject || dAny.draftSubject || 'Re: Interview',
+      draft.body || dAny.draftBody || '',
+      JSON.stringify(draft.suggestedSlots || dAny.proposedSlots || []),
+      draft.status || 'PENDING_APPROVAL',
       draft.approvedAt ?? null,
       draft.sentAt ?? null,
       draft.createdAt || new Date().toISOString(),

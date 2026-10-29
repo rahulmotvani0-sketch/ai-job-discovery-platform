@@ -4,6 +4,7 @@ import { ModelRouter } from '../src/ai/providers/router.js';
 import { JobDescriptionAnalysisAgent } from '../src/ai/agents/job-analyzer.js';
 import { JobMatchingAgent } from '../src/ai/agents/matcher.js';
 import { DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES } from '../src/core/profile.js';
+import { TEST_CANDIDATE_PROFILE } from './fixtures/test-fixtures.js';
 import type { Vacancy } from '../src/types/index.js';
 
 describe('Phase 4: AI Intelligence & Scoring Engine Tests', () => {
@@ -76,7 +77,7 @@ describe('Phase 4: AI Intelligence & Scoring Engine Tests', () => {
       isContractOrFreelance: false,
     };
 
-    const evaluation = JobMatchingAgent.evaluateMatch(matchedVacancy, DEFAULT_USER_PROFILE, DEFAULT_JOB_PREFERENCES);
+    const evaluation = JobMatchingAgent.evaluateMatch(matchedVacancy, TEST_CANDIDATE_PROFILE, DEFAULT_JOB_PREFERENCES);
     expect(evaluation.overallScore).toBeGreaterThanOrEqual(80);
     expect(['Strong', 'Excellent']).toContain(evaluation.tier);
     expect(evaluation.matchingSkills).toContain('Terraform');
