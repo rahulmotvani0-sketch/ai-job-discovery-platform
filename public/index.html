@@ -1037,6 +1037,82 @@
       border-color: var(--border-focus);
       background: rgba(255, 255, 255, 0.05);
     }
+
+    /* LinkedIn Studio Styles */
+    .linkedin-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .linkedin-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+    .linkedin-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    .linkedin-preview-frame {
+      background: #1b1f23;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 1.25rem;
+      color: #e1e4e8;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .linkedin-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0077b5, #00a0dc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 1.05rem;
+    }
+    .linkedin-share-btn {
+      background: #0a66c2;
+      color: #ffffff;
+      border: none;
+      border-radius: 24px;
+      font-weight: 600;
+      padding: 0.65rem 1.4rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+    .linkedin-share-btn:hover {
+      background: #004182;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(10, 102, 194, 0.4);
+    }
+    .linkedin-template-chip {
+      background: rgba(10, 102, 194, 0.12);
+      border: 1px solid rgba(10, 102, 194, 0.35);
+      color: #38bdf8;
+      border-radius: 20px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .linkedin-template-chip:hover {
+      background: rgba(10, 102, 194, 0.25);
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -1062,6 +1138,7 @@
       <button class="nav-tab" onclick="switchTab('history')">Submission History</button>
       <button class="nav-tab" id="nav-tab-global-discovery" onclick="switchTab('global-discovery')">🌐 Source Registry & Coverage</button>
       <button class="nav-tab" id="nav-tab-interviews" onclick="switchTab('interviews')">📬 Inbound Recruiter Replies & Interviews <span id="interviews-nav-badge" style="display:none; background: #8b5cf6; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 9999px; margin-left: 5px;">0</span></button>
+      <button class="nav-tab" id="nav-tab-linkedin" onclick="switchTab('linkedin')">💼 LinkedIn Post Studio</button>
     </div>
 
     <div class="user-pill" id="global-status-pill">
@@ -2263,6 +2340,143 @@
         </div>
         <div id="reg-proposals-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
           <div style="color: var(--text-dim); font-size: 0.85rem; text-align: center; padding: 1.5rem;">Loading proposals...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LinkedIn Post Studio & Outreach View -->
+    <div id="view-linkedin" style="display: none;">
+      <!-- Hero / Section Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+            <span class="source-tag" style="background: rgba(10, 102, 194, 0.25); border-color: #0a66c2; color: #38bdf8;">LINKEDIN STUDIO</span>
+            <span class="meta-pill" style="color: var(--accent-emerald);">100% Policy Compliant Manual Workflow</span>
+          </div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700;">LinkedIn Post Studio & Recruiter Outreach</h2>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">Draft AI-assisted engineering insights, job hunt announcements, and recruiter outreach. Zero scraping, zero unauthorized bot automation—review in full and publish safely via official LinkedIn share links.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <div id="linkedin-provider-pill" class="meta-pill" style="background: rgba(16, 185, 129, 0.12); border-color: var(--accent-emerald); color: var(--accent-emerald); font-weight: 600;">
+            ✓ Active Provider: Manual Workflow (Open-Source)
+          </div>
+        </div>
+      </div>
+
+      <!-- Compliance Notice Banner -->
+      <div style="background: rgba(10, 102, 194, 0.08); border: 1px solid rgba(10, 102, 194, 0.3); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="font-size: 1.5rem;">🛡️</div>
+        <div style="flex: 1; font-size: 0.84rem; color: var(--text-main); line-height: 1.5;">
+          <strong>LinkedIn Automation Policy Adherence:</strong> Payment does not remove platform restrictions. In accordance with <a href="https://www.linkedin.com/help/linkedin/answer/a1340567/automated-activity-on-linkedin?lang=en" target="_blank" style="color: #38bdf8; text-decoration: underline;">LinkedIn's automated activity policy</a>, this platform never uses scraping, cookie hijacking, or automated bot actions. You retain 100% control to review, edit, and publish directly through official LinkedIn dialogs.
+        </div>
+      </div>
+
+      <!-- Main Studio Grid -->
+      <div class="linkedin-panel">
+        <!-- Left: Draft Studio & Generator -->
+        <div class="linkedin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Post & Message Composer</h3>
+            <span id="linkedin-char-count" style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono);">0 / 3000 chars</span>
+          </div>
+
+          <!-- Quick Templates -->
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">AI Draft Accelerators</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
+              <button class="linkedin-template-chip" onclick="generateLinkedInDraftTemplate('job_search')">🚀 Open to Work Announcement</button>
+              <button class="linkedin-template-chip" onclick="generateLinkedInDraftTemplate('tech_insight')">💡 System Architecture Insight</button>
+              <button class="linkedin-template-chip" onclick="generateLinkedInDraftTemplate('project_showcase')">🛠️ Open-Source Project Release</button>
+              <button class="linkedin-template-chip" onclick="generateLinkedInDraftTemplate('recruiter_dm')">✉️ Recruiter Warm Outreach Note</button>
+            </div>
+          </div>
+
+          <!-- Target Vacancy Context Selector (Optional) -->
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">Ground Draft in Target Vacancy (Optional)</label>
+            <select id="linkedin-target-vacancy" class="search-input" style="width: 100%; font-size: 0.85rem;" onchange="handleVacancyContextSelect()">
+              <option value="">-- General Professional Update (No specific role) --</option>
+            </select>
+          </div>
+
+          <!-- Content Textarea -->
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">Post Content / Message Text</label>
+            <textarea id="linkedin-content-input" class="search-input" rows="8" placeholder="Share your engineering journey, architectural discoveries, or career milestone..." oninput="updateLinkedInPreview()" style="width: 100%; resize: vertical; font-family: var(--font-body); font-size: 0.88rem; line-height: 1.5;"></textarea>
+          </div>
+
+          <!-- Link Attachment -->
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">Attached URL (Portfolio, GitHub, or Project)</label>
+            <input type="url" id="linkedin-link-input" class="search-input" placeholder="https://github.com/rahulmotvani0-sketch/..." oninput="updateLinkedInPreview()" style="width: 100%; font-size: 0.85rem;" />
+          </div>
+
+          <!-- Scheduling & Action Bar -->
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 1.25rem; margin-top: 1.25rem;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="datetime-local" id="linkedin-schedule-time" class="search-input" style="font-size: 0.8rem; padding: 0.45rem 0.65rem;" />
+                <button class="btn btn-secondary" onclick="handleScheduleLinkedInPost()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem;">
+                  📅 Schedule Draft
+                </button>
+              </div>
+              <button class="linkedin-share-btn" onclick="handleReviewAndShareLinkedIn()">
+                <span>Share on LinkedIn</span>
+                <span>↗</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live LinkedIn Preview & Scheduled Queue -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Live Preview Card -->
+          <div class="linkedin-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Live Feed Preview</h4>
+              <span class="meta-pill" style="font-size: 0.7rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">Feed Card Mockup</span>
+            </div>
+
+            <div class="linkedin-preview-frame">
+              <!-- Author Header -->
+              <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.85rem;">
+                <div class="linkedin-avatar" id="linkedin-preview-avatar">RM</div>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.92rem; color: #ffffff;" id="linkedin-preview-name">Candidate</div>
+                  <div style="font-size: 0.76rem; color: #94a3b8;" id="linkedin-preview-headline">Software Engineer</div>
+                  <div style="font-size: 0.72rem; color: #64748b;">Just now • 🌐 Public</div>
+                </div>
+              </div>
+
+              <!-- Post Content Body -->
+              <div id="linkedin-preview-body" style="white-space: pre-wrap; margin-bottom: 0.85rem; font-size: 0.88rem; color: #e2e8f0;">Your post draft will appear here in real time as you compose...</div>
+
+              <!-- Attached Link Card (Preview) -->
+              <div id="linkedin-preview-link-card" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.85rem;">
+                <div style="font-size: 0.75rem; color: #38bdf8; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="linkedin-preview-link-domain">github.com</div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: #fff; margin-top: 0.2rem;" id="linkedin-preview-link-title">Attached Reference Link</div>
+              </div>
+
+              <!-- Social Engagement Bar Mockup -->
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.6rem; display: flex; justify-content: space-around; font-size: 0.78rem; color: #94a3b8;">
+                <span>👍 Like</span>
+                <span>💬 Comment</span>
+                <span>🔁 Repost</span>
+                <span>✈️ Send</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scheduled Staged Drafts Queue -->
+          <div class="linkedin-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Scheduled Draft Queue</h4>
+              <button class="btn btn-secondary" onclick="loadScheduledLinkedInPosts()" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">🔄 Refresh</button>
+            </div>
+            <div id="linkedin-scheduled-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="color: var(--text-dim); font-size: 0.82rem; text-align: center; padding: 1.5rem;">No drafts currently scheduled.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -5530,8 +5744,12 @@ Senior Technical Talent Partner</textarea>
       if (globalDiscView) globalDiscView.style.display = tab === 'global-discovery' ? 'block' : 'none';
       const interviewsView = document.getElementById('view-interviews');
       if (interviewsView) interviewsView.style.display = tab === 'interviews' ? 'block' : 'none';
+      const linkedinView = document.getElementById('view-linkedin');
+      if (linkedinView) linkedinView.style.display = tab === 'linkedin' ? 'block' : 'none';
 
-      if (tab === 'interviews') {
+      if (tab === 'linkedin') {
+        loadLinkedInStudio();
+      } else if (tab === 'interviews') {
         loadInterviewsView();
       } else if (tab === 'global-discovery') {
         loadGlobalDiscoveryView();
@@ -6790,6 +7008,302 @@ ${draft.body}
           </div>
         `;
       }).join('');
+    }
+
+    // ==========================================
+    // LinkedIn Post Studio & Outreach Controller
+    // ==========================================
+    let cachedLinkedInProfile = null;
+
+    async function loadLinkedInStudio() {
+      // 1. Fetch Profile for preview header
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const data = await res.json();
+          cachedLinkedInProfile = data.profile || {};
+          const name = cachedLinkedInProfile.fullName || cachedLinkedInProfile.name || 'Candidate';
+          const title = cachedLinkedInProfile.title || cachedLinkedInProfile.targetRole || 'Software Engineer | Distributed Systems';
+          const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'RM';
+
+          const nameEl = document.getElementById('linkedin-preview-name');
+          if (nameEl) nameEl.innerText = name;
+          const headEl = document.getElementById('linkedin-preview-headline');
+          if (headEl) headEl.innerText = title;
+          const avEl = document.getElementById('linkedin-preview-avatar');
+          if (avEl) avEl.innerText = initials;
+        }
+      } catch (e) {
+        console.warn('Could not load profile for LinkedIn preview', e);
+      }
+
+      // 2. Fetch Provider Status
+      try {
+        const provRes = await fetch('/api/linkedin/providers');
+        if (provRes.ok) {
+          const provData = await provRes.json();
+          const pill = document.getElementById('linkedin-provider-pill');
+          if (pill) {
+            pill.innerHTML = `✓ Active Provider: ${provData.activeProvider === 'manual' ? 'Manual Workflow (Open-Source)' : provData.activeProvider}`;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load LinkedIn providers', e);
+      }
+
+      // 3. Populate Vacancies Dropdown
+      const vacSelect = document.getElementById('linkedin-target-vacancy');
+      if (vacSelect && allVacancies && allVacancies.length > 0) {
+        const currentVal = vacSelect.value;
+        vacSelect.innerHTML = '<option value="">-- General Professional Update (No specific role) --</option>' +
+          allVacancies.slice(0, 30).map(v => `<option value="${v.id}">${v.title} @ ${v.companyName || v.company} (${v.location || 'Remote'})</option>`).join('');
+        if (currentVal) vacSelect.value = currentVal;
+      }
+
+      // 4. Default schedule time: tomorrow at 09:30 AM
+      const timeInput = document.getElementById('linkedin-schedule-time');
+      if (timeInput && !timeInput.value) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 30, 0, 0);
+        const iso = tomorrow.toISOString().slice(0, 16);
+        timeInput.value = iso;
+      }
+
+      // 5. Load Scheduled Posts
+      loadScheduledLinkedInPosts();
+      updateLinkedInPreview();
+    }
+
+    function updateLinkedInPreview() {
+      const content = document.getElementById('linkedin-content-input')?.value || '';
+      const linkUrl = document.getElementById('linkedin-link-input')?.value?.trim() || '';
+
+      const countEl = document.getElementById('linkedin-char-count');
+      if (countEl) {
+        countEl.innerText = `${content.length} / 3000 chars`;
+        countEl.style.color = content.length > 2800 ? 'var(--accent-amber)' : 'var(--text-dim)';
+      }
+
+      const bodyEl = document.getElementById('linkedin-preview-body');
+      if (bodyEl) {
+        bodyEl.innerText = content || 'Your post draft will appear here in real time as you compose...';
+      }
+
+      const linkCard = document.getElementById('linkedin-preview-link-card');
+      const domainEl = document.getElementById('linkedin-preview-link-domain');
+      const titleEl = document.getElementById('linkedin-preview-link-title');
+      if (linkCard && domainEl && titleEl) {
+        if (linkUrl) {
+          try {
+            const parsed = new URL(linkUrl);
+            domainEl.innerText = parsed.hostname.toUpperCase();
+            titleEl.innerText = linkUrl;
+            linkCard.style.display = 'block';
+          } catch {
+            domainEl.innerText = 'WEB LINK';
+            titleEl.innerText = linkUrl;
+            linkCard.style.display = 'block';
+          }
+        } else {
+          linkCard.style.display = 'none';
+        }
+      }
+    }
+
+    function handleVacancyContextSelect() {
+      const vacSelect = document.getElementById('linkedin-target-vacancy');
+      if (!vacSelect) return;
+      const vacId = vacSelect.value;
+      if (!vacId) return;
+
+      const vacancy = allVacancies.find(v => v.id === vacId);
+      if (!vacancy) return;
+
+      const linkInput = document.getElementById('linkedin-link-input');
+      if (linkInput && vacancy.url) {
+        linkInput.value = vacancy.url;
+      }
+
+      // Prompt to customize content
+      const contentInput = document.getElementById('linkedin-content-input');
+      if (contentInput && !contentInput.value) {
+        contentInput.value = `Excited about the technological challenges in modern software engineering! Exploring opportunities in ${vacancy.title} with forward-thinking teams like ${vacancy.companyName || vacancy.company}.\n\n#SoftwareEngineering #TechCareers #${(vacancy.companyName || 'Tech').replace(/[^a-zA-Z0-9]/g, '')}`;
+      }
+      updateLinkedInPreview();
+    }
+
+    function generateLinkedInDraftTemplate(type) {
+      const contentInput = document.getElementById('linkedin-content-input');
+      const linkInput = document.getElementById('linkedin-link-input');
+      if (!contentInput) return;
+
+      const name = cachedLinkedInProfile?.fullName || cachedLinkedInProfile?.name || 'Engineer';
+      const role = cachedLinkedInProfile?.targetRole || cachedLinkedInProfile?.title || 'Full-Stack / Platform Engineer';
+
+      if (type === 'job_search') {
+        contentInput.value = `👋 Hello network!\n\nI am officially exploring new engineering opportunities as a ${role}.\n\nOver the past several years, I have built and optimized distributed systems, production APIs, and reliable cloud pipelines. I am energized by collaborative teams building high-impact platforms.\n\nCore Competencies:\n• TypeScript, Node.js, Python, Distributed Systems\n• Relational DBs (PostgreSQL, SQLite), High-Performance Ingestion\n• Cloud Architecture, Clean Code & Test-Driven Development\n\nIf your organization is hiring or you know of teams solving meaningful engineering challenges, let's connect!\n\n#OpenToWork #SoftwareEngineering #Backend #TypeScript #CloudArchitecture`;
+        if (linkInput && !linkInput.value) {
+          linkInput.value = 'https://github.com/rahulmotvani0-sketch/ai-job-discovery-platform';
+        }
+      } else if (type === 'tech_insight') {
+        contentInput.value = `💡 Engineering Insight: When designing discovery pipelines across disparate data sources, unified schema normalization is critical.\n\nRather than writing bespoke ad-hoc parsers, we decouple discovery into standard connector contracts:\n1. Direct ATS endpoints (Greenhouse, Lever, Ashby) with zero scraping.\n2. Canonical URL and content hash deduplication.\n3. Human-in-the-loop review gates for high-leverage outreach.\n\nHow does your team handle multi-provider data ingestion and rate-limit hygiene?\n\n#SoftwareArchitecture #DistributedSystems #EngineeringBestPractices #API`;
+      } else if (type === 'project_showcase') {
+        contentInput.value = `🚀 Excited to share my latest open-source project: an autonomous, privacy-first job discovery engine with candidate-centric AI resume matching!\n\nKey Architectural Highlights:\n✨ 100% Client-side/local data privacy—zero third-party data tracking\n✨ Direct ATS connectors (Lever, Greenhouse, Workable, SmartRecruiters, Ashby)\n✨ Deterministic semantic resume scoring without hallucinations\n✨ Compliant LinkedIn manual sharing workflow (no automated bot activity)\n\nCheck out the repository, architecture notes, and test coverage below 👇\n\n#OpenSource #TypeScript #CareerTech #Automation #DeveloperTools`;
+        if (linkInput) {
+          linkInput.value = 'https://github.com/rahulmotvani0-sketch/ai-job-discovery-platform';
+        }
+      } else if (type === 'recruiter_dm') {
+        contentInput.value = `Hi [Recruiter Name],\n\nI hope your week is off to a great start! I recently came across the [Target Role] opening at [Company Name] and was impressed by the team's work on modern platform scalability.\n\nWith a background in building scalable distributed systems and robust web platforms, I'd love to share how my experience with TypeScript, cloud architectures, and data pipelines aligns with what your team is building.\n\nWould you be open to a brief 10-minute introductory conversation this week?\n\nBest regards,\n${name}`;
+      }
+
+      updateLinkedInPreview();
+    }
+
+    async function handleReviewAndShareLinkedIn() {
+      const content = document.getElementById('linkedin-content-input')?.value?.trim();
+      const linkUrl = document.getElementById('linkedin-link-input')?.value?.trim();
+      if (!content) {
+        alert('Please enter or generate post content before sharing.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/linkedin/draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, linkUrl, visibility: 'PUBLIC' }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to generate LinkedIn draft');
+
+        // Copy text to candidate clipboard
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(content);
+        }
+
+        // Open official LinkedIn Share window in new tab
+        const shareUrl = data.result?.shareUrl || 'https://www.linkedin.com/feed/?shareActive=true';
+        window.open(shareUrl, '_blank', 'noopener,noreferrer');
+
+        alert(`✓ Draft successfully prepared & copied to your clipboard!\n\nLinkedIn has been opened in a new tab. In accordance with platform policy, review your post and paste to publish safely.`);
+      } catch (err) {
+        alert('Error sharing to LinkedIn: ' + err.message);
+      }
+    }
+
+    async function handleScheduleLinkedInPost() {
+      const content = document.getElementById('linkedin-content-input')?.value?.trim();
+      const linkUrl = document.getElementById('linkedin-link-input')?.value?.trim();
+      const scheduledFor = document.getElementById('linkedin-schedule-time')?.value;
+
+      if (!content) {
+        alert('Please enter post content before scheduling.');
+        return;
+      }
+      if (!scheduledFor) {
+        alert('Please select a scheduled date and time.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/linkedin/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            linkUrl,
+            scheduledFor: new Date(scheduledFor).toISOString(),
+            visibility: 'PUBLIC'
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to schedule post');
+
+        alert(`✓ Post draft scheduled for ${new Date(scheduledFor).toLocaleString()}!`);
+        loadScheduledLinkedInPosts();
+      } catch (err) {
+        alert('Error scheduling post: ' + err.message);
+      }
+    }
+
+    async function loadScheduledLinkedInPosts() {
+      const container = document.getElementById('linkedin-scheduled-list');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/linkedin/posts');
+        if (!res.ok) throw new Error('Failed to fetch scheduled posts');
+        const data = await res.json();
+        const posts = data.posts || [];
+
+        if (posts.length === 0) {
+          container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.82rem; text-align: center; padding: 1.5rem;">No drafts currently scheduled.</div>';
+          return;
+        }
+
+        container.innerHTML = posts.map(p => {
+          const statusColor = p.status === 'SCHEDULED' ? 'var(--accent-amber)' : p.status === 'PUBLISHED' ? 'var(--accent-emerald)' : 'var(--text-dim)';
+          const scheduledDate = new Date(p.input?.scheduledFor || p.createdAt).toLocaleString();
+          const previewText = (p.input?.content || '').slice(0, 110) + ((p.input?.content || '').length > 110 ? '...' : '');
+
+          return `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.85rem 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span class="meta-pill" style="color: ${statusColor}; border-color: ${statusColor}; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                  ${p.status}
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono);">${scheduledDate}</span>
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.6rem;">
+                ${previewText}
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                ${p.status === 'SCHEDULED' ? `
+                  <button class="btn btn-secondary" onclick="cancelScheduledPostUI('${p.id}')" style="font-size: 0.72rem; padding: 0.2rem 0.6rem; color: var(--accent-rose); border-color: rgba(244,63,94,0.3);">
+                    Cancel Draft
+                  </button>
+                ` : ''}
+                <button class="btn btn-secondary" onclick="copyAndOpenLinkedInPost('${encodeURIComponent(p.input?.content || '')}', '${encodeURIComponent(p.input?.linkUrl || '')}')" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">
+                  Share Now ↗
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div style="color: var(--accent-rose); font-size: 0.82rem; padding: 1rem;">Error loading queue: ${err.message}</div>`;
+      }
+    }
+
+    async function cancelScheduledPostUI(id) {
+      if (!confirm('Are you sure you want to cancel this scheduled draft?')) return;
+      try {
+        const res = await fetch('/api/linkedin/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to cancel post');
+        loadScheduledLinkedInPosts();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function copyAndOpenLinkedInPost(encodedContent, encodedLink) {
+      const content = decodeURIComponent(encodedContent || '');
+      const link = decodeURIComponent(encodedLink || '');
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(content);
+      }
+      let shareUrl = 'https://www.linkedin.com/feed/?shareActive=true';
+      if (link) {
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`;
+      }
+      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+      alert('✓ Draft text copied to clipboard! Paste directly into LinkedIn.');
     }
 
     // Check for OAuth callback notification
