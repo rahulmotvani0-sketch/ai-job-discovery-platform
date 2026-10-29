@@ -3991,6 +3991,7 @@ Senior Technical Talent Partner</textarea>
                 ${v.isSaved ? '★' : '☆'}
               </button>
               <button class="btn btn-secondary" onclick="inspectVacancy('${v.id}')">Inspect Match</button>
+              <button class="btn btn-secondary" onclick="openLinkedInStudioForVacancy('${v.id}')" title="Draft LinkedIn Outreach" style="border-color: rgba(10, 102, 194, 0.4); color: #38bdf8;">💼 LinkedIn</button>
               ${v.status === 'QUALIFIED' || v.status === 'DRAFTED' || v.status === 'AWAITING_APPROVAL'
                 ? `<button class="btn btn-success" onclick="openReviewModal('${v.id}')">Review & Approve</button>`
                 : (v.status === 'SUBMITTED' 
@@ -5327,7 +5328,10 @@ Senior Technical Talent Partner</textarea>
                 <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;" onclick="showMatchExplanationModal('${escapeHtml(v.id)}')">
                   📊 Match Breakdown
                 </button>
-                <div style="display: flex; gap: 0.4rem;">
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                  <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem; border-color: rgba(10, 102, 194, 0.4); color: #38bdf8;" onclick="openLinkedInStudioForVacancy('${escapeHtml(v.id)}')">
+                    💼 LinkedIn
+                  </button>
                   <a href="${escapeHtml(v.url || '#')}" target="_blank" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
                     Job Link ↗
                   </a>
@@ -7304,6 +7308,17 @@ ${draft.body}
       }
       window.open(shareUrl, '_blank', 'noopener,noreferrer');
       alert('✓ Draft text copied to clipboard! Paste directly into LinkedIn.');
+    }
+
+    function openLinkedInStudioForVacancy(id) {
+      switchTab('linkedin');
+      setTimeout(() => {
+        const vacSelect = document.getElementById('linkedin-target-vacancy');
+        if (vacSelect) {
+          vacSelect.value = id;
+          handleVacancyContextSelect();
+        }
+      }, 100);
     }
 
     // Check for OAuth callback notification
