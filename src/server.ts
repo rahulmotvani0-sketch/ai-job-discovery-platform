@@ -29,6 +29,11 @@ import {
   getGlobalPortalsByCountry,
 } from './discovery/registry/global-directory.js';
 import {
+  LinkedInProviderRegistry,
+  getLinkedInProvider,
+  ManualLinkedInProvider,
+} from './integrations/linkedin/index.js';
+import {
   SECURITY_HEADERS,
   InMemoryRateLimiter,
   extractClientIp,
@@ -1422,6 +1427,81 @@ export class ApplicationServer {
             const id = pathname.replace('/api/interview-prep/', '');
             this.db.deleteInterviewPrepDossier(id);
             return this.sendJson(res, 200, { success: true, message: `Dossier ${id} deleted` });
+          }
+
+          // ==========================================
+          // LinkedIn Publishing & Provider API Endpoints
+          // (Open-Source Manual Workflow / Authorized Providers)
+          // ==========================================
+          if (pathname === '/api/linkedin/providers' && req.method === 'GET') {
+            const registry = LinkedInProviderRegistry.getInstance();
+            return this.sendJson(res, 200, {
+              success: true,
+              activeProvider: registry.getActiveProvider().providerId,
+              providers: registry.listProviders(),
+            }, requestId);
+          }
+
+          if (pathname === '/api/linkedin/draft' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              if (!body.content || typeof body.content !== 'string') {
+                return this.sendJson(res, 400, { error: 'content is required for LinkedIn draft' }, requestId);
+              }
+              const provider = getLinkedInProvider();
+              const result = await provider.publishPost({
+                content: body.content,
+                linkUrl: body.linkUrl,
+                title: body.title,
+                visibility: body.visibility || 'PUBLIC',
+              });
+              return this.sendJson(res, 200, { success: true, result }, requestId);
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message }, requestId);
+            }
+          }
+
+          if (pathname === '/api/linkedin/schedule' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              if (!body.content || !body.scheduledFor) {
+                return this.sendJson(res, 400, { error: 'content and scheduledFor are required' }, requestId);
+              }
+              const provider = getLinkedInProvider();
+              const result = await provider.schedulePost({
+                content: body.content,
+                scheduledFor: body.scheduledFor,
+                linkUrl: body.linkUrl,
+                title: body.title,
+                visibility: body.visibility || 'PUBLIC',
+              });
+              return this.sendJson(res, 201, { success: true, result }, requestId);
+            } catch (err: any) {
+              return this.sendJson(res, 500, { error: err.message }, requestId);
+            }
+          }
+
+          if (pathname === '/api/linkedin/posts' && req.method === 'GET') {
+            const provider = getLinkedInProvider();
+            let posts: any[] = [];
+            if (provider instanceof ManualLinkedInProvider) {
+              posts = provider.getScheduledPosts();
+            }
+            return this.sendJson(res, 200, { success: true, count: posts.length, posts }, requestId);
+          }
+
+          if (pathname === '/api/linkedin/cancel' && req.method === 'POST') {
+            try {
+              const body = await this.parseBody(req);
+              if (!body.id) {
+                return this.sendJson(res, 400, { error: 'id is required to cancel a scheduled post' }, requestId);
+              }
+              const provider = getLinkedInProvider();
+              await provider.cancelScheduledPost(body.id);
+              return this.sendJson(res, 200, { success: true, message: `Post ${body.id} cancelled` }, requestId);
+            } catch (err: any) {
+              return this.sendJson(res, 404, { error: err.message }, requestId);
+            }
           }
 
           if (pathname === '/api/resumes/generate-pdf' && req.method === 'POST') {
